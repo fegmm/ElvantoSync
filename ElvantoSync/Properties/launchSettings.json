@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ElvantoSync": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}
