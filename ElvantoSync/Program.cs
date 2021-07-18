@@ -14,7 +14,7 @@ namespace ElvantoSync
             var nextcloud = new NextcloudApi.Api(new NextcloudApi.Settings()
             {
                 ServerUri = new Uri(config["NEXTCLOUD_SERVER"]),
-                User = config["NEXTCLOUD_USER"],
+                Username = config["NEXTCLOUD_USER"],
                 Password = config["NEXTCLOUD_PASSWORD"]
             });
 
