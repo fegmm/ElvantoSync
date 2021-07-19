@@ -6,32 +6,51 @@ namespace ElvantoSync
 {
     class Program
     {
+        static Settings settings;
         static async Task Main(string[] args)
         {
-            var config = new ConfigurationBuilder().AddEnvironmentVariables().Build();
-            
-            var elvanto = new ElvantoApi.Client(config["ELVANTO_API_KEY"]);
+            LoadConfiguration();
+
+            var elvanto = new ElvantoApi.Client(settings.ElvantoKey);
             var nextcloud = new NextcloudApi.Api(new NextcloudApi.Settings()
             {
-                ServerUri = new Uri(config["NEXTCLOUD_SERVER"]),
-                Username = config["NEXTCLOUD_USER"],
-                Password = config["NEXTCLOUD_PASSWORD"]
+                ServerUri = new Uri(settings.NextcloudServer),
+                Username = settings.NextcloudUser,
+                Password = settings.NextcloudPassword
             });
 
-            if (!bool.TryParse(config["SYNC_ELVANTO_DEPARTEMENTS_TO_GROUPS"], out bool sync) || sync)
+            if (settings.SyncElvantoDepartementsToGroups)
                 await new Elvanto.DepartementsToGroupMemberSync(elvanto).ApplyAsync();
 
-            if (!bool.TryParse(config["SYNC_NEXTCLOUD_PEOPLE"], out sync) || sync)
+            if (settings.SyncNextcloudPeople)
                 await new Nextcloud.PeopleToNextcloudSync(elvanto, nextcloud).ApplyAsync();
 
-            if (!bool.TryParse(config["SYNC_NEXTCLOUD_GROUPS"], out sync) || sync)
+            if (settings.SyncNextcloudGroups)
                 await new Nextcloud.PeopleToNextcloudSync(elvanto, nextcloud).ApplyAsync();
 
-            if (!bool.TryParse(config["SYNC_NEXTCLOUD_GROUPMEMBERS"], out sync) || sync)
+            if (settings.SyncNextcloudGroupmembers)
                 await new Nextcloud.PeopleToNextcloudSync(elvanto, nextcloud).ApplyAsync();
 
-            if (!bool.TryParse(config["SYNC_NEXTCLOUD_GROUPFOLDERS"], out sync) || sync)
+            if (settings.SyncNextcloudGroupfolders)
                 await new Nextcloud.PeopleToNextcloudSync(elvanto, nextcloud).ApplyAsync();
+        }
+
+        private static void LoadConfiguration()
+        {
+            var config = new ConfigurationBuilder().AddEnvironmentVariables().Build();
+            settings = new Settings(
+                OutputFolder: config["OUTPUT_FOLDER"],
+                ElvantoKey: config["ELVANTO_API_KEY"],
+                NextcloudServer: config["NEXTCLOUD_SERVER"],
+                NextcloudUser: config["NEXTCLOUD_USER"],
+                NextcloudPassword: config["NEXTCLOUD_PASSWORD"],
+                LogOnly: bool.TryParse(config["LOG_ONLY"], out bool sync) && sync,
+                SyncElvantoDepartementsToGroups: !bool.TryParse(config["SYNC_ELVANTO_DEPARTEMENTS_TO_GROUPS"], out sync) || sync,
+                SyncNextcloudPeople: !bool.TryParse(config["SYNC_NEXTCLOUD_PEOPLE"], out sync) || sync,
+                SyncNextcloudGroups: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPS"], out sync) || sync,
+                SyncNextcloudGroupmembers: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPMEMBERS"], out sync) || sync,
+                SyncNextcloudGroupfolders: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPFOLDERS"], out sync) || sync
+            );
         }
     }
 }
