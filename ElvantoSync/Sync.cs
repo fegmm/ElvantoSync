@@ -20,13 +20,11 @@ namespace ElvantoSync
             var missing = from.Where(i => !to.ContainsKey(i.Key)).ToDictionary(i => i.Key, i => i.Value);
             var additional = to.Where(i => !from.ContainsKey(i.Key)).ToDictionary(i => i.Key, i => i.Value);
 
-            if (Program.settings.LogOnly)
-            {
-                System.IO.Directory.CreateDirectory(Program.settings.OutputFolder);
-                await System.IO.File.WriteAllLinesAsync(System.IO.Path.Combine(Program.settings.OutputFolder, this.GetType().Name + "-missings.txt"), missing.Keys.Select(i => i.ToString()));
-                await System.IO.File.WriteAllLinesAsync(System.IO.Path.Combine(Program.settings.OutputFolder, this.GetType().Name + "-additionals.txt"), additional.Keys.Select(i => i.ToString()));
-            }
-            else
+            System.IO.Directory.CreateDirectory(Program.settings.OutputFolder);
+            await System.IO.File.WriteAllLinesAsync(System.IO.Path.Combine(Program.settings.OutputFolder, this.GetType().Name + "-missings.txt"), missing.Keys.Select(i => i.ToString()));
+            await System.IO.File.WriteAllLinesAsync(System.IO.Path.Combine(Program.settings.OutputFolder, this.GetType().Name + "-additionals.txt"), additional.Keys.Select(i => i.ToString())); 
+            
+            if (!Program.settings.LogOnly)
             {
                 await AddMissingAsync(missing);
                 await RemoveAdditionalAsync(additional);
