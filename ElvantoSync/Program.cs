@@ -6,7 +6,7 @@ namespace ElvantoSync
 {
     class Program
     {
-        static Settings settings;
+        public static Settings settings;
         static async Task Main(string[] args)
         {
             LoadConfiguration();
