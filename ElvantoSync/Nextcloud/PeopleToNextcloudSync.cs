@@ -29,7 +29,10 @@ namespace ElvantoSync.Nextcloud
 
         public override async Task<Dictionary<string, string>> GetToAsync()
         {
-            return (await NextcloudApi.User.List(nextcloud)).All(nextcloud).ToDictionary(i => i);
+            return (await NextcloudApi.User.List(nextcloud))
+                .All(nextcloud)
+                .Where(i => i.StartsWith("Elvanto-"))
+                .ToDictionary(i => i);
         }
 
         public override async Task AddMissingAsync(Dictionary<string, Person> missing)
