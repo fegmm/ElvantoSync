@@ -28,13 +28,13 @@ namespace ElvantoSync
                 await new Nextcloud.PeopleToNextcloudSync(elvanto, nextcloud).ApplyAsync();
 
             if (settings.SyncNextcloudGroups)
-                await new Nextcloud.PeopleToNextcloudSync(elvanto, nextcloud).ApplyAsync();
+                await new Nextcloud.GroupsToNextcloudSync(elvanto, nextcloud).ApplyAsync();
 
             if (settings.SyncNextcloudGroupmembers)
-                await new Nextcloud.PeopleToNextcloudSync(elvanto, nextcloud).ApplyAsync();
+                await new Nextcloud.GroupMembersToNextcloudSync(elvanto, nextcloud).ApplyAsync();
 
             if (settings.SyncNextcloudGroupfolders)
-                await new Nextcloud.PeopleToNextcloudSync(elvanto, nextcloud).ApplyAsync();
+                await new Nextcloud.GroupsToNextcloudGroupFolderSync(elvanto, nextcloud).ApplyAsync();
         }
 
         private static void LoadConfiguration()
