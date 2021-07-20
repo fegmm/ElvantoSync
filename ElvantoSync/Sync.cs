@@ -22,6 +22,7 @@ namespace ElvantoSync
 
             if (Program.settings.LogOnly)
             {
+                System.IO.Directory.CreateDirectory(Program.settings.OutputFolder);
                 await System.IO.File.WriteAllLinesAsync(System.IO.Path.Combine(Program.settings.OutputFolder, this.GetType().Name + "-missings.txt"), missing.Keys.Select(i => i.ToString()));
                 await System.IO.File.WriteAllLinesAsync(System.IO.Path.Combine(Program.settings.OutputFolder, this.GetType().Name + "-additionals.txt"), additional.Keys.Select(i => i.ToString()));
             }
