@@ -20,6 +20,8 @@ namespace ElvantoSync.Elvanto
         public override async Task<Dictionary<(string personId, string groupName), Person>> GetFromAsync()
         {
             var response = await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest() { Fields = new[] { "departments" } });
+            var groups = await elvanto.GroupsGetAllAsync(new GetAllRequest());
+
             return response.People.Person
                 .Where(i => i.Departments != null)
                 .SelectMany(person => person.Departments.Department
@@ -30,6 +32,7 @@ namespace ElvantoSync.Elvanto
                     .Concat(person.Departments.Department.Select(department => (person, department.Name)))
                 )
                 .Distinct()
+                .Where(i => groups.Groups.Group.Any(j => j.Name == i.Name))
                 .ToDictionary(i => (i.person.Id, i.Name), i => i.person);
         }
 
