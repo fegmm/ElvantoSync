@@ -16,8 +16,10 @@ namespace ElvantoSync
             {
                 ServerUri = new Uri(settings.NextcloudServer),
                 Username = settings.NextcloudUser,
-                Password = settings.NextcloudPassword
-            });
+                Password = settings.NextcloudPassword,
+                ApplicationName = nameof(ElvantoSync),
+                RedirectUri = new Uri(settings.NextcloudServer)
+            }); ;
 
             if (settings.SyncElvantoDepartementsToGroups)
                 await new Elvanto.DepartementsToGroupMemberSync(elvanto).ApplyAsync();
