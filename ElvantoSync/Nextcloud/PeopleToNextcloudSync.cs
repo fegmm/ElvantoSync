@@ -44,9 +44,30 @@ namespace ElvantoSync.Nextcloud
                     displayName = $"{item.Value.Lastname}, {item.Value.Firstname}",
                     email = item.Value.Email,
                     password = random.Next(int.MaxValue / 10, int.MaxValue).ToString(),
-                    quota = "0 MB",
+                    quota = "0 MB"
                 }))
             );
+        }
+
+        public async override Task RemoveAdditionalAsync(Dictionary<string, string> additionals)
+        {
+            var user_infos = await Task.WhenAll(additionals.Select(i => GetUserOrReturnNull(i.Key)));
+            await Task.WhenAll(user_infos
+                .Where(i => i != null && i.quota.used == 0)
+                .Select(i => NextcloudApi.User.Delete(nextcloud, i.id))
+            );
+        }
+
+        private async Task<User> GetUserOrReturnNull(string userid)
+        {
+            try
+            {
+                return await NextcloudApi.User.Get(nextcloud, userid);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
     }
 }
