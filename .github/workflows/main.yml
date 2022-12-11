@@ -16,6 +16,6 @@ jobs:
        username: webersa
        password: ${{secrets.docker_access_token}}
     - name: Build the Docker image
-      run: docker build . --file ElvantoMaps/Dockerfile --tag webersa/elvantomaps:latest
+      run: docker build . --file ElvantoSync/Dockerfile --tag webersa/elvanto_sync:latest
     - name: Push the docker image to Hub
       run: docker push webersa/elvanto_sync:latest
