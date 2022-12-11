@@ -17,3 +17,7 @@ Configuration is done by environment variables.
 | SYNC_NEXTCLOUD_GROUPFOLDERS         | boolean | Whether to sync Elvanto groups to Nextcloud groupfolders                     | false   |
 | OUTPUT_FOLDER                       | string  | Location for the log files                                                   |         |
 | LOG_ONLY                            | boolean | Whether only log files should be created in the output-folder                | false   |
+| SYNC_ELVANTO_GROUPS_TO_KAS_MAIL     | string  | Whether to sync Elvanto group to ALLINKL KAS forwarding lists                | false   |
+| KAS_LOGIN                           | string  | KAS Username                                                                 |         |
+| KAS_AUTH_DATA                       | string  | KAS Password                                                                 |         |
+| KAS_DOMAIN                          | string  | Domain for which the forwarding lists are created                            |         |
