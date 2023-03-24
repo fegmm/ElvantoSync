@@ -20,9 +20,15 @@ namespace ElvantoSync.Nextcloud
 
         public override async Task<Dictionary<(string group, string user), GroupMember>> GetFromAsync()
         {
+            // People that are Contacts are reported as GroupMembers may be contacts, these must not be synced to nextcloud!
+            var valid_persons = (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest()))
+                .People.Person.Select(i => i.Id);
+            
             return (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = new[] { "people" } })).Groups.Group
                 .Where(i => i.People != null && i.People.Person != null)
-                .SelectMany(i => i.People.Person.Select(j => (i.Name, j)))
+                .SelectMany(i => i.People.Person
+                    .Where(j => valid_persons.Contains(j.Id))
+                    .Select(j => (i.Name, j)))
                 .ToDictionary(i => (i.Name, "Elvanto-" + i.j.Id), i => i.j);
         }
 
