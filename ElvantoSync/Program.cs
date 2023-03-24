@@ -67,7 +67,7 @@ namespace ElvantoSync
                 SyncNextcloudGroupmembers: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPMEMBERS"], out sync) || sync,
                 SyncNextcloudGroupfolders: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPFOLDERS"], out sync) || sync,
                 SyncElvantoGroupsToKASMail: !bool.TryParse(config["SYNC_ELVANTO_GROUPS_TO_KAS_MAIL"], out sync) || sync,
-                UploadGroupMailAddressesToNextcloudPath: config["UPLOAD_GROUP_MAIL_ADDRESSES_TO_NEXTCLOUDPATH"]
+                UploadGroupMailAddressesToNextcloudPath: config["UPLOAD_GROUP_MAIL_ADDRESSES_TO_NEXTCLOUD_PATH"]
             );
         }
     }
