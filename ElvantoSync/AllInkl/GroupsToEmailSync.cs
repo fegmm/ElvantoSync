@@ -37,7 +37,6 @@ namespace ElvantoSync.AllInkl
             if (Program.settings.UploadGroupMailAddressesToNextcloudPath != null)
             {
                 var path = Program.settings.UploadGroupMailAddressesToNextcloudPath;
-                var file_content = String.Join('\n', from.OrderBy(i => i.Value.Name).Select((item) => $"{item.Value.Name} => {item.Key}@{this.domain}"));
 
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
                 Document document = new Document();
@@ -49,7 +48,8 @@ namespace ElvantoSync.AllInkl
                 {
                     var row = table.AddRow();
                     row.Cells[0].AddParagraph(item.Value.Name);
-                    row.Cells[1].AddParagraph($"{item.Key}@{this.domain}");
+                    var mail_link = row.Cells[1].AddParagraph().AddHyperlink($"mailto:{item.Key}@{this.domain}", HyperlinkType.Url);
+                    mail_link.AddFormattedText($"{item.Key}@{this.domain}");
                 }
 
                 PdfDocumentRenderer pdfRenderer = new PdfDocumentRenderer(false);
