@@ -21,3 +21,4 @@ Configuration is done by environment variables.
 | KAS_LOGIN                           | string  | KAS Username                                                                 |         |
 | KAS_AUTH_DATA                       | string  | KAS Password                                                                 |         |
 | KAS_DOMAIN                          | string  | Domain for which the forwarding lists are created                            |         |
+| UPLOAD_GROUP_MAIL_ADDRESSES_TO_NEXTCLOUD_PATH | string | If set, a PDF file with a table of the mappings from group names to usernames will be uploaded to the nextcloud user's path as specified | |
