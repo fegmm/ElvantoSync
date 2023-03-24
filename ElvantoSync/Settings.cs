@@ -21,5 +21,6 @@ namespace ElvantoSync
         bool SyncNextcloudGroups,
         bool SyncNextcloudGroupmembers,
         bool SyncNextcloudGroupfolders,
-        bool SyncElvantoGroupsToKASMail);       
+        bool SyncElvantoGroupsToKASMail,
+        string UploadGroupMailAddressesToNextcloudPath);
 }            

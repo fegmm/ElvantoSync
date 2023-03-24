@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
-using ServiceReference1;
-using SimpleSOAPClient;
-using System.Xml;
-using System.Xml.Linq;
 using KasApi;
 using KasApi.Requests;
 using ElvantoSync.ElvantoApi.Models;
 using KasApi.Response;
+using System.IO;
+using System.Text;
+using MigraDoc.DocumentObjectModel;
+using MigraDoc.Rendering;
 
 namespace ElvantoSync.AllInkl
 {
@@ -20,19 +18,51 @@ namespace ElvantoSync.AllInkl
         private readonly ElvantoApi.Client elvanto;
         private readonly Client kas;
         private readonly string domain;
+        private readonly NextcloudApi.Api nextcloud;
 
-        public GroupsToEmailSync(ElvantoApi.Client elvanto, KasApi.Client kas, string domain)
+        public GroupsToEmailSync(ElvantoApi.Client elvanto, KasApi.Client kas, string domain, NextcloudApi.Api nextcloud)
         {
             this.elvanto = elvanto;
             this.kas = kas;
             this.domain = domain;
+            this.nextcloud = nextcloud;
         }
 
         public override async Task<Dictionary<string, Group>> GetFromAsync()
         {
-            return (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = new[] { "people" } })).Groups.Group
+            var from =  (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = new[] { "people" } })).Groups.Group
                 .Where(i => i.People?.Person != null && i.People.Person.Any())
                 .ToDictionary(i => SanitizeName(i.Name), i => i);
+
+            if (Program.settings.UploadGroupMailAddressesToNextcloudPath != null)
+            {
+                var path = Program.settings.UploadGroupMailAddressesToNextcloudPath;
+                var file_content = String.Join('\n', from.OrderBy(i => i.Value.Name).Select((item) => $"{item.Value.Name} => {item.Key}@{this.domain}"));
+
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                Document document = new Document();
+                Section section = document.AddSection();
+                var table = section.AddTable();
+                table.AddColumn("8cm");
+                table.AddColumn("10cm");
+                foreach (var item in from.OrderBy(i => i.Value.Name))
+                {
+                    var row = table.AddRow();
+                    row.Cells[0].AddParagraph(item.Value.Name);
+                    row.Cells[1].AddParagraph($"{item.Key}@{this.domain}");
+                }
+
+                PdfDocumentRenderer pdfRenderer = new PdfDocumentRenderer(false);
+                pdfRenderer.Document = document;
+                pdfRenderer.RenderDocument();
+
+                using var stream = new MemoryStream();
+                pdfRenderer.Save(stream, false);
+
+                await NextcloudApi.CloudFile.Upload(this.nextcloud, $"{this.nextcloud.Settings.Username}/{path}", stream);
+            }
+
+            return from;
         }
 
         public override async Task<Dictionary<string, MailForward>> GetToAsync()

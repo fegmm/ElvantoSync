@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace ElvantoSync
@@ -43,7 +44,7 @@ namespace ElvantoSync
                 await new Nextcloud.GroupsToNextcloudGroupFolderSync(elvanto, nextcloud).ApplyAsync();
 
             if (settings.SyncElvantoGroupsToKASMail)
-                await new AllInkl.GroupsToEmailSync(elvanto, kas, settings.KASDomain).ApplyAsync();
+                await new AllInkl.GroupsToEmailSync(elvanto, kas, settings.KASDomain, nextcloud).ApplyAsync();
                 await new AllInkl.GroupMembersToMailForwardMemberSync(elvanto, kas, settings.KASDomain).ApplyAsync();
         }
 
@@ -65,7 +66,8 @@ namespace ElvantoSync
                 SyncNextcloudGroups: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPS"], out sync) || sync,
                 SyncNextcloudGroupmembers: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPMEMBERS"], out sync) || sync,
                 SyncNextcloudGroupfolders: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPFOLDERS"], out sync) || sync,
-                SyncElvantoGroupsToKASMail: !bool.TryParse(config["SYNC_ELVANTO_GROUPS_TO_KAS_MAIL"], out sync) || sync
+                SyncElvantoGroupsToKASMail: !bool.TryParse(config["SYNC_ELVANTO_GROUPS_TO_KAS_MAIL"], out sync) || sync,
+                UploadGroupMailAddressesToNextcloudPath: config["UPLOAD_GROUP_MAIL_ADDRESSES_TO_NEXTCLOUDPATH"]
             );
         }
     }
