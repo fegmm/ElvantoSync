@@ -43,7 +43,7 @@ namespace ElvantoSync.Nextcloud
                     userid = item.Key,
                     displayName = $"{item.Value.Lastname}, {item.Value.Firstname}",
                     email = item.Value.Email,
-                    password = random.Next(int.MaxValue / 10, int.MaxValue).ToString(),
+                    password = Guid.NewGuid().ToString(),
                     quota = "0 MB"
                 }))
             );
