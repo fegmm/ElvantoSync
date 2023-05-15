@@ -19,6 +19,7 @@ namespace ElvantoSync
         bool SyncElvantoDepartementsToGroups,
         bool SyncNextcloudPeople,
         bool SyncNextcloudGroups,
+        bool SyncNextcloudDeck,
         bool SyncNextcloudGroupmembers,
         bool SyncNextcloudGroupfolders,
         bool SyncElvantoGroupsToKASMail,

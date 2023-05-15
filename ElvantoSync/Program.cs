@@ -43,9 +43,15 @@ namespace ElvantoSync
             if (settings.SyncNextcloudGroupfolders)
                 await new Nextcloud.GroupsToNextcloudGroupFolderSync(elvanto, nextcloud).ApplyAsync();
 
+            if (settings.SyncNextcloudDeck)
+                await new Nextcloud.GroupsToDeckSync(elvanto, nextcloud).ApplyAsync();
+
             if (settings.SyncElvantoGroupsToKASMail)
+            {
                 await new AllInkl.GroupsToEmailSync(elvanto, kas, settings.KASDomain, nextcloud).ApplyAsync();
                 await new AllInkl.GroupMembersToMailForwardMemberSync(elvanto, kas, settings.KASDomain).ApplyAsync();
+            }
+
         }
 
         private static void LoadConfiguration()
@@ -64,6 +70,7 @@ namespace ElvantoSync
                 SyncElvantoDepartementsToGroups: !bool.TryParse(config["SYNC_ELVANTO_DEPARTEMENTS_TO_GROUPS"], out sync) || sync,
                 SyncNextcloudPeople: !bool.TryParse(config["SYNC_NEXTCLOUD_PEOPLE"], out sync) || sync,
                 SyncNextcloudGroups: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPS"], out sync) || sync,
+                SyncNextcloudDeck: !bool.TryParse(config["SYNC_NEXTCLOUD_DECK"], out sync) || sync,
                 SyncNextcloudGroupmembers: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPMEMBERS"], out sync) || sync,
                 SyncNextcloudGroupfolders: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPFOLDERS"], out sync) || sync,
                 SyncElvantoGroupsToKASMail: !bool.TryParse(config["SYNC_ELVANTO_GROUPS_TO_KAS_MAIL"], out sync) || sync,
