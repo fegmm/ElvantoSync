@@ -72,7 +72,7 @@ namespace ElvantoSync.Nextcloud
                     {"participant", i.title},
                     {"permissionEdit", true},
                     {"permissionShare", true},
-                    {"permissionManage", false},
+                    {"permissionManage", true},
                 })
             );
             await Task.WhenAll(add_group_requests);
