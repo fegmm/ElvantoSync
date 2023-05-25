@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace ElvantoSync
@@ -33,6 +32,9 @@ namespace ElvantoSync
 
             if (settings.SyncNextcloudPeople)
                 await new Nextcloud.PeopleToNextcloudSync(elvanto, nextcloud).ApplyAsync();
+
+            if (settings.SyncNextcloudContacts)
+                await new Nextcloud.PeopleToNextcloudContactSync(elvanto, nextcloud).ApplyAsync();
 
             if (settings.SyncNextcloudGroups)
                 await new Nextcloud.GroupsToNextcloudSync(elvanto, nextcloud).ApplyAsync();
@@ -69,6 +71,7 @@ namespace ElvantoSync
                 LogOnly: bool.TryParse(config["LOG_ONLY"], out bool sync) && sync,
                 SyncElvantoDepartementsToGroups: !bool.TryParse(config["SYNC_ELVANTO_DEPARTEMENTS_TO_GROUPS"], out sync) || sync,
                 SyncNextcloudPeople: !bool.TryParse(config["SYNC_NEXTCLOUD_PEOPLE"], out sync) || sync,
+                SyncNextcloudContacts: !bool.TryParse(config["SYNC_NEXTCLOUD_CONTACTS"], out sync) || sync,
                 SyncNextcloudGroups: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPS"], out sync) || sync,
                 SyncNextcloudDeck: !bool.TryParse(config["SYNC_NEXTCLOUD_DECK"], out sync) || sync,
                 SyncNextcloudGroupmembers: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPMEMBERS"], out sync) || sync,

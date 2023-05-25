@@ -18,6 +18,7 @@ namespace ElvantoSync
         bool LogOnly,
         bool SyncElvantoDepartementsToGroups,
         bool SyncNextcloudPeople,
+        bool SyncNextcloudContacts,
         bool SyncNextcloudGroups,
         bool SyncNextcloudDeck,
         bool SyncNextcloudGroupmembers,

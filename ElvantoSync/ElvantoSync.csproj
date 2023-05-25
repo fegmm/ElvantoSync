@@ -10,6 +10,7 @@
     <PackageReference Include="ElvantoSync.ElvantoApi" Version="0.1.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="7.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.18.1" />
+    <PackageReference Include="MixERP.Net.VCards" Version="1.0.7" />
     <PackageReference Include="NextcloudApi" Version="1.0.17" />
     <PackageReference Include="PdfSharp.MigraDoc.Standard" Version="1.51.15" />
     <PackageReference Include="SimpleSOAPClient" Version="2.1.0" />
@@ -18,6 +19,7 @@
     <PackageReference Include="System.ServiceModel.Http" Version="4.10.0" />
     <PackageReference Include="System.ServiceModel.NetTcp" Version="4.10.0" />
     <PackageReference Include="System.ServiceModel.Security" Version="4.10.0" />
+    <PackageReference Include="WebDav.Client" Version="2.8.0" />
   </ItemGroup>
 
   <ItemGroup>
