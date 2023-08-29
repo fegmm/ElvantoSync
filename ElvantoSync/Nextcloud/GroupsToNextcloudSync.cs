@@ -21,8 +21,13 @@ namespace ElvantoSync.Nextcloud
 
         public override async Task<Dictionary<string, Group>> GetFromAsync()
         {
-            return (await elvanto.GroupsGetAllAsync(new GetAllRequest())).Groups.Group
-                .ToDictionary(i => i.Name, i => i);
+            var groups = (await elvanto.GroupsGetAllAsync(new GetAllRequest())).Groups.Group;
+            var from_groups = groups.ToDictionary(i => i.Name, i => i);
+            if (!Program.settings.SyncNextcloudGroupLeaders)
+                return from_groups;
+
+            var from_leader_groups = groups.ToDictionary(i => $"{i.Name}{Program.settings.GroupLeaderSuffix}", i => i);
+            return from_groups.Concat(from_leader_groups).ToDictionary(i => i.Key, i => i.Value);
         }
 
         public override async Task<Dictionary<string, string>> GetToAsync()

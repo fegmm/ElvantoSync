@@ -73,6 +73,8 @@ namespace ElvantoSync
                 SyncNextcloudPeople: !bool.TryParse(config["SYNC_NEXTCLOUD_PEOPLE"], out sync) || sync,
                 SyncNextcloudContacts: !bool.TryParse(config["SYNC_NEXTCLOUD_CONTACTS"], out sync) || sync,
                 SyncNextcloudGroups: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPS"], out sync) || sync,
+                SyncNextcloudGroupLeaders: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUP_LEADERS"], out sync) || sync,
+                GroupLeaderSuffix: config["GROUP_LEADER_SUFFIX"],
                 SyncNextcloudDeck: !bool.TryParse(config["SYNC_NEXTCLOUD_DECK"], out sync) || sync,
                 SyncNextcloudGroupmembers: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPMEMBERS"], out sync) || sync,
                 SyncNextcloudGroupfolders: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPFOLDERS"], out sync) || sync,

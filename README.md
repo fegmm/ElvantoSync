@@ -13,6 +13,8 @@ Configuration is done by environment variables.
 | SYNC_ELVANTO_DEPARTEMENTS_TO_GROUPS | boolean | Whether to sync Elvanto departements and sub-departements to Elvanto groups  | false   |
 | SYNC_NEXTCLOUD_PEOPLE               | boolean | Whether to sync Elvanto people to Nextcloud accounts                         | false   |
 | SYNC_NEXTCLOUD_GROUPS               | boolean | Whether to sync Elvanto groups to Nextcloud groups                           | false   |
+| SYNC_NEXTCLOUD_GROUP_LEADER         | boolean | Whether to sync Elvanto groups leaders to Nextcloud groups                   | false   |
+| GROUP_LEADER_SUFFIX                 | string  | Suffix to append, to the Group Name to generate the group leader group       |         |
 | SYNC_NEXTCLOUD_GROUPMEMBERS         | boolean | Whether to sync Elvanto group members to Nextcloud group members             | false   |
 | SYNC_NEXTCLOUD_GROUPFOLDERS         | boolean | Whether to sync Elvanto groups to Nextcloud groupfolders                     | false   |
 | OUTPUT_FOLDER                       | string  | Location for the log files                                                   |         |

@@ -20,6 +20,8 @@ namespace ElvantoSync
         bool SyncNextcloudPeople,
         bool SyncNextcloudContacts,
         bool SyncNextcloudGroups,
+        bool SyncNextcloudGroupLeaders,
+        string GroupLeaderSuffix,
         bool SyncNextcloudDeck,
         bool SyncNextcloudGroupmembers,
         bool SyncNextcloudGroupfolders,
