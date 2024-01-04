@@ -1,30 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace ElvantoSync;
 
-namespace ElvantoSync
-{
-    record Settings(
-        string OutputFolder,
-        string ElvantoKey,
-        string NextcloudServer,
-        string NextcloudUser,
-        string NextcloudPassword,
-        string KASLogin,
-        string KASAuthData,
-        string KASDomain,
-        bool LogOnly,
-        bool SyncElvantoDepartementsToGroups,
-        bool SyncNextcloudPeople,
-        bool SyncNextcloudContacts,
-        bool SyncNextcloudGroups,
-        bool SyncNextcloudGroupLeaders,
-        string GroupLeaderSuffix,
-        bool SyncNextcloudDeck,
-        bool SyncNextcloudGroupmembers,
-        bool SyncNextcloudGroupfolders,
-        bool SyncElvantoGroupsToKASMail,
-        string UploadGroupMailAddressesToNextcloudPath);
-}            
+record Settings(
+    string OutputFolder,
+    string ElvantoKey,
+    string NextcloudServer,
+    string NextcloudUser,
+    string NextcloudPassword,
+    string KASLogin,
+    string KASAuthData,
+    string KASDomain,
+    string GroupLeaderSuffix,
+    string UploadGroupMailAddressesToNextcloudPath,
+    bool LogOnly = false,
+    bool SyncElvantoDepartementsToGroups = true,
+    bool SyncNextcloudPeople = true,
+    bool SyncNextcloudContacts = true,
+    bool SyncNextcloudGroups = true,
+    bool SyncNextcloudGroupLeaders = true,
+    bool SyncNextcloudDeck = true,
+    bool SyncNextcloudCollectives = true,
+    bool SyncNextcloudGroupmembers = true,
+    bool SyncNextcloudGroupfolders = true,
+    bool SyncElvantoGroupsToKASMail = true
+);

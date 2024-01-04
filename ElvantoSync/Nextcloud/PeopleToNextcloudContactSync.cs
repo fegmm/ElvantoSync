@@ -16,28 +16,8 @@ using WebDav;
 
 namespace ElvantoSync.Nextcloud
 {
-    class PeopleToNextcloudContactSync : Sync<string, Person, WebDavResource>
+    class PeopleToNextcloudContactSync(Client elvanto, Settings settings, WebDavClient nextcloud_webdav) : Sync<string, Person, WebDavResource>(settings)
     {
-        private readonly Client elvanto;
-        private readonly Api nextcloud;
-        private readonly WebDavClient nextcloud_webdav;
-
-        public PeopleToNextcloudContactSync(Client elvantoApi, Api nextcloudApi)
-        {
-            this.elvanto = elvantoApi;
-            this.nextcloud = nextcloudApi;
-
-            string username = Program.settings.NextcloudUser;
-            string password = Program.settings.NextcloudPassword;
-            string encoded = System.Convert.ToBase64String(Encoding.UTF8.GetBytes(username + ":" + password));
-
-            HttpClient client = new HttpClient();
-            client.BaseAddress = new Uri(Program.settings.NextcloudServer);
-            client.DefaultRequestHeaders.Add("OCS-APIRequest", "true");
-            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encoded);
-            this.nextcloud_webdav = new WebDav.WebDavClient(client);
-        }
-
         public override async Task<Dictionary<string, Person>> GetFromAsync()
         {
             return (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest())).People.Person
@@ -47,7 +27,7 @@ namespace ElvantoSync.Nextcloud
         public override async Task<Dictionary<string, WebDavResource>> GetToAsync()
         {
             var people = await GetFromAsync();
-            var contact_response = await this.nextcloud_webdav.Propfind("remote.php/dav/addressbooks/users/Administrator/default/");
+            var contact_response = await nextcloud_webdav.Propfind("remote.php/dav/addressbooks/users/Administrator/default/");
             var contacts = contact_response.Resources.ToDictionary(i => i.Uri.Split("/")[^1].Replace(".vcf", ""));
             return contacts
                 .Where(i => !people.ContainsKey(i.Key) || DateTime.Parse(people[i.Key].Date_modified) < i.Value.LastModifiedDate.Value.ToUniversalTime())

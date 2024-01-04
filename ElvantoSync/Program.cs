@@ -1,86 +1,107 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using ElvantoSync.Nextcloud;
+using ElvantoSync.Nextcloud.Repository;
+using ElvantoSync.Util;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 
-namespace ElvantoSync
+namespace ElvantoSync;
+
+class Program
 {
-    class Program
+    static async Task Main(string[] args)
     {
-        public static Settings settings;
-        static async Task Main(string[] args)
+        var settings = new ConfigurationBuilder()
+            .AddUserSecrets<Program>()
+            .AddEnvironmentVariables()
+            .Build()
+            .Get<Settings>();
+
+        var elvanto = new ElvantoApi.Client(settings.ElvantoKey);
+        var nextcloud = new NextcloudApi.Api(new NextcloudApi.Settings()
         {
-            LoadConfiguration();
+            ServerUri = new Uri(settings.NextcloudServer),
+            Username = settings.NextcloudUser,
+            Password = settings.NextcloudPassword,
+            ApplicationName = nameof(ElvantoSync),
+            RedirectUri = new Uri(settings.NextcloudServer)
+        });
 
-            var elvanto = new ElvantoApi.Client(settings.ElvantoKey);
-            var nextcloud = new NextcloudApi.Api(new NextcloudApi.Settings()
-            {
-                ServerUri = new Uri(settings.NextcloudServer),
-                Username = settings.NextcloudUser,
-                Password = settings.NextcloudPassword,
-                ApplicationName = nameof(ElvantoSync),
-                RedirectUri = new Uri(settings.NextcloudServer)
-            });
-            var kas = new KasApi.Client(new KasApi.Requests.AuthorizeHeader()
-            {
-                kas_login = settings.KASLogin,
-                kas_auth_data = settings.KASAuthData,
-                kas_auth_type = "plain"
-            });
+        string username = settings.NextcloudUser;
+        string password = settings.NextcloudPassword;
+        string encoded = System.Convert.ToBase64String(Encoding.UTF8.GetBytes(username + ":" + password));
 
-            if (settings.SyncElvantoDepartementsToGroups)
-                await new Elvanto.DepartementsToGroupMemberSync(elvanto).ApplyAsync();
+        HttpClient client = new HttpClient();
+        client.BaseAddress = new Uri(settings.NextcloudServer);
+        client.DefaultRequestHeaders.Add("OCS-APIRequest", "true");
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encoded);
+        var nextcloud_webdav = new WebDav.WebDavClient(client);
 
-            if (settings.SyncNextcloudPeople)
-                await new Nextcloud.PeopleToNextcloudSync(elvanto, nextcloud).ApplyAsync();
+        var services = new ServiceCollection()
+            .AddSingleton<ILogger>(ConfigureLogging())
+            .AddSingleton<FlurlClientFactory>()
+            .AddSingleton<Settings>(settings)
+            .AddSingleton<NextcloudApi.Api>(nextcloud)
+            .AddSingleton<ElvantoApi.Client>(elvanto)
+            .AddSingleton(nextcloud_webdav)
+            .AddTransient<ICircleRepository, CircleRepository>()
+            .AddTransient<ICollectiveRepository, CollectivesRepository>()
+            .BuildServiceProvider();
 
-            if (settings.SyncNextcloudContacts)
-                await new Nextcloud.PeopleToNextcloudContactSync(elvanto, nextcloud).ApplyAsync();
+        var kas = new KasApi.Client(new KasApi.Requests.AuthorizeHeader()
+        {
+            kas_login = settings.KASLogin,
+            kas_auth_data = settings.KASAuthData,
+            kas_auth_type = "plain"
+        });
 
-            if (settings.SyncNextcloudGroups)
-                await new Nextcloud.GroupsToNextcloudSync(elvanto, nextcloud).ApplyAsync();
+        if (settings.SyncElvantoDepartementsToGroups)
+            await services.GetService<Elvanto.DepartementsToGroupMemberSync>().ApplyAsync();
 
-            if (settings.SyncNextcloudGroupmembers)
-                await new Nextcloud.GroupMembersToNextcloudSync(elvanto, nextcloud).ApplyAsync();
+        if (settings.SyncNextcloudPeople)
+            await services.GetService<Nextcloud.PeopleToNextcloudSync>().ApplyAsync();
 
-            if (settings.SyncNextcloudGroupfolders)
-                await new Nextcloud.GroupsToNextcloudGroupFolderSync(elvanto, nextcloud).ApplyAsync();
+        if (settings.SyncNextcloudContacts)
+            await services.GetService<Nextcloud.PeopleToNextcloudContactSync>().ApplyAsync();
 
-            if (settings.SyncNextcloudDeck)
-                await new Nextcloud.GroupsToDeckSync(elvanto, nextcloud).ApplyAsync();
+        if (settings.SyncNextcloudGroups)
+            await services.GetService<Nextcloud.GroupsToNextcloudSync>().ApplyAsync();
 
-            if (settings.SyncElvantoGroupsToKASMail)
-            {
-                await new AllInkl.GroupsToEmailSync(elvanto, kas, settings.KASDomain, nextcloud).ApplyAsync();
-                await new AllInkl.GroupMembersToMailForwardMemberSync(elvanto, kas, settings.KASDomain).ApplyAsync();
-            }
+        if (settings.SyncNextcloudGroupmembers)
+            await services.GetService<Nextcloud.GroupMembersToNextcloudSync>().ApplyAsync();
 
+        if (settings.SyncNextcloudGroupfolders)
+            await services.GetService<Nextcloud.GroupsToNextcloudGroupFolderSync>().ApplyAsync();
+
+        if (settings.SyncNextcloudDeck)
+            await services.GetService<Nextcloud.GroupsToDeckSync>().ApplyAsync();
+
+        if (settings.SyncNextcloudCollectives)
+            await services.GetService<GroupsToCollectivesSync>().ApplyAsync();
+
+        if (settings.SyncElvantoGroupsToKASMail)
+        {
+            await services.GetService<AllInkl.GroupsToEmailSync>().ApplyAsync();
+            await services.GetService<AllInkl.GroupMembersToMailForwardMemberSync>().ApplyAsync();
         }
 
-        private static void LoadConfiguration()
+    }
+    private static ILogger ConfigureLogging()
+    {
+
+        var loggerFactory = LoggerFactory.Create(builder =>
         {
-            var config = new ConfigurationBuilder().AddEnvironmentVariables().Build();
-            settings = new Settings(
-                OutputFolder: config["OUTPUT_FOLDER"],
-                ElvantoKey: config["ELVANTO_API_KEY"],
-                NextcloudServer: config["NEXTCLOUD_SERVER"],
-                NextcloudUser: config["NEXTCLOUD_USER"],
-                NextcloudPassword: config["NEXTCLOUD_PASSWORD"],
-                KASLogin: config["KAS_LOGIN"],
-                KASAuthData: config["KAS_AUTH_DATA"],
-                KASDomain: config["KAS_DOMAIN"],
-                LogOnly: bool.TryParse(config["LOG_ONLY"], out bool sync) && sync,
-                SyncElvantoDepartementsToGroups: !bool.TryParse(config["SYNC_ELVANTO_DEPARTEMENTS_TO_GROUPS"], out sync) || sync,
-                SyncNextcloudPeople: !bool.TryParse(config["SYNC_NEXTCLOUD_PEOPLE"], out sync) || sync,
-                SyncNextcloudContacts: !bool.TryParse(config["SYNC_NEXTCLOUD_CONTACTS"], out sync) || sync,
-                SyncNextcloudGroups: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPS"], out sync) || sync,
-                SyncNextcloudGroupLeaders: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUP_LEADERS"], out sync) || sync,
-                GroupLeaderSuffix: config["GROUP_LEADER_SUFFIX"],
-                SyncNextcloudDeck: !bool.TryParse(config["SYNC_NEXTCLOUD_DECK"], out sync) || sync,
-                SyncNextcloudGroupmembers: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPMEMBERS"], out sync) || sync,
-                SyncNextcloudGroupfolders: !bool.TryParse(config["SYNC_NEXTCLOUD_GROUPFOLDERS"], out sync) || sync,
-                SyncElvantoGroupsToKASMail: !bool.TryParse(config["SYNC_ELVANTO_GROUPS_TO_KAS_MAIL"], out sync) || sync,
-                UploadGroupMailAddressesToNextcloudPath: config["UPLOAD_GROUP_MAIL_ADDRESSES_TO_NEXTCLOUD_PATH"]
-            );
-        }
+            builder
+                .AddFilter("Microsoft", LogLevel.Warning)
+                .AddFilter("System", LogLevel.Warning)
+                .AddFilter("ElvantoSync", LogLevel.Debug)
+                .AddConsole();
+        });
+
+        return loggerFactory.CreateLogger<Program>();
     }
 }
