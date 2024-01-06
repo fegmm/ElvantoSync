@@ -35,4 +35,9 @@ class GroupsToDeckSync(Client elvanto, INextcloudDeckClient deckClient, Settings
         });
         await Task.WhenAll(requests);
     }
+
+    public override bool IsActive()
+    {
+        return settings.SyncNextcloudDeck;
+    }
 }

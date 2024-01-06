@@ -69,5 +69,9 @@ namespace ElvantoSync.Nextcloud
                 .Select(i => nextcloud_webdav.Delete(i.Value.Uri))
             );
         }
+        public override bool IsActive()
+    {
+        return settings.SyncNextcloudContacts;
+    }
     }
 }

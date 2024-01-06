@@ -54,4 +54,9 @@ class GroupMembersToNextcloudSync(ElvantoApi.Client elvanto, INextcloudProvision
 
     public override async Task RemoveAdditionalAsync(Dictionary<(string group, string user), string> additionals)
         => await Task.WhenAll(additionals.Select(item => provisioningClient.RemoveUserFromGroup(item.Key.user, item.Key.group)));
+
+    public override bool IsActive()
+    {
+        return settings.SyncNextcloudGroupmembers;
+    }
 }

@@ -29,4 +29,8 @@ class GroupsToNextcloudSync(ElvantoApi.Client elvanto, INextcloudProvisioningCli
     {
         await Task.WhenAll(missing.Select(i => provisioningClient.CreateGroup(i.Key, i.Key)));
     }
+    public override bool IsActive()
+    {
+        return settings.SyncNextcloudGroups;
+    }
 }

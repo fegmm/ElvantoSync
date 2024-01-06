@@ -36,4 +36,9 @@ class GroupsToNextcloudGroupFolderSync(Client elvanto, INextcloudGroupFolderClie
 
         await Task.WhenAll(requests);
     }
+
+    public override bool IsActive()
+    {
+        return settings.SyncNextcloudGroupfolders;
+    }
 }

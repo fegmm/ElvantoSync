@@ -19,12 +19,14 @@ class GroupsToCollectivesSync(
 {
     public override async Task<Dictionary<string, string>> GetFromAsync()
     {
+        return null;
         return (await elvanto.GroupsGetAllAsync(new GetAllRequest()))
            .Groups.Group.ToDictionary(i => i.Name, i => i.Name); ;
     }
 
     public override async Task<Dictionary<string, Collective>> GetToAsync()
     {
+        return null; 
         var response = await collectivesRepo.GetCollectives();
         return response.ToDictionary(i => i.Name);
     }
@@ -40,5 +42,9 @@ class GroupsToCollectivesSync(
             await circleRepo.SetMemberLevel(createdCollective.CircleId, leaderMemberId, MemberLevels.Admin);
         });
         await Task.WhenAll(createCollectivesWithMembersTasks);
+    }
+    public override bool IsActive()
+    {
+        return settings.SyncNextcloudCollectives;
     }
 }

@@ -15,8 +15,8 @@ class PeopleToNextcloudSync(Client elvanto, INextcloudProvisioningClient provisi
 
     public override async Task<Dictionary<string, Person>> GetFromAsync()
     {
-        return (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest()))
-            .People.Person.ToDictionary(i => $"Elvanto-{i.Id}");
+       return (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest()))
+            .People.Person.ToDictionary(i => $"Elvanto-{i.Id}"); 
     }
 
     public override async Task<Dictionary<string, User>> GetToAsync()
@@ -48,5 +48,10 @@ class PeopleToNextcloudSync(Client elvanto, INextcloudProvisioningClient provisi
             .Select(i => provisioningClient.DeleteUser(i.Key));
 
         await Task.WhenAll(deleteEmptyUsers);
+    }
+
+    public override bool IsActive()
+    {
+        return settings.SyncNextcloudPeople;
     }
 }

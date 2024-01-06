@@ -79,4 +79,8 @@ internal class GroupMembersToMailForwardMemberSync(ElvantoApi.Client elvanto, Ka
 
         await Task.WhenAll(tasks);
     }
+    public override bool IsActive()
+    {
+        return settings.SyncElvantoGroupsToKASMail;
+    }
 }

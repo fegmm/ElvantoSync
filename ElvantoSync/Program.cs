@@ -1,10 +1,17 @@
-﻿using ElvantoSync.Nextcloud;
+﻿using ElvantoSync.AllInkl;
+using ElvantoSync.Elvanto;
+using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.Nextcloud;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Nextcloud.Extensions;
+using Microsoft.Extensions.ObjectPool;
 using System;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
+using WebDav;
 
 namespace ElvantoSync;
 
@@ -19,59 +26,53 @@ class Program
             .Get<Settings>();
 
         var elvanto = new ElvantoApi.Client(settings.ElvantoKey);
-        var nextcloud = new NextcloudApi.Api(new NextcloudApi.Settings()
+        var kas = new KasApi.Client(new KasApi.Requests.AuthorizeHeader()
         {
-            ServerUri = new Uri(settings.NextcloudServer),
-            Username = settings.NextcloudUser,
-            Password = settings.NextcloudPassword,
-            ApplicationName = nameof(ElvantoSync),
-            RedirectUri = new Uri(settings.NextcloudServer)
+            kas_login = settings.KASLogin,
+            kas_auth_data = settings.KASAuthData,
+            kas_auth_type = "plain"
         });
+        ServiceProvider services = BuildServiceProvider(settings, elvanto, kas);
+        await ExecuteSync(services);
 
-        var services = new ServiceCollection()
+
+
+
+    }
+
+    private static ServiceProvider BuildServiceProvider(Settings settings, ElvantoApi.Client elvanto, KasApi.Client kas)
+    {
+        return new ServiceCollection()
             .AddSingleton<ILogger>(ConfigureLogging())
+            .AddSingleton<FlurlClientFactory>()
             .AddSingleton<Settings>(settings)
             .AddSingleton<NextcloudApi.Api>(nextcloud)
             .AddSingleton<ElvantoApi.Client>(elvanto)
+            .AddSingleton(nextcloud_webdav)
+            .AddSingleton<KasApi.Client>(kas)
+            .AddSingleton<ISync, GroupsToCollectivesSync>()
+            .AddSingleton<ISync, PeopleToNextcloudSync>()
+            .AddSingleton<ISync, DepartementsToGroupMemberSync>()
+            .AddSingleton<ISync, PeopleToNextcloudContactSync>()
+            .AddSingleton<ISync, GroupsToNextcloudSync>()
+            .AddSingleton<ISync, GroupMembersToNextcloudSync>()
+            .AddSingleton<ISync, GroupsToNextcloudGroupFolderSync>()
+            .AddSingleton<ISync, GroupsToDeckSync>()
+            .AddSingleton<ISync, GroupsToNextcloudGroupFolderSync>()
+            .AddSingleton<ISync, GroupsToEmailSync>()
+            .AddSingleton<ISync, GroupMembersToMailForwardMemberSync>()
+            .AddTransient<ICircleRepository, CircleRepository>()
+            .AddTransient<ICollectiveRepository, CollectivesRepository>()
             .AddNextcloud(nameof(ElvantoSync), settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword);
+            .BuildServiceProvider();
+    }
 
-        var serviceProvider = services.BuildServiceProvider();
-
-        var kas = new KasApi.Client(new KasApi.Requests.AuthorizeHeader(
-            kas_login: settings.KASLogin,
-            kas_auth_data: settings.KASAuthData,
-            kas_auth_type: "plain"
-        ));
-
-        if (settings.SyncElvantoDepartementsToGroups)
-            await serviceProvider.GetService<Elvanto.DepartementsToGroupMemberSync>().ApplyAsync();
-
-        if (settings.SyncNextcloudPeople)
-            await serviceProvider.GetService<Nextcloud.PeopleToNextcloudSync>().ApplyAsync();
-
-        if (settings.SyncNextcloudContacts)
-            await serviceProvider.GetService<Nextcloud.PeopleToNextcloudContactSync>().ApplyAsync();
-
-        if (settings.SyncNextcloudGroups)
-            await serviceProvider.GetService<Nextcloud.GroupsToNextcloudSync>().ApplyAsync();
-
-        if (settings.SyncNextcloudGroupmembers)
-            await serviceProvider.GetService<Nextcloud.GroupMembersToNextcloudSync>().ApplyAsync();
-
-        if (settings.SyncNextcloudGroupfolders)
-            await serviceProvider.GetService<Nextcloud.GroupsToNextcloudGroupFolderSync>().ApplyAsync();
-
-        if (settings.SyncNextcloudDeck)
-            await serviceProvider.GetService<Nextcloud.GroupsToDeckSync>().ApplyAsync();
-
-        if (settings.SyncNextcloudCollectives)
-            await serviceProvider.GetService<GroupsToCollectivesSync>().ApplyAsync();
-
-        if (settings.SyncElvantoGroupsToKASMail)
-        {
-            await serviceProvider.GetService<AllInkl.GroupsToEmailSync>().ApplyAsync();
-            await serviceProvider.GetService<AllInkl.GroupMembersToMailForwardMemberSync>().ApplyAsync();
-        }
+    private static async Task ExecuteSync(ServiceProvider provider)
+    {
+        var services = provider.GetServices<ISync>()
+        .Where(service => service.IsActive())
+        .Select(service => service.ApplyAsync());
+        await Task.WhenAll(services);
     }
     private static ILogger ConfigureLogging()
     {

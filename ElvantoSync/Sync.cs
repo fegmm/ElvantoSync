@@ -4,12 +4,19 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync
 {
-    abstract class Sync<TKey, TFrom, TTo>(Settings settings)
+
+    interface ISync{
+        public Task ApplyAsync();
+        public bool IsActive();
+    }
+
+    abstract class Sync<TKey, TFrom, TTo>(Settings settings) : ISync
     {
         public Settings Settings => settings;
+
+        public abstract bool IsActive();
         public abstract Task<Dictionary<TKey, TFrom>> GetFromAsync();
         public abstract Task<Dictionary<TKey, TTo>> GetToAsync();
-
         public virtual Task AddMissingAsync(Dictionary<TKey, TFrom> missing) => Task.CompletedTask;
         public virtual Task RemoveAdditionalAsync(Dictionary<TKey, TTo> additionals) => Task.CompletedTask;
         public virtual Task ApplyUpdate(IEnumerable<(TFrom, TTo)> matches) => Task.CompletedTask;
@@ -17,6 +24,7 @@ namespace ElvantoSync
 
         public async Task ApplyAsync()
         {
+
             var from = await GetFromAsync();
             var to = await GetToAsync();
             var missing = from.Where(i => !to.ContainsKey(i.Key)).ToDictionary(i => i.Key, i => i.Value);

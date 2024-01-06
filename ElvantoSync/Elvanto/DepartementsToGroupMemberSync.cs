@@ -66,4 +66,9 @@ class DepartementsToGroupMemberSync(ElvantoApi.Client elvanto, Settings settings
         var nameToIdDict = response.Groups.Group.ToDictionary(i => i.Name, i => i.Id);
         await Task.WhenAll(additionals.Select(i => elvanto.GroupsRemovePersonAsync(nameToIdDict[i.Key.groupName], i.Key.personId)));
     }
+
+    public override bool IsActive()
+    {
+        return settings.SyncElvantoDepartementsToGroups;
+    }
 }

@@ -116,4 +116,8 @@ internal class GroupsToEmailSync(ElvantoApi.Client elvanto, NextcloudApi.Api nex
             return name;
         }
     }
+    public override bool IsActive()
+    {
+        return settings.SyncElvantoGroupsToKASMail;
+    }
 }
