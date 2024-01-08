@@ -1,6 +1,7 @@
 using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
-using NextcloudApi;
+using Nextcloud.Interfaces;
+using Nextcloud.Models.Provisioning;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync.Nextcloud;
 
-class PeopleToNextcloudSync(Client elvanto, Api nextcloud, Settings settings) : Sync<string, Person, string>(settings)
+class PeopleToNextcloudSync(Client elvanto, INextcloudProvisioningClient provisioningClient, Settings settings) : Sync<string, Person, User>(settings)
 {
     readonly Random random = new Random();
 
@@ -18,47 +19,34 @@ class PeopleToNextcloudSync(Client elvanto, Api nextcloud, Settings settings) : 
             .People.Person.ToDictionary(i => $"Elvanto-{i.Id}");
     }
 
-    public override async Task<Dictionary<string, string>> GetToAsync()
+    public override async Task<Dictionary<string, User>> GetToAsync()
     {
-
-        return (await NextcloudApi.User.List(nextcloud))
-            .All(nextcloud)
-            .Where(i => i.StartsWith("Elvanto-"))
-            .ToDictionary(i => i);
+        var users = await provisioningClient.GetUsers();
+        return users.Where(i => i.Id.StartsWith("Elvanto-")).ToDictionary(i => i.Id);
     }
 
     public override async Task AddMissingAsync(Dictionary<string, Person> missing)
     {
-        await Task.WhenAll(
-            missing.Select(item => User.Create(nextcloud, new UserInfo()
-            {
-                userid = item.Key,
-                displayName = $"{item.Value.Lastname}, {item.Value.Firstname}",
-                email = item.Value.Email,
-                password = Guid.NewGuid().ToString(),
-                quota = "0 MB"
-            }))
-        );
+        var requests = missing.Select(i => provisioningClient.CreateUser(new CreateUserRequest(
+            i.Key,
+            $"{i.Value.Lastname}, {i.Value.Firstname}",
+            i.Value.Email,
+            null,
+            null,
+            null,
+            null,
+            Guid.NewGuid().ToString(),
+            "1 GB"
+        )));
+
+        await Task.WhenAll(requests);
     }
 
-    public async override Task RemoveAdditionalAsync(Dictionary<string, string> additionals)
+    public async override Task RemoveAdditionalAsync(Dictionary<string, User> additionals)
     {
-        var user_infos = await Task.WhenAll(additionals.Select(i => GetUserOrReturnNull(i.Key)));
-        await Task.WhenAll(user_infos
-            .Where(i => i != null && i.quota.used == 0)
-            .Select(i => NextcloudApi.User.Delete(nextcloud, i.id))
-        );
-    }
+        var deleteEmptyUsers = additionals.Where(i => i.Value.Quota.Used == 0)
+            .Select(i => provisioningClient.DeleteUser(i.Key));
 
-    private async Task<User> GetUserOrReturnNull(string userid)
-    {
-        try
-        {
-            return await NextcloudApi.User.Get(nextcloud, userid);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
+        await Task.WhenAll(deleteEmptyUsers);
     }
 }

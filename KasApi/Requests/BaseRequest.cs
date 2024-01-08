@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 
 namespace KasApi.Requests;
+
 public class BaseRequest : IBaseRequest
 {
     public string? kas_action { get; set; }

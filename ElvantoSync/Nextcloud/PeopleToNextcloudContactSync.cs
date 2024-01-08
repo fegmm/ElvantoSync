@@ -3,14 +3,10 @@ using ElvantoSync.ElvantoApi.Models;
 using MixERP.Net.VCards;
 using MixERP.Net.VCards.Models;
 using MixERP.Net.VCards.Serializer;
-using NextcloudApi;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading.Tasks;
 using WebDav;
 

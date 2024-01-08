@@ -1,12 +1,9 @@
 ﻿using KasApi.Requests;
 using KasApi.Response;
 using ServiceReference1;
-using System.Linq;
+using System.Collections.Concurrent;
 using System.Xml;
 using System.Xml.Linq;
-using Newtonsoft;
-using System.Collections.Generic;
-using System.Collections.Concurrent;
 
 namespace KasApi
 {
@@ -15,14 +12,14 @@ namespace KasApi
         private readonly KasApiPortTypeClient client;
         private readonly AuthorizeHeader authorization;
 
-        private Dictionary<string, DateTime> next_call_possible;
+        private Dictionary<string, DateTime> nextCallPossible;
         private ConcurrentDictionary<string,  SemaphoreSlim> semaphores;
 
         public Client(AuthorizeHeader authorization)
         {
             this.client = new ServiceReference1.KasApiPortTypeClient(KasApiPortTypeClient.EndpointConfiguration.KasApiPort);
             this.authorization = authorization;
-            this.next_call_possible = new Dictionary<string, DateTime>();
+            this.nextCallPossible = new Dictionary<string, DateTime>();
             this.semaphores = new ConcurrentDictionary<string, SemaphoreSlim>();
         }
 
@@ -34,7 +31,7 @@ namespace KasApi
 
             try
             {
-                var wait_time = this.next_call_possible.GetValueOrDefault(request.kas_action, DateTime.Now) - DateTime.Now;
+                var wait_time = this.nextCallPossible.GetValueOrDefault(request.kas_action, DateTime.Now) - DateTime.Now;
                 if (wait_time.TotalMilliseconds > 0)
                     await Task.Delay(wait_time);
 
@@ -47,7 +44,7 @@ namespace KasApi
 
                     return type switch
                     {
-                        "ns2:Map" => reference.Elements("item").ToDictionary(i => i.Element("key").Value, i => parse_xml_to_objects(i)),
+                        "ns2:Map" => reference.Elements("item").ToDictionary(i => i.Element("key")!.Value, i => parse_xml_to_objects(i)),
                         "xsd:string" => reference.Value,
                         "xsd:int" => reference.Value,
                         "SOAP-ENC:Array" => reference.Elements("item").Select(i => parse_xml_to_objects(i, sub_value = false)).ToArray(),
@@ -66,7 +63,7 @@ namespace KasApi
                 if (item == null) return null;
                 var result = parse_xml_to_objects(item) as Dictionary<string, object>;
                 if (result == null) return null;
-                this.next_call_possible[request.kas_action] = DateTime.Now.AddSeconds(int.Parse((string)result.GetValueOrDefault("KasFloodDelay", "0")));
+                this.nextCallPossible[request.kas_action] = DateTime.Now.AddSeconds(int.Parse((string)result.GetValueOrDefault("KasFloodDelay", "0")));
                 return result["ReturnInfo"];
             }
             catch (Exception)
@@ -85,7 +82,7 @@ namespace KasApi
             var result_array = result as object[];
             var result_dicts = result_array?.Cast<Dictionary<string, object>>();
             if (result_dicts == null)
-                return Array.Empty<MailForward>();
+                return [];
             return result_dicts.Select(i => new MailForward(i)).ToArray();
         }
 
@@ -93,7 +90,7 @@ namespace KasApi
         {
             parameters.Remove("kas_action", out string? kas_action);
             var request = new BaseRequest() { kas_action = kas_action, KasRequestParams = parameters};
-            var result = await this.ExecuteRequestAsync(request);
+            await this.ExecuteRequestAsync(request);
         }
     }
 }

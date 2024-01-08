@@ -1,31 +1,39 @@
 ﻿using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
-using NextcloudApi;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Nextcloud.Interfaces;
+using Nextcloud.Models.GroupFolders;
 
 namespace ElvantoSync.Nextcloud;
 
-class GroupsToNextcloudGroupFolderSync(Client elvanto, NextcloudApi.Api nextcloud, Settings settings) : Sync<string, string, NextcloudApi.GroupFolder>(settings)
+class GroupsToNextcloudGroupFolderSync(Client elvanto, INextcloudGroupFolderClient groupFolderClient, Settings settings)
+    : Sync<string, Group, GroupFolder>(settings)
 {
-    public override async Task<Dictionary<string, string>> GetFromAsync()
+    public override async Task<Dictionary<string, Group>> GetFromAsync()
     {
         return (await elvanto.GroupsGetAllAsync(new GetAllRequest()))
-            .Groups.Group.ToDictionary(i => i.Name, i => i.Name);
+            .Groups.Group.ToDictionary(i => i.Name, i => i);
     }
 
-    public override async Task<Dictionary<string, NextcloudApi.GroupFolder>> GetToAsync()
+    public override async Task<Dictionary<string, GroupFolder>> GetToAsync()
     {
-        return (await NextcloudApi.GroupFolder.List(nextcloud)).List.ToDictionary(i => i.mount_point);
+        var groupFolders = await groupFolderClient.GetGroupFolders();
+        return groupFolders.ToDictionary(i => i.MountPoint, i => i);
     }
 
-    public override async Task AddMissingAsync(Dictionary<string, string> missing)
+    public override async Task AddMissingAsync(Dictionary<string, Group> missing)
     {
-        await Task.WhenAll(missing.Select(i => NextcloudApi.GroupFolder.Create(nextcloud, i.Key)));
+        var requests = missing.Select(async i =>
+        {
+            var groupFolder = await groupFolderClient.CreateGroupFolder(i.Key);
+            await groupFolderClient.AddGroup(groupFolder, i.Key);
+            await groupFolderClient.SetPermission(groupFolder, i.Key, Permissions.All);
+            await groupFolderClient.SetAcl(groupFolder, true);
+            await groupFolderClient.AddAclManager(groupFolder, i.Key + Settings.GroupLeaderSuffix);
+        });
 
-        var foldersToId = (await GroupFolder.List(nextcloud)).List.ToDictionary(i => i.mount_point, i => i.id);
-        await Task.WhenAll(missing.Select(i => GroupFolder.AddGroup(nextcloud, foldersToId[i.Key], i.Key)));
-        await Task.WhenAll(missing.Select(i => GroupFolder.SetPermissions(nextcloud, foldersToId[i.Key], i.Key, GroupFolder.Permissions.All)));
+        await Task.WhenAll(requests);
     }
 }

@@ -1,15 +1,17 @@
-﻿using ElvantoSync.ElvantoApi.Models;
+﻿using Nextcloud.Interfaces;
+using Nextcloud.Models.Provisioning;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace ElvantoSync.Nextcloud;
 
-class GroupsToNextcloudSync(ElvantoApi.Client elvanto, NextcloudApi.Api nextcloud, Settings settings) : Sync<string, Group, string>(settings)
+class GroupsToNextcloudSync(ElvantoApi.Client elvanto, INextcloudProvisioningClient provisioningClient, Settings settings)
+    : Sync<string, ElvantoApi.Models.Group, Group>(settings)
 {
-    public override async Task<Dictionary<string, Group>> GetFromAsync()
+    public override async Task<Dictionary<string, ElvantoApi.Models.Group>> GetFromAsync()
     {
-        var groups = (await elvanto.GroupsGetAllAsync(new GetAllRequest())).Groups.Group;
+        var groups = (await elvanto.GroupsGetAllAsync(new ElvantoApi.Models.GetAllRequest())).Groups.Group;
         var from_groups = groups.ToDictionary(i => i.Name, i => i);
         if (!Settings.SyncNextcloudGroupLeaders)
             return from_groups;
@@ -18,13 +20,13 @@ class GroupsToNextcloudSync(ElvantoApi.Client elvanto, NextcloudApi.Api nextclou
         return from_groups.Concat(from_leader_groups).ToDictionary(i => i.Key, i => i.Value);
     }
 
-    public override async Task<Dictionary<string, string>> GetToAsync()
+    public override async Task<Dictionary<string, Group>> GetToAsync()
     {
-        return (await NextcloudApi.Group.List(nextcloud)).All(nextcloud).ToDictionary(i => i);
+        return (await provisioningClient.GetGroups()).ToDictionary(i => i.Id);
     }
 
-    public override async Task AddMissingAsync(Dictionary<string, Group> missing)
+    public override async Task AddMissingAsync(Dictionary<string, ElvantoApi.Models.Group> missing)
     {
-        await Task.WhenAll(missing.Select(i => NextcloudApi.Group.Create(nextcloud, i.Key)));
+        await Task.WhenAll(missing.Select(i => provisioningClient.CreateGroup(i.Key, i.Key)));
     }
 }

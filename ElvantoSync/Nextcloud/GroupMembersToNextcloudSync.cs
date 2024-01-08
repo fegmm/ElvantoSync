@@ -1,4 +1,5 @@
 ﻿using ElvantoSync.ElvantoApi.Models;
+using Nextcloud.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +7,8 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync.Nextcloud;
 
-class GroupMembersToNextcloudSync(ElvantoApi.Client elvanto, NextcloudApi.Api nextcloud, Settings settings) : Sync<(string group, string user), GroupMember, string>(settings)
+class GroupMembersToNextcloudSync(ElvantoApi.Client elvanto, INextcloudProvisioningClient provisioningClient, Settings settings)
+    : Sync<(string group, string user), GroupMember, string>(settings)
 {
     public override async Task<Dictionary<(string group, string user), GroupMember>> GetFromAsync()
     {
@@ -39,21 +41,17 @@ class GroupMembersToNextcloudSync(ElvantoApi.Client elvanto, NextcloudApi.Api ne
     {
         var members = new List<(string group, string user)>();
         var elvantoGroups = (await elvanto.GroupsGetAllAsync(new GetAllRequest())).Groups.Group.Select(i => i.Name);
-        var nextcloudGroups = (await NextcloudApi.Group.List(nextcloud)).All(nextcloud);
+        var nextcloudGroups = await provisioningClient.GetGroups();
 
-        foreach (var group in nextcloudGroups.Where(i => elvantoGroups.Contains(i.Replace(Settings.GroupLeaderSuffix, ""))))
-            foreach (var user in (await NextcloudApi.Group.GetMembers(nextcloud, group)).List)
+        foreach (var group in nextcloudGroups.Where(i => elvantoGroups.Contains(i.Id.Replace(Settings.GroupLeaderSuffix, ""))).Select(i => i.Id))
+            foreach (var user in (await provisioningClient.GetMembers(group)))
                 members.Add((group, user));
         return members.Where(i => i.user.Contains("Elvanto")).ToDictionary(i => i, i => i.group);
     }
 
     public override async Task AddMissingAsync(Dictionary<(string group, string user), GroupMember> missing)
-    {
-        await Task.WhenAll(missing.Select(item => NextcloudApi.User.AddToGroup(nextcloud, item.Key.user, item.Key.group)));
-    }
+        => await Task.WhenAll(missing.Select(item => provisioningClient.AddUserToGroup(item.Key.user, item.Key.group)));
 
     public override async Task RemoveAdditionalAsync(Dictionary<(string group, string user), string> additionals)
-    {
-        await Task.WhenAll(additionals.Select(item => NextcloudApi.User.RemoveFromGroup(nextcloud, item.Key.user, item.Key.group)));
-    }
+        => await Task.WhenAll(additionals.Select(item => provisioningClient.RemoveUserFromGroup(item.Key.user, item.Key.group)));
 }
