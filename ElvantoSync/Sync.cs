@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync
 {
-
     interface ISync{
         public Task ApplyAsync();
         public bool IsActive();

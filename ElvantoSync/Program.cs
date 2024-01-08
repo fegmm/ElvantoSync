@@ -1,17 +1,12 @@
 ﻿using ElvantoSync.AllInkl;
 using ElvantoSync.Elvanto;
-using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.Nextcloud;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.ObjectPool;
-using System;
+using Nextcloud.Extensions;
 using System.Linq;
-using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
-using WebDav;
 
 namespace ElvantoSync;
 
@@ -26,12 +21,12 @@ class Program
             .Get<Settings>();
 
         var elvanto = new ElvantoApi.Client(settings.ElvantoKey);
-        var kas = new KasApi.Client(new KasApi.Requests.AuthorizeHeader()
-        {
-            kas_login = settings.KASLogin,
-            kas_auth_data = settings.KASAuthData,
-            kas_auth_type = "plain"
-        });
+        var kas = new KasApi.Client(new KasApi.Requests.AuthorizeHeader(
+            kas_login: settings.KASLogin,
+            kas_auth_data: settings.KASAuthData,
+            kas_auth_type: "plain"
+        ));
+        
         ServiceProvider services = BuildServiceProvider(settings, elvanto, kas);
         await ExecuteSync(services);
 
@@ -44,11 +39,8 @@ class Program
     {
         return new ServiceCollection()
             .AddSingleton<ILogger>(ConfigureLogging())
-            .AddSingleton<FlurlClientFactory>()
             .AddSingleton<Settings>(settings)
-            .AddSingleton<NextcloudApi.Api>(nextcloud)
             .AddSingleton<ElvantoApi.Client>(elvanto)
-            .AddSingleton(nextcloud_webdav)
             .AddSingleton<KasApi.Client>(kas)
             .AddSingleton<ISync, GroupsToCollectivesSync>()
             .AddSingleton<ISync, PeopleToNextcloudSync>()
@@ -61,9 +53,7 @@ class Program
             .AddSingleton<ISync, GroupsToNextcloudGroupFolderSync>()
             .AddSingleton<ISync, GroupsToEmailSync>()
             .AddSingleton<ISync, GroupMembersToMailForwardMemberSync>()
-            .AddTransient<ICircleRepository, CircleRepository>()
-            .AddTransient<ICollectiveRepository, CollectivesRepository>()
-            .AddNextcloud(nameof(ElvantoSync), settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword);
+            .AddNextcloud(nameof(ElvantoSync), settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword)
             .BuildServiceProvider();
     }
 
