@@ -43,6 +43,14 @@ public static class DependencyInjection
             i.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(applicationName));
             i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         });
+        services.AddHttpClient<NextcloudTalkClient>(i =>
+        {
+            i.BaseAddress = new Uri(nextcloudUrl);
+            i.DefaultRequestHeaders.Authorization = auth;
+            i.DefaultRequestHeaders.Add("OCS-ApiRequest", "true");
+            i.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(applicationName));
+            i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        });
 
         return services;
     }

@@ -29,11 +29,7 @@ class Program
         
         ServiceProvider services = BuildServiceProvider(settings, elvanto, kas);
         await ExecuteSync(services);
-
-
-
-
-    }
+ }
 
     private static ServiceProvider BuildServiceProvider(Settings settings, ElvantoApi.Client elvanto, KasApi.Client kas)
     {
@@ -53,6 +49,7 @@ class Program
             .AddSingleton<ISync, GroupsToNextcloudGroupFolderSync>()
             .AddSingleton<ISync, GroupsToEmailSync>()
             .AddSingleton<ISync, GroupMembersToMailForwardMemberSync>()
+            .AddSingleton<ISync, GroupsToTalkSync>()
             .AddNextcloud(nameof(ElvantoSync), settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword)
             .BuildServiceProvider();
     }
