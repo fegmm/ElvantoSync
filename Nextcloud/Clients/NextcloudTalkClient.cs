@@ -21,7 +21,7 @@ public class NextcloudTalkClient(HttpClient client) : INextcloudTalkClient
     }
 
     public async Task<IEnumerable<Conversation>> GetConversations()
-    {   var response = await client.GetAsync(basePath);
+    {    var response = await client.GetAsync(basePath);
          var result = await response.EnsureSuccessStatusCode()
             .Content.ReadFromJsonAsync<OCSResponse<IEnumerable<Conversation>>>();
          return result.Ocs.Data;

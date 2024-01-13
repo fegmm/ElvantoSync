@@ -20,13 +20,20 @@ class GroupsToTalkSync(
     public override async Task<Dictionary<string, string>> GetFromAsync()
     {
         return (await elvanto.GroupsGetAllAsync(new GetAllRequest()))
-           .Groups.Group.ToDictionary(i => i.Name, i => i.Name); ;
+           .Groups.Group.ToDictionary(i => i.Name, i => i.Name); 
     }
 
     public override async Task<Dictionary<string, Conversation>> GetToAsync()
     {
         var response = await talkRepo.GetConversations();
+      //  await TestCreation();
         return response.ToDictionary(i => i.Name);
+    }
+
+    public async Task TestCreation(){
+        var fakeMissing = new Dictionary<string, string>();
+        fakeMissing.Add("Admin", "Admin");
+        await AddMissingAsync(fakeMissing);
     }
 
     public override async Task AddMissingAsync(Dictionary<string, string> missing)

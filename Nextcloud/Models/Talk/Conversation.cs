@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 namespace Nextcloud.Models.Talk;
-public class Conversation
+public record Conversation
 {
     public int Id { get; set; }
     public string Token { get; set; }
@@ -57,7 +57,7 @@ public class Conversation
     public int RecordingConsent { get; set; }
 }
 
-public class LastMessage
+public record LastMessage
 {
     public int Id { get; set; }
     public string Token { get; set; }
@@ -66,7 +66,6 @@ public class LastMessage
     public string ActorDisplayName { get; set; }
     public long Timestamp { get; set; }
     public string Message { get; set; }
-    public MessageParameters MessageParameters { get; set; }
     public string SystemMessage { get; set; }
     public string MessageType { get; set; }
     public bool IsReplyable { get; set; }
@@ -76,20 +75,14 @@ public class LastMessage
     public bool Markdown { get; set; }
 }
 
-public class MessageParameters
-{
-    public Actor Actor { get; set; }
-    public User User { get; set; }
-}
-
-public class Actor
+public record Actor
 {
     public string Type { get; set; }
     public string Id { get; set; }
     public string Name { get; set; }
 }
 
-public class User
+public record User
 {
     public string Type { get; set; }
     public string Id { get; set; }
