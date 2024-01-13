@@ -12,8 +12,8 @@ public record User(
     Backendcapabilities BackendCapabilities,
     string Biography,
     string BiographyScope,
-    string Displayname,
-    string DisplaynameScope,
+    [property: JsonPropertyName("displayname")] string DisplayName,
+    [property: JsonPropertyName("displaynameScope")] string DisplayNameScope,
     string Email,
     string EmailScope,
     bool Enabled,
@@ -24,7 +24,7 @@ public record User(
     string HeadlineScope,
     string Id,
     string Language,
-    int LastLogin,
+    long LastLogin,
     string Locale,
     string Manager,
     [property: JsonPropertyName("notify_email ")] string NotifyEmail,
@@ -51,9 +51,9 @@ public record Backendcapabilities(
 );
 
 public record UserQuota(
-    int Free,
-    int Quota,
-    int Relative,
-    int Total,
-    int Used
+    long Free,
+    long Quota,
+    long Relative,
+    long Total,
+    long Used
 );

@@ -9,9 +9,9 @@ public record Board(
     object Acl,
     object Permissions,
     object Users,
-    int Shared,
-    int DeletedAt,
+    bool Shared,
+    long DeletedAt,
     int Id,
-    int LastModified,
+    long LastModified,
     object Settings
 );

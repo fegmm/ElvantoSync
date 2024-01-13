@@ -1,11 +1,13 @@
-﻿namespace Nextcloud.Models.Provisioning;
+﻿using System.Text.Json.Serialization;
+
+namespace Nextcloud.Models.Provisioning;
 
 public record Group
 (
     string Id,
-    string Displayname,
-    bool Usercount,
-    bool Disabled,
+    [property: JsonPropertyName("displayname")] string DisplayName,
+    [property: JsonPropertyName("usercount")] int UserCount,
+    int Disabled,
     bool CanAdd,
     bool CanRemove
 );

@@ -7,7 +7,7 @@ public record GroupFolder
     int Id,
     Dictionary<string, int> Groups,
     [property: JsonPropertyName("mount_point")] string MountPoint,
-    int Quota,
+    long Quota,
     long Size,
     bool Acl,
     Dictionary<string, ACLManage> Manage,

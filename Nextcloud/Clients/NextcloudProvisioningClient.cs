@@ -2,6 +2,8 @@
 using Nextcloud.Models;
 using Nextcloud.Models.Provisioning;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Nextcloud.Clients;
 
@@ -9,7 +11,7 @@ public class NextcloudProvisioningClient(HttpClient client) : INextcloudProvisio
 {
     public async Task<IEnumerable<Group>> GetGroups(CancellationToken cancellationToken = default)
     {
-        var request = await client.GetAsync("/ocs/v2.php/cloud/groups", cancellationToken);
+        var request = await client.GetAsync("/ocs/v2.php/cloud/groups/details", cancellationToken);
         var result = await request.EnsureSuccessStatusCode()
             .Content.ReadFromJsonAsync<OCSResponse<GetGroupResponse>>(cancellationToken);
         return result!.Ocs.Data.Groups;
@@ -25,8 +27,8 @@ public class NextcloudProvisioningClient(HttpClient client) : INextcloudProvisio
 
     public async Task AddUserToGroup(string userId, string groupId, CancellationToken cancellationToken = default)
     {
-        var reqBody = new { userid = userId };
-        var request = await client.PostAsJsonAsync($"/ocs/v2.php/cloud/groups/{groupId}/users", reqBody, cancellationToken);
+        var reqBody = new { groupid = groupId };
+        var request = await client.PostAsJsonAsync($"/ocs/v2.php/cloud/users/{userId}/groups", reqBody, cancellationToken);
         request.EnsureSuccessStatusCode();
     }
 
@@ -67,7 +69,36 @@ public class NextcloudProvisioningClient(HttpClient client) : INextcloudProvisio
 
     public async Task RemoveUserFromGroup(string userId, string groupId, CancellationToken cancellationToken = default)
     {
-        var request = await client.DeleteAsync($"/ocs/v2.php/cloud/users/{userId}/groups/{groupId}", cancellationToken);
+        var reqBody = new { groupid = groupId };
+        HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Delete, $"/ocs/v2.php/cloud/users/{userId}/groups")
+        {
+            Content = JsonContent.Create(reqBody)
+        };
+        var request = await client.SendAsync(requestMessage, cancellationToken);
         request.EnsureSuccessStatusCode();
     }
+
+    public async Task EditUser(string userId, EditUserRequest user, CancellationToken cancellationToken = default)
+    {
+        var requests = user.ToDictionary()
+            .Select(async i =>
+            {
+                var reqBody = new { key = i.Key, value = i.Value };
+                var request = await client.PutAsJsonAsync($"/ocs/v2.php/cloud/users/{userId}", reqBody, cancellationToken);
+                request.EnsureSuccessStatusCode();
+            });
+        foreach (var request in requests)
+        {
+            await request;
+        }
+        //await Task.WhenAll(requests);
+        
+    }
+    public async Task EditGroup(string groupId, string newDisplayName, CancellationToken cancellationToken = default)
+    {
+        var reqBody = new { key = "displayname", value = newDisplayName };
+        var request = await client.PutAsJsonAsync($"/ocs/v2.php/cloud/groups/{groupId}", reqBody, cancellationToken);
+        request.EnsureSuccessStatusCode();
+    }
+
 }

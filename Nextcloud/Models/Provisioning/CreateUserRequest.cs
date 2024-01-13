@@ -1,13 +1,15 @@
-﻿namespace Nextcloud.Models.Provisioning;
+﻿using System.Text.Json.Serialization;
+
+namespace Nextcloud.Models.Provisioning;
 
 public record CreateUserRequest(
-    string UserId,
+    [property: JsonPropertyName("userid")] string UserId,
     string? DisplayName,
     string? Email,
-    IEnumerable<string> Groups,
-    IEnumerable<string> Subadmin,
-    string? Manager,
-    string? Language,
-    string? Password,
-    string? Quota
+    IEnumerable<string>? Groups = null,
+    IEnumerable<string>? Subadmin = null,
+    string? Manager = null,
+    string? Language = null,
+    string? Password = null,
+    string? Quota = null
 );
