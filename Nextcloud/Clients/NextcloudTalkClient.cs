@@ -15,15 +15,13 @@ public class NextcloudTalkClient(HttpClient client) : INextcloudTalkClient
     {
           var reqBody = new { roomType = roomType, invite = invite, source = source, roomName = roomName};
             var response = await client.PostAsJsonAsync(basePath, reqBody);
-         var result = await response.EnsureSuccessStatusCode()
-            .Content.ReadFromJsonAsync<OCSResponse<Conversation>>();
-         response.EnsureSuccessStatusCode();
+          response.EnsureSuccessStatusCode();
     }
 
     public async Task<IEnumerable<Conversation>> GetConversations()
     {    var response = await client.GetAsync(basePath);
          var result = await response.EnsureSuccessStatusCode()
             .Content.ReadFromJsonAsync<OCSResponse<IEnumerable<Conversation>>>();
-         return result.Ocs.Data;
+         return result!.Ocs.Data;
     }
 }

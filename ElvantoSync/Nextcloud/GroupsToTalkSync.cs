@@ -31,8 +31,10 @@ class GroupsToTalkSync(
     }
 
     public async Task TestCreation(){
-        var fakeMissing = new Dictionary<string, string>();
-        fakeMissing.Add("Admin", "Admin");
+        var fakeMissing = new Dictionary<string, string>
+        {
+            { "Admin", "Admin" }
+        };
         await AddMissingAsync(fakeMissing);
     }
 
