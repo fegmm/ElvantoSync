@@ -17,6 +17,9 @@ class GroupsToTalkSync(
     Settings settings
 ) : Sync<string, string, Conversation>(settings)
 {
+
+   
+
     public override async Task<Dictionary<string, string>> GetFromAsync()
     {
         return (await elvanto.GroupsGetAllAsync(new GetAllRequest()))
@@ -26,7 +29,7 @@ class GroupsToTalkSync(
     public override async Task<Dictionary<string, Conversation>> GetToAsync()
     {
         var response = await talkRepo.GetConversations();
-      //  await TestCreation();
+       // await TestCreation();
         return response.ToDictionary(i => i.Name);
     }
 
@@ -40,7 +43,15 @@ class GroupsToTalkSync(
 
     public override async Task AddMissingAsync(Dictionary<string, string> missing)
     {
-        var createCollectivesWithMembersTasks = missing.Keys.Select(group => talkRepo.CreateConversation(2,group,"groups",group));
+
+         string description = @"Euer Gruppenchat für's Team! 
+
+Anmerkungen: Neue Mitarbeiter, die ihr in Elvanto hinzufügt, haben am nächsten Tag automatisch Zugriff. Um wie bei WhatsApp über jede neue Nachricht ein Push zu erhalten, stellt die Benachrichtigungseinstellungen auf Alle Nachrichten.";
+        var createCollectivesWithMembersTasks = missing.Keys.Select(async group => 
+        { 
+            var createdConvo = await talkRepo.CreateConversation(2,group,"groups",group);
+            await talkRepo.SetDescription(createdConvo.Token, description);
+        });
         await Task.WhenAll(createCollectivesWithMembersTasks);
     }
     public override bool IsActive()

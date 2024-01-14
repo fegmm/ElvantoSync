@@ -6,7 +6,8 @@ namespace ElvantoSync.Infrastructure.Nextcloud;
 
 public interface INextcloudTalkClient
 {
-    Task CreateConversation(int roomType, string invite, string source, string roomName );
+    Task<Conversation> CreateConversation(int roomType, string invite, string source, string roomName );
     Task<IEnumerable<Conversation>> GetConversations();
+    Task SetDescription(string toke, string description);
 
 }
