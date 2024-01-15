@@ -58,8 +58,7 @@ public static class DependencyInjection
         {
             i.BaseAddress = new Uri(nextcloudUrl);
             i.DefaultRequestHeaders.Authorization = auth;
-            i.DefaultRequestHeaders.Add("OCS-ApiRequest", "true");
-            i.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(applicationName,"1.0"));
+            i.DefaultRequestHeaders.UserAgent.ParseAdd(applicationName);
             i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         });
          services.AddHttpClient<INextcloudGroupFolderClient,NextcloudGroupFolderClient>(i =>
@@ -96,6 +95,4 @@ public static class DependencyInjection
                 RedirectUri = new Uri(nextcloudUrl)
             });
     }
-
-
 }

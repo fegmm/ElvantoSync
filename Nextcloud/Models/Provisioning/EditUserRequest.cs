@@ -2,17 +2,32 @@
 
 namespace Nextcloud.Models.Provisioning;
 
-public record EditUserRequest(
-    string? Email = null,
-    string? Quota = null,
-    [property: JsonPropertyName("displayname")] string? DisplayName = null,
-    string? Phone = null,
-    string? Address = null,
-    string? Website = null,
-    string? Twitter = null,
-    string? Password = null
-)
+public record EditUserRequest
 {
+    [JsonPropertyName("email")]
+    public string? Email { get; init; }
+    
+    [JsonPropertyName("quota")]
+    public string? Quota { get; init; }
+    
+    [JsonPropertyName("displayname")]
+    public string? DisplayName { get; init; }
+    
+    [JsonPropertyName("phone")]
+    public string? Phone { get; init; }
+    
+    [JsonPropertyName("address")]
+    public string? Address { get; init; }
+    
+    [JsonPropertyName("website")]
+    public string? Website { get; init; }
+    
+    [JsonPropertyName("twitter")]
+    public string? Twitter { get; init; }
+    
+    [JsonPropertyName("password")]
+    public string? Password { get; init; }
+
     public Dictionary<string, object> ToDictionary()
     {
         var dict = new Dictionary<string, object>();

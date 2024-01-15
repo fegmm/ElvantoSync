@@ -1,8 +1,33 @@
 ﻿using Docker.DotNet.Models;
 using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
+using Microsoft.Extensions.Logging;
 
 namespace Nextcloud.Tests;
+
+class MyLogger : ILogger, IDisposable
+{
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull
+    {
+        return this;
+    }
+
+    public void Dispose()
+    {
+        return;
+    }
+
+    public bool IsEnabled(LogLevel logLevel)
+    {
+        return true;
+    }
+
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+    {
+        File.AppendAllText("diagnostic.log", formatter.Invoke(state, exception));
+    }
+}
 
 public class NextcloudContainer : IAsyncDisposable
 {
@@ -21,13 +46,14 @@ public class NextcloudContainer : IAsyncDisposable
         {
             return;
         }
+        //TestcontainersSettings.Logger = new MyLogger();
 
-        var images = new ImageFromDockerfileBuilder()
-            .WithName("nextcloud-test:latest")
-            .WithDockerfile("nextcloud.dockerfile")
-            .Build();
+        //var images = new ImageFromDockerfileBuilder()
+        //    .WithDockerfile("nextcloud.dockerfile")
+        //    .WithName("nextcloud-test:latest")
+        //    .Build();
 
-        await images.CreateAsync();
+        //await images.CreateAsync();
 
         container = new ContainerBuilder()
             .WithImage("nextcloud-test:latest")

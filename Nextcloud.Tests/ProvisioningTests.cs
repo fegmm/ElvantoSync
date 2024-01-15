@@ -21,17 +21,18 @@ public class ProvisioningTests : TestBase
         client = ServiceProvider.GetRequiredService<NextcloudProvisioningClient>();
 
         testGroup = "testGroup";
-        testUserProps = new(
-            UserId: "test",
-            DisplayName: "test",
-            Email: "test@example.org",
-            Groups: ["admin"],
-            Subadmin: [testGroup],
-            Manager: "admin",
-            Language: "en",
-            Password: "testPasswort!123",
-            Quota: "1 GB"
-        );
+        testUserProps = new CreateUserRequest
+        {
+            UserId = "test",
+            DisplayName = "test",
+            Email = "test@example.org",
+            Groups = ["admin"],
+            Subadmin = [testGroup],
+            Manager = "admin",
+            Language = "en",
+            Password = "testPasswort!123",
+            Quota = "1 GB"
+        };
     }
 
     [Fact, Priority(0)]
@@ -46,7 +47,7 @@ public class ProvisioningTests : TestBase
     public async void GetGroupsReturnsAdmin()
     {
         var groups = await client.GetGroups();
-        
+
         groups.Should().Contain(g => g.Id == "admin").And.HaveCount(1);
     }
 
@@ -55,7 +56,7 @@ public class ProvisioningTests : TestBase
     {
         await client.CreateGroup(testGroup, testGroup);
         var groups = await client.GetGroups();
-        
+
         groups.Should().Contain(g => g.Id == testGroup).And.HaveCount(2);
     }
 
@@ -63,11 +64,11 @@ public class ProvisioningTests : TestBase
     public async void CreateUserReturnsCorrectUserId()
     {
         var userId = await client.CreateUser(testUserProps);
-        
-        
+
+
         userId.Should().NotBeNull();
         userId.Should().Be(testUserProps.UserId);
-        
+
         var users = await client.GetUsers();
         users.Should().Contain(u => u.Id == testUserProps.UserId).And.HaveCount(2);
 
@@ -84,17 +85,17 @@ public class ProvisioningTests : TestBase
     [Fact, Priority(3)]
     public async void EditUserChangesValues()
     {
-        await client.EditUser(testUserProps.UserId, new EditUserRequest(
-            DisplayName: "test2",
-            Email: "test2@example.org",
-            Quota: "2 GB",
-            Phone: "123456789",
-            Address: "test street 1",
-            Website: "https://example.org",
-            Twitter: "@test"
-        ));
-        
-        
+        await client.EditUser(testUserProps.UserId, new EditUserRequest()
+        {
+            DisplayName = "test2",
+            Email = "test2@example.org",
+            Quota = "2 GB",
+            Phone = "123456789",
+            Address = "test street 1",
+            Website = "https://example.org",
+            Twitter = "@test"
+        });
+
         var users = await client.GetUsers();
         users.Should().Contain(u => u.Id == testUserProps.UserId).And.HaveCount(2);
 
@@ -112,7 +113,7 @@ public class ProvisioningTests : TestBase
     public async void EditGroupChangesValues()
     {
         await client.EditGroup(testGroup, "testGroup2");
-        
+
 
         var groups = await client.GetGroups();
         groups.Should().Contain(g => g.Id == testGroup).And.HaveCount(2);
@@ -125,8 +126,8 @@ public class ProvisioningTests : TestBase
     public async void AddUserToGroupAddsUser()
     {
         await client.AddUserToGroup(testUserProps.UserId, testGroup);
-        
-        
+
+
         var users = await client.GetMembers(testGroup);
         users.Should().Contain(u => u == testUserProps.UserId).And.HaveCount(1);
     }
@@ -135,8 +136,8 @@ public class ProvisioningTests : TestBase
     public async void RemoveUserFromGroupRemovesUser()
     {
         await client.RemoveUserFromGroup(testUserProps.UserId, testGroup);
-        
-        
+
+
         var users = await client.GetMembers(testGroup);
         users.Should().NotContain(u => u == testUserProps.UserId).And.HaveCount(0);
     }
@@ -145,8 +146,8 @@ public class ProvisioningTests : TestBase
     public async void DeleteUserRemovesUser()
     {
         await client.DeleteUser(testUserProps.UserId);
-        
-        
+
+
         var users = await client.GetUsers();
         users.Should().NotContain(u => u.Id == testUserProps.UserId).And.HaveCount(1);
     }
@@ -155,8 +156,8 @@ public class ProvisioningTests : TestBase
     public async void DeleteGroupRemovesGroup()
     {
         await client.DeleteGroup(testGroup);
-        
-        
+
+
         var groups = await client.GetGroups();
         groups.Should().NotContain(g => g.Id == testGroup).And.HaveCount(1);
     }

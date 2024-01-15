@@ -1,3 +1,9 @@
-﻿namespace Nextcloud.Models.Collectives;
+﻿using System.Text.Json.Serialization;
 
-internal record CSRFToken(string Token);
+namespace Nextcloud.Models.Collectives;
+
+internal record CSRFToken
+{
+    [JsonPropertyName("token")]
+    public required string Token { get; init; }
+}

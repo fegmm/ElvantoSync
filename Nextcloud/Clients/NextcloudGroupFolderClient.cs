@@ -5,14 +5,14 @@ using System.Net.Http.Json;
 
 namespace Nextcloud.Clients;
 
-internal class NextcloudGroupFolderClient(HttpClient client) : INextcloudGroupFolderClient
+public class NextcloudGroupFolderClient(HttpClient client) : INextcloudGroupFolderClient
 {
     public async Task<IEnumerable<GroupFolder>> GetGroupFolders(CancellationToken cancellationToken = default)
     {
         var request = await client.GetAsync("/apps/groupfolders/folders", cancellationToken);
         var response = await request.EnsureSuccessStatusCode()
-            .Content.ReadFromJsonAsync<Dictionary<string, GroupFolder>>(cancellationToken);
-        return response!.Values;
+            .Content.ReadFromJsonAsync<GetGroupFolderResponse>(cancellationToken);
+        return response!.Ocs.Data.Values;
     }
 
     public async Task<int> CreateGroupFolder(string name, CancellationToken cancellationToken = default)
@@ -38,7 +38,7 @@ internal class NextcloudGroupFolderClient(HttpClient client) : INextcloudGroupFo
 
     public async Task AddGroup(int id, string groupId, CancellationToken cancellationToken = default)
     {
-        var reqBody = new { groupid = groupId };
+        var reqBody = new { group = groupId };
         var request = await client.PostAsJsonAsync($"/apps/groupfolders/folders/{id}/groups", reqBody, cancellationToken);
         request.EnsureSuccessStatusCode();
     }

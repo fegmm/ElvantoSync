@@ -10,7 +10,7 @@ RUN /entrypoint.sh apache2-foreground & pid=$! && sleep 60 && kill $pid
 USER www-data
 
 # install Nextcloud Apps
-RUN cd /var/www/html && \ 
+RUN cd /var/www/html && \
     php occ app:install deck && \
     php occ app:install spreed && \
     php occ app:install contacts && \
