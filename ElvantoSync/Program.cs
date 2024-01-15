@@ -5,7 +5,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nextcloud.Extensions;
+using System;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace ElvantoSync;
@@ -29,21 +32,18 @@ class Program
         
         ServiceProvider services = BuildServiceProvider(settings, elvanto, kas);
         await ExecuteSync(services);
-
-
-
-
-    }
+ }
 
     private static ServiceProvider BuildServiceProvider(Settings settings, ElvantoApi.Client elvanto, KasApi.Client kas)
     {
+        
         return new ServiceCollection()
             .AddSingleton<ILogger>(ConfigureLogging())
             .AddSingleton<Settings>(settings)
             .AddSingleton<ElvantoApi.Client>(elvanto)
             .AddSingleton<KasApi.Client>(kas)
-            .AddSingleton<ISync, GroupsToCollectivesSync>()
-            .AddSingleton<ISync, PeopleToNextcloudSync>()
+            .AddTransient<ISync, GroupsToCollectivesSync>()
+            .AddTransient<ISync, PeopleToNextcloudSync>()
             .AddSingleton<ISync, DepartementsToGroupMemberSync>()
             .AddSingleton<ISync, PeopleToNextcloudContactSync>()
             .AddSingleton<ISync, GroupsToNextcloudSync>()
@@ -53,7 +53,8 @@ class Program
             .AddSingleton<ISync, GroupsToNextcloudGroupFolderSync>()
             .AddSingleton<ISync, GroupsToEmailSync>()
             .AddSingleton<ISync, GroupMembersToMailForwardMemberSync>()
-            .AddNextcloud(nameof(ElvantoSync), settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword)
+            .AddSingleton<ISync, GroupsToTalkSync>()
+            .AddNextcloud(settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword,nameof(ElvantoSync))
             .BuildServiceProvider();
     }
 

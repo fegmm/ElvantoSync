@@ -16,10 +16,12 @@ record Settings(
     bool SyncNextcloudPeople = true,
     bool SyncNextcloudContacts = true,
     bool SyncNextcloudGroups = true,
+    bool SyncNextCloudTalk = true,
     bool SyncNextcloudGroupLeaders = true,
     bool SyncNextcloudDeck = true,
     bool SyncNextcloudCollectives = true,
     bool SyncNextcloudGroupmembers = true,
     bool SyncNextcloudGroupfolders = true,
     bool SyncElvantoGroupsToKASMail = true
+   
 );
