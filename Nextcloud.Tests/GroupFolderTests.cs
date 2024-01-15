@@ -1,6 +1,6 @@
 ﻿using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Nextcloud.Clients;
+using Nextcloud.Interfaces;
 using Xunit.Priority;
 
 namespace Nextcloud.Tests;
@@ -8,13 +8,13 @@ namespace Nextcloud.Tests;
 [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
 public class GroupFolderTests : TestBase
 {
-    private readonly NextcloudGroupFolderClient client;
+    private readonly INextcloudGroupFolderClient client;
     private readonly string testGroupFolder;
     private readonly string testGroupFolderRenamed;
 
     public GroupFolderTests(NextcloudContainer nextcloud) : base(nextcloud)
     {
-        client = ServiceProvider.GetRequiredService<NextcloudGroupFolderClient>();
+        client = ServiceProvider.GetRequiredService<INextcloudGroupFolderClient>();
         testGroupFolder = "testGroupFolder";
         testGroupFolderRenamed = "testGroupFolderRenamed";
     }

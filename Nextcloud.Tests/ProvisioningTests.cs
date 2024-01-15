@@ -1,9 +1,7 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Nextcloud.Clients;
-using Nextcloud.Extensions;
+using Nextcloud.Interfaces;
 using Nextcloud.Models.Provisioning;
-using Renci.SshNet.Security;
 using Xunit.Priority;
 
 namespace Nextcloud.Tests;
@@ -12,13 +10,13 @@ namespace Nextcloud.Tests;
 [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
 public class ProvisioningTests : TestBase
 {
-    private readonly NextcloudProvisioningClient client;
+    private readonly INextcloudProvisioningClient client;
     private readonly string testGroup;
     private readonly CreateUserRequest testUserProps;
 
     public ProvisioningTests(NextcloudContainer nextcloud) : base(nextcloud)
     {
-        client = ServiceProvider.GetRequiredService<NextcloudProvisioningClient>();
+        client = ServiceProvider.GetRequiredService<INextcloudProvisioningClient>();
 
         testGroup = "testGroup";
         testUserProps = new CreateUserRequest
