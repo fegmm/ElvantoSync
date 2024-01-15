@@ -1,4 +1,4 @@
-﻿using ElvantoSync.ElvantoApi;
+using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.GroupFolders;
 
-namespace ElvantoSync.Nextcloud;
 
 class GroupsToNextcloudGroupFolderSync(Client elvanto, INextcloudGroupFolderClient groupFolderClient, Settings settings)
     : Sync<string, Group, GroupFolder>(settings)

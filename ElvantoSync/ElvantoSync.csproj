@@ -9,6 +9,7 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="ElvantoSync.ElvantoApi" Version="0.1.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0" />
 		<PackageReference Include="MixERP.Net.VCards" Version="1.0.7" />

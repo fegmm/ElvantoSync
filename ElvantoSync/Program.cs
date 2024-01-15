@@ -1,6 +1,7 @@
 ﻿using ElvantoSync.AllInkl;
 using ElvantoSync.Elvanto;
 using ElvantoSync.Nextcloud;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -54,7 +55,9 @@ class Program
             .AddSingleton<ISync, GroupsToEmailSync>()
             .AddSingleton<ISync, GroupMembersToMailForwardMemberSync>()
             .AddSingleton<ISync, GroupsToTalkSync>()
-            .AddNextcloud(settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword, nameof(ElvantoSync))
+            .AddNextcloud(settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword,nameof(ElvantoSync))
+            .AddDbContext<MyDbContext>(options =>
+                options.UseSqlite(settings.ConnectionString))
             .BuildServiceProvider();
     }
 

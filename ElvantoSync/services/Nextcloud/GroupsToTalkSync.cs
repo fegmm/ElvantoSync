@@ -14,7 +14,7 @@ namespace ElvantoSync.Nextcloud;
 class GroupsToTalkSync(
     Client elvanto,
     INextcloudTalkClient talkRepo,
-    Settings settings
+    Settings settings, IndexRepository repository
 ) : Sync<string, string, Conversation>(settings)
 {
 
@@ -58,4 +58,5 @@ Anmerkungen: Neue Mitarbeiter, die ihr in Elvanto hinzufügt, haben am nächsten
     {
         return settings.SyncNextCloudTalk;
     }
+
 }

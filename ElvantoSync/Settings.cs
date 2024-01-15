@@ -2,6 +2,7 @@
 
 record Settings(
     string OutputFolder,
+    string ConnectionString,
     string ElvantoKey,
     string NextcloudServer,
     string NextcloudUser,
