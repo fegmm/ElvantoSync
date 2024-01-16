@@ -29,14 +29,14 @@ class Program
             kas_auth_data: settings.KASAuthData,
             kas_auth_type: "plain"
         ));
-        
+
         ServiceProvider services = BuildServiceProvider(settings, elvanto, kas);
         await ExecuteSync(services);
- }
+    }
 
     private static ServiceProvider BuildServiceProvider(Settings settings, ElvantoApi.Client elvanto, KasApi.Client kas)
     {
-        
+
         return new ServiceCollection()
             .AddSingleton<ILogger>(ConfigureLogging())
             .AddSingleton<Settings>(settings)
@@ -54,7 +54,7 @@ class Program
             .AddSingleton<ISync, GroupsToEmailSync>()
             .AddSingleton<ISync, GroupMembersToMailForwardMemberSync>()
             .AddSingleton<ISync, GroupsToTalkSync>()
-            .AddNextcloud(settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword,nameof(ElvantoSync))
+            .AddNextcloud(settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword, nameof(ElvantoSync))
             .BuildServiceProvider();
     }
 

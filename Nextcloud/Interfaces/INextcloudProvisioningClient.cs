@@ -13,5 +13,8 @@ public interface INextcloudProvisioningClient
     Task<IEnumerable<Group>> GetGroups(CancellationToken cancellationToken = default);
     Task<IEnumerable<string>> GetMembers(string groupId, CancellationToken cancellationToken = default);
     Task<IEnumerable<User>> GetUsers(CancellationToken cancellationToken = default);
+    Task EditUser(string userId, EditUserRequest user, CancellationToken cancellationToken = default);
+    Task EditGroup(string groupId, string newDisplayName, CancellationToken cancellationToken = default);
+
     Task RemoveUserFromGroup(string userId, string groupId, CancellationToken cancellationToken = default);
 }

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace ElvantoSync
@@ -23,7 +24,6 @@ namespace ElvantoSync
 
         public async Task ApplyAsync()
         {
-
             var from = await GetFromAsync();
             var to = await GetToAsync();
             var missing = from.Where(i => !to.ContainsKey(i.Key)).ToDictionary(i => i.Key, i => i.Value);

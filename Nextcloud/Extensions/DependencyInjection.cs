@@ -21,7 +21,7 @@ public static class DependencyInjection
         {
             i.BaseAddress = new Uri(nextcloudUrl);
             i.DefaultRequestHeaders.Authorization = auth;
-            i.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(applicationName,"1.0"));
+            i.DefaultRequestHeaders.UserAgent.ParseAdd(applicationName);
             i.DefaultRequestHeaders.Add("OCS-ApiRequest", "true");
             i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         });
@@ -31,7 +31,7 @@ public static class DependencyInjection
         {
             i.BaseAddress = new Uri(nextcloudUrl);
             i.DefaultRequestHeaders.Authorization = auth;
-            i.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(applicationName,"1.0"));
+            i.DefaultRequestHeaders.UserAgent.ParseAdd(applicationName);
             i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
         {
@@ -43,59 +43,59 @@ public static class DependencyInjection
         {
             i.BaseAddress = new Uri(nextcloudUrl);
             i.DefaultRequestHeaders.Authorization = auth;
-            i.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(applicationName,"1.0"));
+            i.DefaultRequestHeaders.UserAgent.ParseAdd(applicationName);
             i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         });
-        services.AddHttpClient<INextcloudTalkClient,NextcloudTalkClient>(i =>
+        services.AddHttpClient<INextcloudTalkClient, NextcloudTalkClient>(i =>
         {
             i.BaseAddress = new Uri(nextcloudUrl);
             i.DefaultRequestHeaders.Authorization = auth;
             i.DefaultRequestHeaders.Add("OCS-ApiRequest", "true");
-            i.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(applicationName,"1.0"));
+            i.DefaultRequestHeaders.UserAgent.ParseAdd(applicationName);
             i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         });
-        services.AddHttpClient<INextcloudProvisioningClient,NextcloudProvisioningClient>(i =>
+        services.AddHttpClient<INextcloudProvisioningClient, NextcloudProvisioningClient>(i =>
         {
             i.BaseAddress = new Uri(nextcloudUrl);
             i.DefaultRequestHeaders.Authorization = auth;
             i.DefaultRequestHeaders.Add("OCS-ApiRequest", "true");
-            i.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(applicationName,"1.0"));
+            i.DefaultRequestHeaders.UserAgent.ParseAdd(applicationName);
             i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         });
-         services.AddHttpClient<INextcloudGroupFolderClient,NextcloudGroupFolderClient>(i =>
-        {
-            i.BaseAddress = new Uri(nextcloudUrl);
-            i.DefaultRequestHeaders.Authorization = auth;
-            i.DefaultRequestHeaders.Add("OCS-ApiRequest", "true");
-            i.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(applicationName,"1.0"));
-            i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        });
+        services.AddHttpClient<INextcloudGroupFolderClient, NextcloudGroupFolderClient>(i =>
+       {
+           i.BaseAddress = new Uri(nextcloudUrl);
+           i.DefaultRequestHeaders.Authorization = auth;
+           i.DefaultRequestHeaders.Add("OCS-ApiRequest", "true");
+           i.DefaultRequestHeaders.UserAgent.ParseAdd(applicationName);
+           i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+       });
         services.AddSingleton<WebDavClient>(getWebDav(username, password, nextcloudUrl));
         services.AddSingleton<NextcloudApi.Api>(getNextCloudApi(username, password, nextcloudUrl));
         return services;
     }
 
-    private static WebDavClient getWebDav(string username, string password, string nextcloudUrl){
-   
+    private static WebDavClient getWebDav(string username, string password, string nextcloudUrl)
+    {
+
         string encoded = System.Convert.ToBase64String(Encoding.UTF8.GetBytes(username + ":" + password));
 
         HttpClient client = new HttpClient();
         client.BaseAddress = new Uri(nextcloudUrl);
         client.DefaultRequestHeaders.Add("OCS-APIRequest", "true");
         client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encoded);
-       return new WebDav.WebDavClient(client);
+        return new WebDav.WebDavClient(client);
     }
-    
-    private static NextcloudApi.Api getNextCloudApi(string username, string password, string nextcloudUrl){
+
+    private static NextcloudApi.Api getNextCloudApi(string username, string password, string nextcloudUrl)
+    {
         return new NextcloudApi.Api(new NextcloudApi.Settings()
-            {
-                ServerUri = new Uri(nextcloudUrl),
-                Username = username,
-                Password = password,
-                ApplicationName = nameof(ElvantoSync),
-                RedirectUri = new Uri(nextcloudUrl)
-            });
+        {
+            ServerUri = new Uri(nextcloudUrl),
+            Username = username,
+            Password = password,
+            ApplicationName = nameof(ElvantoSync),
+            RedirectUri = new Uri(nextcloudUrl)
+        });
     }
-
-
 }

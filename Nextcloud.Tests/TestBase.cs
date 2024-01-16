@@ -1,29 +1,24 @@
-﻿using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Containers;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Nextcloud.Extensions;
 
 namespace Nextcloud.Tests;
 
-internal class TestBase : IAsyncLifetime
+public class TestBase : IAsyncLifetime, IClassFixture<NextcloudContainer>
 {
-    private readonly IContainer container;
+    private readonly NextcloudContainer nextcloud;
+    protected ServiceProvider ServiceProvider { get; }
 
-    public TestBase()
+    public TestBase(NextcloudContainer nextcloud)
     {
-       container = new ContainerBuilder()
-            .WithImage("nextcloud:latest")
-            .WithPortBinding(80, 80)
-            .WithEnvironment("SQLITE_DATABASE", "db.sqlite")
-            .WithEnvironment("NEXTCLOUD_ADMIN_USER", "admin")
-            .WithEnvironment("NEXTCLOUD_ADMIN_PASSWORD", "securePassword123!")
-            .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(80))
-            .WithStartupCallback(async (container, ct) =>
-            {
-                await container.ExecAsync(["su", "www-data", "&&", "php", "occ", "app:install"]);
-            })
-            .Build();
+        IServiceCollection services = new ServiceCollection();
+        services.AddNextcloud(nextcloud.NextcloudUrl, "admin", "StrongPassword123!", "elvatnosync/1.0");
+        ServiceProvider = services.BuildServiceProvider();
+        this.nextcloud = nextcloud;
     }
 
-    public Task DisposeAsync() => container.DisposeAsync().AsTask();
+    public string? NextcloudUrl => nextcloud.NextcloudUrl;
 
-    public Task InitializeAsync() => this.container.StartAsync();
+    public async Task InitializeAsync() => await nextcloud.Start();
+
+    public Task DisposeAsync() => Task.CompletedTask;
 }

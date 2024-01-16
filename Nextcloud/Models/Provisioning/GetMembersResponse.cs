@@ -1,5 +1,8 @@
-﻿namespace Nextcloud.Models.Provisioning;
+﻿using System.Text.Json.Serialization;
 
-internal record GetMembersResponse(
-    IEnumerable<string> Users
-);
+namespace Nextcloud.Models.Provisioning;
+
+internal record GetMembersResponse {
+    [JsonPropertyName("users")]
+    public required IEnumerable<string> Users { get; init; }
+}

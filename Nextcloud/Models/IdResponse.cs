@@ -1,4 +1,13 @@
-﻿namespace Nextcloud.Models;
+﻿using System.Text.Json.Serialization;
 
-internal record IdResponse<T>(T Id);
-internal record IdResponse(string Id) : IdResponse<string>(Id);
+namespace Nextcloud.Models;
+
+internal record IdResponse<T>
+{
+    [JsonPropertyName("id")]
+    public required T Id { get; init; }
+}
+
+internal record IdResponse : IdResponse<string>
+{
+}   
