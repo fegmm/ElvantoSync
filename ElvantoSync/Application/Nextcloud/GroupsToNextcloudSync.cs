@@ -22,10 +22,19 @@ class GroupsToNextcloudSync(ElvantoApi.Client elvanto, INextcloudProvisioningCli
 
     public override async Task AddMissingAsync(IEnumerable<ElvantoApi.Models.Group> missing)
     {
-        await Task.WhenAll(missing.Select(async i =>
+        await Task.WhenAll(missing.Select(async group =>
         {
-            await provisioningClient.CreateGroup(i.Name, i.Name);
-            await provisioningClient.CreateGroup(i.Name + Settings.GroupLeaderSuffix, i.Name + Settings.GroupLeaderSuffix);
+            await Task.WhenAll([
+                provisioningClient.CreateGroup(group.Name, group.Name),
+                provisioningClient.CreateGroup(group.Name + Settings.GroupLeaderSuffix, group.Name + Settings.GroupLeaderSuffix)
+            ]);
+            await Task.WhenAll([
+                .. group.People.Person
+                    .Select(person => provisioningClient.AddUserToGroup("Elvanto-" + person.Id, group.Name)),
+                .. group.People.Person
+                    .Where(person => person.Position == "Leader" || person.Position == "Assistant Leader")
+                    .Select(person => provisioningClient.AddUserToGroup("Elvanto-" + person.Id, group.Name + Settings.GroupLeaderSuffix))
+            ]);
         }));
     }
 

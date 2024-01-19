@@ -38,7 +38,7 @@ internal class GroupsToEmailSync(ElvantoApi.Client elvanto, NextcloudApi.Api nex
             var mails = group.People.Person.Select(i => i.Email).Distinct().Where(i => string.IsNullOrEmpty(i)).ToArray();
             if (compare.additional.Any() || compare.missing.Any())
             {
-                await kas.ExecuteRequestWithParams(new UpdateMailForward() { MailForward = mail.MailForwardAdress, Targets = mails});
+                await kas.ExecuteRequestWithParams(new UpdateMailForward() { MailForward = mail.MailForwardAdress, Targets = mails });
             }
         });
         await Task.WhenAll(requests);
@@ -82,7 +82,16 @@ internal class GroupsToEmailSync(ElvantoApi.Client elvanto, NextcloudApi.Api nex
     public override async Task AddMissingAsync(IEnumerable<Group> missing)
     {
         var tasks = missing
-            .Select(i => kas.ExecuteRequestWithParams(new AddMailForward() { LocalPart = SanitizeName(i.Name), DomainPart = Settings.KASDomain, Targets = new[] { "technik@fegmm.de" } }));
+            .Select(i => kas.ExecuteRequestWithParams(new AddMailForward()
+            {
+                LocalPart = SanitizeName(i.Name),
+                DomainPart = Settings.KASDomain,
+                Targets = i.People.Person
+                    .Select(i => i.Email)
+                    .Distinct()
+                    .Where(i => !string.IsNullOrEmpty(i))
+                    .ToArray()
+            }));
         await Task.WhenAll(tasks);
     }
 
