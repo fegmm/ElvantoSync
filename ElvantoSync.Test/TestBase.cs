@@ -10,33 +10,73 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Nextcloud.Extensions;
+using NextcloudApi;
 
 namespace ElvantoSync.Tests;
 
-public class TestBase : IAsyncLifetime, IClassFixture<NextcloudContainer>
+public abstract class TestBase : IAsyncLifetime
 {
+     public abstract Task ApplyAsync_ShouldAddNewPersonsFromElvanto();
+     public abstract Task ApplyAsync_ShouldNotAddIfNoNewPerson();
     private readonly NextcloudContainer nextcloud;
-    protected ServiceProvider ServiceProvider { get; }
-     private Mock<IElvantoClient> _elvantoClientMock;
-
-    public TestBase(NextcloudContainer nextcloud)
+   
+    protected ServiceCollection Services { get; private set; }
+     private bool _disposed = false;
+    public TestBase()
     {
-        var settings = new Settings("./TestPath","","","","", "", "", "", "", "", false, false, false, false, false, false, false, false, false, false, false, false);
-            
-         _elvantoClientMock = new Mock<IElvantoClient>();
-
-        IServiceCollection services = new ServiceCollection();
-        services.AddSingleton<PeopleToNextcloudSync>();
-        //services.AddNextCloudSync();
-        services.AddSingleton<Settings>(settings);
-        services.AddNextcloudClients(nextcloud.NextcloudUrl, "admin", "StrongPassword123!", "elvatnosync/1.0");
-        services.AddSingleton<IElvantoClient>(_elvantoClientMock.Object);
-          var people = new List<Person> { new Person { Id = "1", Firstname ="Test", Lastname="Tester",Email = "MyEmail"  }, new Person { Id = "2", Firstname ="Test", Lastname="Tester",Email = "MyEmail" } };
-        _elvantoClientMock.Setup(x => x.PeopleGetAllAsync(It.IsAny<GetAllPeopleRequest>()))
-            .ReturnsAsync(new PeopleGetAllResponse { People = new People { Person = [.. people] } });
-
-        ServiceProvider = services.BuildServiceProvider();
+        
+        Services = new ServiceCollection();
+        var nextcloud = new NextcloudContainer();
+        ConfigureServices(nextcloud);
         this.nextcloud = nextcloud;
+    }
+
+     protected IServiceProvider BuildServiceProvider()
+    {
+        return Services.BuildServiceProvider();
+    }
+
+    protected virtual void ConfigureServices(NextcloudContainer nextcloud)
+    {
+        var settings = new Settings("./TestPath", null, null, null, null, null, null, null,null,null);
+        Services.AddSingleton<PeopleToNextcloudSync>();
+        //services.AddNextCloudSync();
+        Services.AddSingleton<Settings>(settings);
+        Services.AddNextcloudClients(nextcloud.NextcloudUrl, "admin", "StrongPassword123!", "elvatnosync/1.0");
+
+    }
+
+      public void Dispose()
+    {
+        // Dispose of unmanaged resources
+        nextcloud.DisposeAsync();
+        Dispose(true);
+        
+        // Suppress finalization
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed state (managed objects)
+                if (Services is IDisposable serviceProviderDisposable)
+                {
+                    serviceProviderDisposable.Dispose();
+                }
+
+                // If any other IDisposable fields, dispose them here
+                // e.g., _mockExternalDependency.Dispose();
+            }
+
+            // Free unmanaged resources (unmanaged objects) and override a finalizer below
+            // Set large fields to null
+
+            _disposed = true;
+        }
     }
 
     public string? NextcloudUrl => nextcloud.NextcloudUrl;

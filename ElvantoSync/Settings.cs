@@ -1,6 +1,6 @@
 ﻿namespace ElvantoSync;
 
-record Settings(
+public record Settings(
     string OutputFolder,
     string ElvantoKey,
     string NextcloudServer,

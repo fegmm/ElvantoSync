@@ -62,8 +62,19 @@ public class NextcloudContainer : IAsyncDisposable
             .WithEnvironment("NEXTCLOUD_ADMIN_PASSWORD", "securePassword123!")
             .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(80))
             .Build();
+        
 
         await container.StartAsync();
+    }
+
+    public async Task Stop()
+    {
+        if (container != null)
+        {
+            return;
+        }
+
+        await container.StopAsync();
     }
 
     public async ValueTask DisposeAsync()
