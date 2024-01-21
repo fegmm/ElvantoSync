@@ -5,10 +5,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.GroupFolders;
+using ElvantoSync.ElvantoService;
 
 namespace ElvantoSync.Nextcloud;
 
-class GroupsToNextcloudGroupFolderSync(Client elvanto, INextcloudGroupFolderClient groupFolderClient, Settings settings)
+class GroupsToNextcloudGroupFolderSync(IElvantoClient elvanto, INextcloudGroupFolderClient groupFolderClient, Settings settings)
     : Sync<string, Group, GroupFolder>(settings)
 {
     public override async Task<Dictionary<string, Group>> GetFromAsync()

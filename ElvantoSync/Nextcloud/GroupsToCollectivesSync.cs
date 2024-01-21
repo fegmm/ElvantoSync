@@ -1,5 +1,6 @@
 ﻿using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.ElvantoService;
 using ElvantoSync.Infrastructure.Nextcloud;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.Circles;
@@ -11,7 +12,7 @@ using System.Threading.Tasks;
 namespace ElvantoSync.Nextcloud;
 
 class GroupsToCollectivesSync(
-    Client elvanto,
+   IElvantoClient elvanto,
     INextcloudCollectivesClient collectivesRepo,
     INextcloudCircleClient circleRepo,
     Settings settings

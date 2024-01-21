@@ -1,4 +1,5 @@
 ﻿using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.ElvantoService;
 using Nextcloud.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync.Nextcloud;
 
-class GroupMembersToNextcloudSync(ElvantoApi.Client elvanto, INextcloudProvisioningClient provisioningClient, Settings settings)
+class GroupMembersToNextcloudSync(IElvantoClient elvanto, INextcloudProvisioningClient provisioningClient, Settings settings)
     : Sync<(string group, string user), GroupMember, string>(settings)
 {
     public override async Task<Dictionary<(string group, string user), GroupMember>> GetFromAsync()

@@ -1,5 +1,6 @@
 ﻿using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.ElvantoService;
 using MixERP.Net.VCards;
 using MixERP.Net.VCards.Models;
 using MixERP.Net.VCards.Serializer;
@@ -12,7 +13,7 @@ using WebDav;
 
 namespace ElvantoSync.Nextcloud
 {
-    class PeopleToNextcloudContactSync(Client elvanto, Settings settings, WebDavClient nextcloud_webdav) : Sync<string, Person, WebDavResource>(settings)
+    class PeopleToNextcloudContactSync(IElvantoClient elvanto, Settings settings, WebDavClient nextcloud_webdav) : Sync<string, Person, WebDavResource>(settings)
     {
         public override async Task<Dictionary<string, Person>> GetFromAsync()
         {

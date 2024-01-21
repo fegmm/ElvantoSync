@@ -99,7 +99,7 @@ public record UserQuota
     [JsonPropertyName("quota")]
     public required long Quota {get; init;}
     [JsonPropertyName("relative")]
-    public long? Relative {get; init;}
+    public double? Relative {get; init;}
     [JsonPropertyName("total")]
     public long? Total {get; init;}
     [JsonPropertyName("used")]

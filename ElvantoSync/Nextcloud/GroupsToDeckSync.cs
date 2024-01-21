@@ -1,5 +1,6 @@
 ﻿using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.ElvantoService;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.Deck;
 using System;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync.Nextcloud;
 
-class GroupsToDeckSync(Client elvanto, INextcloudDeckClient deckClient, Settings settings) : Sync<string, string, Board>(settings)
+class GroupsToDeckSync(IElvantoClient elvanto, INextcloudDeckClient deckClient, Settings settings) : Sync<string, string, Board>(settings)
 {
     private readonly Random random = new();
 

@@ -12,7 +12,7 @@ namespace Nextcloud.Extensions;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddNextcloud(this IServiceCollection services, string nextcloudUrl, string username, string password, string applicationName)
+    public static IServiceCollection AddNextcloudClients(this IServiceCollection services, string nextcloudUrl, string username, string password, string applicationName)
     {
         byte[] authToken = Encoding.UTF8.GetBytes($"{username}:{password}");
         var auth = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(authToken));

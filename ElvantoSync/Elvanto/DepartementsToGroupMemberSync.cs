@@ -1,12 +1,13 @@
 ﻿using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.ElvantoService;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace ElvantoSync.Elvanto;
 
-class DepartementsToGroupMemberSync(ElvantoApi.Client elvanto, Settings settings) : Sync<(string personId, string groupName), Person, GroupMember>(settings)
+class DepartementsToGroupMemberSync(IElvantoClient elvanto, Settings settings) : Sync<(string personId, string groupName), Person, GroupMember>(settings)
 {
     public override async Task<Dictionary<(string personId, string groupName), Person>> GetFromAsync()
     {

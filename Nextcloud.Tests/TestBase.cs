@@ -11,7 +11,7 @@ public class TestBase : IAsyncLifetime, IClassFixture<NextcloudContainer>
     public TestBase(NextcloudContainer nextcloud)
     {
         IServiceCollection services = new ServiceCollection();
-        services.AddNextcloud(nextcloud.NextcloudUrl, "admin", "StrongPassword123!", "elvatnosync/1.0");
+        services.AddNextcloudClients(nextcloud.NextcloudUrl, "admin", "StrongPassword123!", "elvatnosync/1.0");
         ServiceProvider = services.BuildServiceProvider();
         this.nextcloud = nextcloud;
     }

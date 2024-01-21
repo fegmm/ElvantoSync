@@ -5,12 +5,12 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync
 {
-    interface ISync{
+    public interface ISync{
         public Task ApplyAsync();
         public bool IsActive();
     }
 
-    abstract class Sync<TKey, TFrom, TTo>(Settings settings) : ISync
+    public abstract class Sync<TKey, TFrom, TTo>(Settings settings) : ISync
     {
         public Settings Settings => settings;
 
