@@ -38,4 +38,11 @@ public class NextcloudCollectivesClient(HttpClient client) : INextcloudCollectiv
         csrfToken = result!.Token;
         return csrfToken;
     }
+
+    public async Task SetDisplayName(string circleId, string name, CancellationToken cancellationToken = default)
+    {
+        var reqBody = new { name = name };
+        var response = await client.PutAsJsonAsync($"/ocs/v2.php/apps/circles/circles/{circleId}/name", reqBody, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
 }

@@ -12,6 +12,7 @@
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="8.0.1" />
 		<PackageReference Include="MixERP.Net.VCards" Version="1.0.7" />
 		<PackageReference Include="NextcloudApi" Version="1.0.17" />
 		<PackageReference Include="PdfSharp.MigraDoc.Standard" Version="1.51.15" />

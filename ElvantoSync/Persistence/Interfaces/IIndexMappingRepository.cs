@@ -6,7 +6,6 @@ namespace ElvantoSync.Persistence.Interfaces;
 
 interface IIndexMappingRepository
 {
-    public Task AddMapping(IndexMapping entity);
-    public Task<IEnumerable<string>> FindMissingResources(IEnumerable<string> ids, string type);
-    public Task<IEnumerable<string>> FindAdditionalResources(IEnumerable<string> ids, string type);
+    Task AddMapping(IndexMapping entity);
+    Task<IEnumerable<string>> MapIndex(IEnumerable<string> fromId, string type);
 }

@@ -1,5 +1,6 @@
 ﻿using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.Extensions;
+using ElvantoSync.Settings.AllInkl;
 using KasApi.Requests;
 using KasApi.Response;
 using MigraDoc.DocumentObjectModel;
@@ -12,16 +13,15 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync.AllInkl;
 
-internal class GroupsToEmailSync(ElvantoApi.Client elvanto, NextcloudApi.Api nextcloud, KasApi.Client kas, Settings settings) : Sync<Group, MailForward>(settings)
+internal class GroupsToEmailSync(ElvantoApi.Client elvanto, NextcloudApi.Api nextcloud, KasApi.Client kas, GroupsToEmailSyncSettings settings) : Sync<Group, MailForward>(settings)
 {
-    public override bool IsActive() => settings.SyncElvantoGroupsToKASMail;
     public override string FromKeySelector(Group i) => SanitizeName(i.Name);
     public override string ToKeySelector(MailForward i) => SanitizeName(i.MailForwardAdress.Split("@")[0]);
 
 
     public override async Task<IEnumerable<Group>> GetFromAsync()
     {
-        var from = (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = new[] { "people" } })).Groups.Group
+        var from = (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"] })).Groups.Group
             .Where(i => i.People?.Person != null && i.People.Person.Any());
 
         await CreateAndUploadPdf(nextcloud, from);
@@ -46,9 +46,9 @@ internal class GroupsToEmailSync(ElvantoApi.Client elvanto, NextcloudApi.Api nex
 
     private async Task CreateAndUploadPdf(NextcloudApi.Api nextcloud, IEnumerable<Group> from)
     {
-        if (Settings.UploadGroupMailAddressesToNextcloudPath != null)
+        if (settings.UploadGroupMailAddressesToNextcloudPath != null)
         {
-            var path = Settings.UploadGroupMailAddressesToNextcloudPath;
+            var path = settings.UploadGroupMailAddressesToNextcloudPath;
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             Document document = new Document();
@@ -61,8 +61,8 @@ internal class GroupsToEmailSync(ElvantoApi.Client elvanto, NextcloudApi.Api nex
                 string sanatizedName = SanitizeName(item.Name);
                 var row = table.AddRow();
                 row.Cells[0].AddParagraph(item.Name);
-                var mail_link = row.Cells[1].AddParagraph().AddHyperlink($"mailto:{sanatizedName}@{Settings.KASDomain}", HyperlinkType.Url);
-                mail_link.AddFormattedText($"{sanatizedName}@{Settings.KASDomain}");
+                var mail_link = row.Cells[1].AddParagraph().AddHyperlink($"mailto:{sanatizedName}@{settings.KASDomain}", HyperlinkType.Url);
+                mail_link.AddFormattedText($"{sanatizedName}@{settings.KASDomain}");
             }
 
             PdfDocumentRenderer pdfRenderer = new PdfDocumentRenderer(false);
@@ -77,7 +77,7 @@ internal class GroupsToEmailSync(ElvantoApi.Client elvanto, NextcloudApi.Api nex
     }
 
     public override async Task<IEnumerable<MailForward>> GetToAsync()
-        => (await kas.GetMailforwardsAsync()).Where(i => i.MailForwardAdress.Split("@")[1] == Settings.KASDomain);
+        => (await kas.GetMailforwardsAsync()).Where(i => i.MailForwardAdress.Split("@")[1] == settings.KASDomain);
 
     public override async Task AddMissingAsync(IEnumerable<Group> missing)
     {
@@ -85,7 +85,7 @@ internal class GroupsToEmailSync(ElvantoApi.Client elvanto, NextcloudApi.Api nex
             .Select(i => kas.ExecuteRequestWithParams(new AddMailForward()
             {
                 LocalPart = SanitizeName(i.Name),
-                DomainPart = Settings.KASDomain,
+                DomainPart = settings.KASDomain,
                 Targets = i.People.Person
                     .Select(i => i.Email)
                     .Distinct()

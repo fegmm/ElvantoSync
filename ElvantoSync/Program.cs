@@ -1,6 +1,8 @@
 ﻿using ElvantoSync.AllInkl;
 using ElvantoSync.Elvanto;
+using ElvantoSync.Extensions;
 using ElvantoSync.Nextcloud;
+using ElvantoSync.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +21,7 @@ class Program
             .AddUserSecrets<Program>()
             .AddEnvironmentVariables()
             .Build()
-            .Get<Settings>();
+            .Get<ApplicationSettings>();
 
         var elvanto = new ElvantoApi.Client(settings.ElvantoKey);
         var kas = new KasApi.Client(new KasApi.Requests.AuthorizeHeader(
@@ -32,12 +34,13 @@ class Program
         await ExecuteSync(services);
     }
 
-    private static ServiceProvider BuildServiceProvider(Settings settings, ElvantoApi.Client elvanto, KasApi.Client kas)
+    private static ServiceProvider BuildServiceProvider(ApplicationSettings settings, ElvantoApi.Client elvanto, KasApi.Client kas)
     {
 
         return new ServiceCollection()
             .AddSingleton<ILogger>(ConfigureLogging())
-            .AddSingleton<Settings>(settings)
+            .AddOptions()
+            .AddSyncOptions()
             .AddSingleton<ElvantoApi.Client>(elvanto)
             .AddSingleton<KasApi.Client>(kas)
             .AddTransient<ISync, GroupsToCollectivesSync>()
@@ -59,7 +62,7 @@ class Program
     private static async Task ExecuteSync(ServiceProvider provider)
     {
         var services = provider.GetServices<ISync>()
-        .Where(service => service.IsActive())
+        .Where(service => service.IsActive)
         .Select(service => service.ApplyAsync());
         await Task.WhenAll(services);
     }

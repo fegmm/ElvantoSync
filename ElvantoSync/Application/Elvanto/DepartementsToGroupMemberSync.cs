@@ -1,13 +1,16 @@
 ﻿using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.Settings.Elvanto;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace ElvantoSync.Elvanto;
 
-class DepartementsToGroupMemberSync(ElvantoApi.Client elvanto, Settings settings) : Sync<(Person person, string departement), (GroupMember member, string group)>(settings)
+class DepartementsToGroupMemberSync(
+    ElvantoApi.Client elvanto,
+    DepartementsToGroupMemberSyncSettings settings
+) : Sync<(Person person, string departement), (GroupMember member, string group)>(settings)
 {
-    public override bool IsActive() => settings.SyncElvantoDepartementsToGroups;
     public override string FromKeySelector((Person person, string departement) i) => (i.person.Id, i.departement).ToString();
     public override string ToKeySelector((GroupMember member, string group) i) => (i.member.Id, i.group).ToString();
 
@@ -31,7 +34,7 @@ class DepartementsToGroupMemberSync(ElvantoApi.Client elvanto, Settings settings
 
     public override async Task<IEnumerable<(GroupMember member, string group)>> GetToAsync()
     {
-        var departments = new HashSet<string>((await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest() { Fields = new[] { "departments" } })).People.Person
+        var departments = new HashSet<string>((await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest() { Fields = ["departments"] })).People.Person
             .Where(i => i.Departments != null)
             .SelectMany(person => person.Departments.Department
                 .SelectMany(department => department.Sub_departments.Sub_department
@@ -42,7 +45,7 @@ class DepartementsToGroupMemberSync(ElvantoApi.Client elvanto, Settings settings
             )
             .Distinct());
 
-        var response = await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = new[] { "people" } });
+        var response = await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"] });
         return response.Groups.Group
             .Where(i => i.People != null && i.People.Person != null)
             .Where(i => departments.Contains(i.Name))

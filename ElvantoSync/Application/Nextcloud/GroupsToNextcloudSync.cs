@@ -1,4 +1,5 @@
 ﻿using ElvantoSync.Extensions;
+using ElvantoSync.Settings.Nextcloud;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.Provisioning;
 using System.Collections.Generic;
@@ -7,10 +8,12 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync.Nextcloud;
 
-class GroupsToNextcloudSync(ElvantoApi.Client elvanto, INextcloudProvisioningClient provisioningClient, Settings settings)
-    : Sync<ElvantoApi.Models.Group, Group>(settings)
+class GroupsToNextcloudSync(
+    ElvantoApi.Client elvanto,
+    INextcloudProvisioningClient provisioningClient,
+    GroupsToNextcloudSyncSettings settings
+) : Sync<ElvantoApi.Models.Group, Group>(settings)
 {
-    public override bool IsActive() => settings.SyncNextcloudGroups;
     public override string FromKeySelector(ElvantoApi.Models.Group i) => i.Name;
     public override string ToKeySelector(Group i) => i.Id;
 
@@ -26,14 +29,14 @@ class GroupsToNextcloudSync(ElvantoApi.Client elvanto, INextcloudProvisioningCli
         {
             await Task.WhenAll([
                 provisioningClient.CreateGroup(group.Name, group.Name),
-                provisioningClient.CreateGroup(group.Name + Settings.GroupLeaderSuffix, group.Name + Settings.GroupLeaderSuffix)
+                provisioningClient.CreateGroup(group.Name + settings.GroupLeaderSuffix, group.Name + settings.GroupLeaderSuffix)
             ]);
             await Task.WhenAll([
                 .. group.People.Person
                     .Select(person => provisioningClient.AddUserToGroup("Elvanto-" + person.Id, group.Name)),
                 .. group.People.Person
                     .Where(person => person.Position == "Leader" || person.Position == "Assistant Leader")
-                    .Select(person => provisioningClient.AddUserToGroup("Elvanto-" + person.Id, group.Name + Settings.GroupLeaderSuffix))
+                    .Select(person => provisioningClient.AddUserToGroup("Elvanto-" + person.Id, group.Name + settings.GroupLeaderSuffix))
             ]);
         }));
     }
@@ -49,7 +52,7 @@ class GroupsToNextcloudSync(ElvantoApi.Client elvanto, INextcloudProvisioningCli
             {
                 await provisioningClient.AddUserToGroup("Elvanto-" + i.Id, nextcloudGroup.Id);
                 if (i.Position == "Leader" || i.Position == "Assistant Leader")
-                    await provisioningClient.AddUserToGroup("Elvanto-" + i.Id, nextcloudGroup.Id + Settings.GroupLeaderSuffix);
+                    await provisioningClient.AddUserToGroup("Elvanto-" + i.Id, nextcloudGroup.Id + settings.GroupLeaderSuffix);
             });
             var removeMemberRequests = compare.missing.Select(id => provisioningClient.RemoveUserFromGroup(id, nextcloudGroup.Id));
             await Task.WhenAll([.. addMemberRequests, .. removeMemberRequests]);

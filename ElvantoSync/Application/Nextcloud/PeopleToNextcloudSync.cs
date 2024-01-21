@@ -1,5 +1,6 @@
 using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.Settings.Nextcloud;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.Provisioning;
 using System;
@@ -9,10 +10,13 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync.Nextcloud;
 
-class PeopleToNextcloudSync(Client elvanto, INextcloudProvisioningClient provisioningClient, Settings settings) : Sync<Person, User>(settings)
+class PeopleToNextcloudSync(
+    Client elvanto,
+    INextcloudProvisioningClient provisioningClient,
+    PeopleToNextcloudSyncSettings settings
+) : Sync<Person, User>(settings)
 {
-    public override bool IsActive() => settings.SyncNextcloudPeople;
-    public override string FromKeySelector(Person i) => $"Elvanto-{i.Id}";
+    public override string FromKeySelector(Person i) => settings.IdPrefix + i.Id;
     public override string ToKeySelector(User i) => i.Id;
 
     public override async Task<IEnumerable<Person>> GetFromAsync() =>
@@ -21,22 +25,19 @@ class PeopleToNextcloudSync(Client elvanto, INextcloudProvisioningClient provisi
     public override async Task<IEnumerable<User>> GetToAsync()
     {
         var users = await provisioningClient.GetUsers();
-        return users.Where(i => i.Id.StartsWith("Elvanto-"));
+        return users.Where(i => i.Id.StartsWith(settings.IdPrefix));
     }
 
     public override async Task AddMissingAsync(IEnumerable<Person> missing)
     {
-        var requests = missing.Select(i => provisioningClient.CreateUser(new CreateUserRequest(
-            "Elvanto-" + i.Id,
-            $"{i.Lastname}, {i.Firstname}",
-            i.Email,
-            null,
-            null,
-            null,
-            null,
-            Guid.NewGuid().ToString(),
-            "1 GB"
-        )));
+        var requests = missing.Select(i => provisioningClient.CreateUser(new CreateUserRequest()
+        {
+            UserId = settings.IdPrefix + i.Id,
+            DisplayName = $"{i.Lastname}, {i.Firstname}",
+            Email = i.Email,
+            Password = Guid.NewGuid().ToString(),
+            Quota = settings.Quoata
+        }));
 
         await Task.WhenAll(requests);
     }

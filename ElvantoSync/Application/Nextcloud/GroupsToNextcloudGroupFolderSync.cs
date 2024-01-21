@@ -6,12 +6,16 @@ using System.Threading.Tasks;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.GroupFolders;
 using ElvantoSync;
+using ElvantoSync.Settings.Nextcloud;
 
 
-class GroupsToNextcloudGroupFolderSync(Client elvanto, INextcloudGroupFolderClient groupFolderClient, Settings settings)
-    : Sync<Group, GroupFolder>(settings)
+class GroupsToNextcloudGroupFolderSync(
+    Client elvanto,
+    INextcloudGroupFolderClient groupFolderClient,
+    GroupsToNextcloudGroupFolderSyncSettings settings,
+    GroupsToNextcloudSyncSettings groupSettings
+) : Sync<Group, GroupFolder>(settings)
 {
-    public override bool IsActive() => settings.SyncNextcloudGroupfolders;
     public override string FromKeySelector(Group i) => i.Name;
     public override string ToKeySelector(GroupFolder i) => i.MountPoint;
 
@@ -29,7 +33,7 @@ class GroupsToNextcloudGroupFolderSync(Client elvanto, INextcloudGroupFolderClie
             await groupFolderClient.AddGroup(groupFolder, i.Name);
             await groupFolderClient.SetPermission(groupFolder, i.Name, Permissions.All);
             await groupFolderClient.SetAcl(groupFolder, true);
-            await groupFolderClient.AddAclManager(groupFolder, i.Name + Settings.GroupLeaderSuffix);
+            await groupFolderClient.AddAclManager(groupFolder, i.Name + groupSettings.GroupLeaderSuffix);
         });
 
         await Task.WhenAll(requests);

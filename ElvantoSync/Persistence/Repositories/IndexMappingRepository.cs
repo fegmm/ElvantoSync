@@ -21,24 +21,6 @@ public class IndexMappingRepository(DbContext context) : IIndexMappingRepository
         await context.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<string>> FindAdditionalResources(IEnumerable<string> ids, string type)
-    {
-        return await context.IndexMappings
-            .Where(i => i.Type == type)
-            .GroupJoin(ids, i => i.ToId, i => i, (i, _) => i.ToId)
-            .Where(i => i == null)
-            .ToListAsync();
-    }
-
-    public async Task<IEnumerable<string>> FindMissingResources(IEnumerable<string> ids, string type)
-    {
-        return await context.IndexMappings
-            .Where(i => i.Type == type)
-            .GroupJoin(ids, i => i.FromId, i => i, (i, _) => i.FromId)
-            .Where(i => i == null)
-            .ToListAsync();
-    }
-
     public async Task<IEnumerable<string>> MapIndex(IEnumerable<string> fromId, string type)
         => await context.IndexMappings
             .Where(i => i.Type == type)
