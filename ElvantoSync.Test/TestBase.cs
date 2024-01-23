@@ -1,16 +1,7 @@
-﻿using ElvantoSync.ElvantoApi.Models;
-using ElvantoSync.ElvantoService;
-using ElvantoSync.Nextcloud;
-using ElvantoSync.ElvantoApi;
-using ElvantoSync.ElvantoApi.Models;
-using ElvantoSync.ElvantoService;
-using Nextcloud.Interfaces;
-using Nextcloud.Models.Provisioning;
-using Microsoft.Extensions.Configuration;
+﻿using ElvantoSync.Nextcloud;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
 using Nextcloud.Extensions;
-using NextcloudApi;
+using Nextcloud.Tests;
 
 namespace ElvantoSync.Tests;
 

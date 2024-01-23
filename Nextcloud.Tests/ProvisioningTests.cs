@@ -22,7 +22,7 @@ public class ProvisioningTests : TestBase
         testUserProps = new CreateUserRequest
         {
             UserId = "test",
-            DisplayName = "test",
+            DisplayName = "DisplayName",
             Email = "test@example.org",
             Groups = ["admin"],
             Subadmin = [testGroup],

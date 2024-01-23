@@ -20,6 +20,7 @@ class Program
     {
         var settings = new ConfigurationBuilder()
             .AddUserSecrets<Program>()
+            .AddJsonFile("appsettings.json", optional: true)
             .AddEnvironmentVariables()
             .Build()
             .Get<Settings>();

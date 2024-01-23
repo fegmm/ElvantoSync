@@ -7,13 +7,14 @@ using ElvantoSync.ElvantoService;
 using ElvantoSync.ElvantoApi.Models;
 using Moq;
 using Nextcloud.Models.Provisioning;
+using Nextcloud.Tests;
 
 
 namespace ElvantoSync.Tests;
 
 [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
 
-public class PeopleToNextcloudSyncTests:TestBase
+public class PeopleToNextcloudSyncTests : TestBase
 {
     private Mock<IElvantoClient> _elvantoClientMock;
     private ISync _peopleToNextcloudSync;
@@ -23,58 +24,73 @@ public class PeopleToNextcloudSyncTests:TestBase
     public PeopleToNextcloudSyncTests() : base()
     {
 
-        _serviceProvider = BuildServiceProvider();  
-        
-      
-      
-        client = _serviceProvider.GetService<INextcloudProvisioningClient>();
+        _serviceProvider = BuildServiceProvider();
+
+
+
+        client = _serviceProvider.GetRequiredService<INextcloudProvisioningClient>();
     }
 
 
     protected override void ConfigureServices(NextcloudContainer nextcloud)
     {
         base.ConfigureServices(nextcloud);
-        _elvantoClientMock = new Mock<IElvantoClient>();    
-        Services.AddTransient<IElvantoClient>(x => _elvantoClientMock.Object);   
+        _elvantoClientMock = new Mock<IElvantoClient>();
+        Services.AddTransient<IElvantoClient>(x => _elvantoClientMock.Object);
     }
 
     [Fact, Priority(0)]
     public override async Task ApplyAsync_ShouldAddNewPersonsFromElvanto()
     {
 
-        var people = new List<Person> { new Person { Id = "1", Firstname ="Test", Lastname="Tester",Email = "MyEmail"  }, new Person { Id = "2", Firstname ="Test", Lastname="Tester",Email = "MyEmail" } };
-        _elvantoClientMock.Setup(x => x.PeopleGetAllAsync(It.IsAny<GetAllPeopleRequest>()))
-            .ReturnsAsync(new PeopleGetAllResponse { People = new People { Person = people.ToArray() } });
-        // Act
-        _peopleToNextcloudSync =  _serviceProvider.GetService<PeopleToNextcloudSync>();
-        await _peopleToNextcloudSync.ApplyAsync();
-        var result = await client.GetUsers();   
-        // Assert
-        
-        Assert.True(result.Where(x => x.DisplayName.Contains(people.First().Lastname)).Any());
-        Assert.True(result.Where(x => x.DisplayName.Contains(people.Last().Firstname)).Any());
-        Assert.True(result.
-        Where(x => x.DisplayName.Contains(people.Last().Firstname))
-        .Select(x => x.Email.ToLower().Equals(people.Last().Email.ToLower())
-        ).Any());
+        IEnumerable<Person> people = [
+            new Person { Id = "1", Firstname = "Test", Lastname = "Tester", Email = "myemail@example.org" },
+            new Person { Id = "2", Firstname = "Test", Lastname = "Tester", Email = "myemail@example.org" }
+        ];
 
+        _elvantoClientMock
+            .Setup(x => x.PeopleGetAllAsync(It.IsAny<GetAllPeopleRequest>()))
+            .ReturnsAsync(new PeopleGetAllResponse
+            {
+                People = new People
+                {
+                    Person = people.ToArray()
+                }
+            });
+
+        // Act
+        _peopleToNextcloudSync = _serviceProvider.GetRequiredService<PeopleToNextcloudSync>();
+        await _peopleToNextcloudSync.ApplyAsync();
+        var result = await client.GetUsers();
+        
+        // Assert
+        var users = result.Where(i => i.Id != "admin").ToArray();
+        users.Should().HaveCount(people.Count());
+        foreach (var user in users)
+        {
+            user.DisplayName.Should().NotBeNullOrEmpty();
+            user.DisplayName.Should().ContainAny(people.Select(x => x.Firstname));
+            user.DisplayName.Should().ContainAny(people.Select(x => x.Lastname));
+            user.Email.Should().NotBeNullOrEmpty();
+            user.Email.Should().ContainAny(people.Select(x => x.Email));
+        }
     }
 
-      [Fact, Priority(0)]
+    [Fact, Priority(0)]
     public override async Task ApplyAsync_ShouldNotAddIfNoNewPerson()
     {
 
-        var people = new List<Person> { new Person { Id = "1", Firstname ="Test", Lastname="Tester",Email = "MyEmail"  }, new Person { Id = "2", Firstname ="Test", Lastname="Tester",Email = "MyEmail" } };
+        var people = new List<Person> { new Person { Id = "1", Firstname = "Test", Lastname = "Tester", Email = "MyEmail@example.org" }, new Person { Id = "2", Firstname = "Test", Lastname = "Tester", Email = "MyEmail" } };
         _elvantoClientMock.Setup(x => x.PeopleGetAllAsync(It.IsAny<GetAllPeopleRequest>()))
             .ReturnsAsync(new PeopleGetAllResponse { People = new People { Person = people.ToArray() } });
-        _peopleToNextcloudSync =  _serviceProvider.GetService<PeopleToNextcloudSync>();
+        _peopleToNextcloudSync = _serviceProvider.GetService<PeopleToNextcloudSync>();
         await _peopleToNextcloudSync.ApplyAsync();
-        var initialApply = await client.GetUsers();   
+        var initialApply = await client.GetUsers();
         // Act
         await _peopleToNextcloudSync.ApplyAsync();
-        var secondApply = await client.GetUsers();   
+        var secondApply = await client.GetUsers();
         // Assert
-   
+
 
         Assert.True(initialApply.Where(x => !x.DisplayName.Equals("admin"))
         .SequenceEqual(secondApply.Where(x => !x.DisplayName.Equals("admin"))));
@@ -82,7 +98,7 @@ public class PeopleToNextcloudSyncTests:TestBase
     }
 
 
-   
+
 
 
     // Similar tests can be written for GetToAsync, AddMissingAsync, RemoveAdditionalAsync and IsActive methods.
