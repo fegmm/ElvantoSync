@@ -3,11 +3,11 @@ using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.Infrastructure.Nextcloud;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
+using Microsoft.Extensions.Logging;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.Circles;
 using Nextcloud.Models.Collectives;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace ElvantoSync.Nextcloud;
@@ -18,11 +18,14 @@ class GroupsToCollectivesSync(
     INextcloudCircleClient circleRepo,
     DbContext dbContext,
     GroupsToCollectiveSyncSettings settings,
-    GroupsToNextcloudSyncSettings groupSettings
-) : MappedSync<Group, Collective>(dbContext, settings)
+    GroupsToNextcloudSyncSettings groupSettings,
+    ILogger<GroupsToCollectivesSync> logger
+) : Sync<Group, Collective>(dbContext, settings, logger)
 {
     public override string FromKeySelector(Group i) => i.Id;
     public override string ToKeySelector(Collective i) => i.Id.ToString();
+    public override string FallbackFromKeySelector(Group i) => i.Name;
+    public override string FallbackToKeySelector(Collective i) => i.Name;
 
     public override async Task<IEnumerable<Group>> GetFromAsync()
         => (await elvanto.GroupsGetAllAsync(new GetAllRequest())).Groups.Group;
@@ -30,28 +33,24 @@ class GroupsToCollectivesSync(
     public override async Task<IEnumerable<Collective>> GetToAsync()
         => await collectivesRepo.GetCollectives();
 
-    public override async Task AddMissingAsync(IEnumerable<Group> missing)
+    protected override async Task<string> AddMissing(Group group)
     {
-        var createCollectivesWithMembersTasks = missing.Select(async group =>
-        {
-            var createdCollective = await collectivesRepo.CreateCollective(group.Name);
-            await circleRepo.AddMemberToCircle(createdCollective.CircleId, group.Name, MemberTypes.Group);
-            string leaderGroupName = group.Name + groupSettings.GroupLeaderSuffix;
-            var leaderMemberId = await circleRepo.AddMemberToCircle(createdCollective.CircleId, leaderGroupName, MemberTypes.Group);
-            await circleRepo.SetMemberLevel(createdCollective.CircleId, leaderMemberId, MemberLevels.Admin);
-        });
-        await Task.WhenAll(createCollectivesWithMembersTasks);
+        var createdCollective = await collectivesRepo.CreateCollective(group.Name);
+        await circleRepo.AddMemberToCircle(createdCollective.CircleId, group.Name, MemberTypes.Group);
+        string leaderGroupName = group.Name + groupSettings.GroupLeaderSuffix;
+        var leaderMemberId = await circleRepo.AddMemberToCircle(createdCollective.CircleId, leaderGroupName, MemberTypes.Group);
+        await circleRepo.SetMemberLevel(createdCollective.CircleId, leaderMemberId, MemberLevels.Admin);
+        return ToKeySelector(createdCollective);
     }
 
-    public override async Task ApplyUpdate(IEnumerable<(Group, Collective)> matches)
+    protected override async Task RemoveAdditional(Collective collective)
+        => await collectivesRepo.DeleteCollective(collective.Id);
+
+    protected override async Task UpdateMatch(Group group, Collective collective)
     {
-        await Task.WhenAll(matches.Select(async match =>
+        if (group.Name != collective.Name)
         {
-            var (group, collective) = match;
-            if (group.Name != collective.Name)
-            {
-                await collectivesRepo.SetDisplayName(collective.CircleId, group.Name);
-            }
-        }));
+            await collectivesRepo.SetDisplayName(collective.CircleId, group.Name);
+        }
     }
 }

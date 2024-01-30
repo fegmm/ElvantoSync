@@ -40,4 +40,17 @@ internal class NextcloudDeckClient(HttpClient client) : INextcloudDeckClient
         var response = await client.PostAsJsonAsync($"index.php/apps/deck/api/v1.1/boards/{boardId}/acl", reqBody, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task DeleteBoard(int boardId)
+    {
+        var response = await client.DeleteAsync($"index.php/apps/deck/api/v1.1/boards/{boardId}");
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task SetDisplayName(int boardId, string name)
+    {
+        var reqBody = new { title = name };
+        var response = await client.PutAsJsonAsync($"index.php/apps/deck/api/v1.1/boards/{boardId}", reqBody);
+        response.EnsureSuccessStatusCode();
+    }
 }

@@ -40,7 +40,7 @@ class Program
         return new ServiceCollection()
             .AddSingleton<ILogger>(ConfigureLogging())
             .AddOptions()
-            .AddSyncOptions()
+            .AddApplicationOptions()
             .AddSingleton<ElvantoApi.Client>(elvanto)
             .AddSingleton<KasApi.Client>(kas)
             .AddTransient<ISync, GroupsToCollectivesSync>()
@@ -63,7 +63,7 @@ class Program
     {
         var services = provider.GetServices<ISync>()
         .Where(service => service.IsActive)
-        .Select(service => service.ApplyAsync());
+        .Select(service => service.Apply());
         await Task.WhenAll(services);
     }
     private static ILogger ConfigureLogging()

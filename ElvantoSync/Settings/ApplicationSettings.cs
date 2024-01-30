@@ -2,6 +2,8 @@
 
 internal record ApplicationSettings
 {
+    internal const string ConfigSection = "Application";
+
     public string ConnectionString { get; set; } = "Data Source=ElvantoSync.db";
     public string ElvantoKey { get; init; }
     public string KASLogin { get; init; }

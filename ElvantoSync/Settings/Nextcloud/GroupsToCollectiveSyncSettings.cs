@@ -1,5 +1,6 @@
 ﻿namespace ElvantoSync.Settings.Nextcloud;
 
-internal record GroupsToCollectiveSyncSettings : MappedSyncSettings
+internal record GroupsToCollectiveSyncSettings : SyncSettings
 {
+    internal const string ConfigSection = "Sync:Nextcloud:GroupsToCollectiveSync";
 }

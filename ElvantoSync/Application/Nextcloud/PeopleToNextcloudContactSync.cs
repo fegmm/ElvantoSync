@@ -1,6 +1,8 @@
 ﻿using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
+using Microsoft.Extensions.Logging;
 using MixERP.Net.VCards;
 using MixERP.Net.VCards.Models;
 using MixERP.Net.VCards.Serializer;
@@ -15,13 +17,18 @@ namespace ElvantoSync.Nextcloud;
 
 class PeopleToNextcloudContactSync(
     Client elvanto,
-    PeopleToContactSyncSettings settings,
     PeopleToNextcloudSyncSettings peopleSettings,
-    WebDavClient nextcloud_webdav
-) : Sync<Person, WebDavResource>(settings)
+    WebDavClient nextcloud_webdav,
+    HttpClient img_client,
+    DbContext dbContext,
+    PeopleToContactSyncSettings settings,
+    ILogger<PeopleToNextcloudContactSync> logger
+) : Sync<Person, WebDavResource>(dbContext, settings, logger)
 {
-    public override string FromKeySelector(Person i) => $"Elvanto-{i.Id}";
-    public override string ToKeySelector(WebDavResource i) => i.Uri.Split("/")[^1].Replace(".vcf", "");
+    public override string FromKeySelector(Person i) => i.Id;
+    public override string ToKeySelector(WebDavResource i) => i.Uri;
+    public override string FallbackFromKeySelector(Person i) => $"{i.Lastname}, {i.Firstname}";
+    public override string FallbackToKeySelector(WebDavResource i) => i.DisplayName;
 
     public override async Task<IEnumerable<Person>> GetFromAsync()
         => (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest())).People.Person;
@@ -30,46 +37,72 @@ class PeopleToNextcloudContactSync(
     {
         var contact_response = await nextcloud_webdav.Propfind("remote.php/dav/addressbooks/users/Administrator/default/");
         return contact_response.Resources.Where(i => ToKeySelector(i).Contains(peopleSettings.IdPrefix));
-        //.Where(i => !people.ContainsKey(i.Key) || DateTime.Parse(people[i.Key].Date_modified) < i.Value.LastModifiedDate.Value.ToUniversalTime());
     }
 
-    public override async Task AddMissingAsync(IEnumerable<Person> missing)
+    protected override async Task<string> AddMissing(Person person)
     {
-        using var img_client = new HttpClient();
-        var images = (await Task.WhenAll(
-            missing.Select(async i => (peopleSettings.IdPrefix + i.Id, new Photo(
-                true,
-                i.Picture.Split('.')[^1],
-                Convert.ToBase64String(
-                    await img_client.GetByteArrayAsync(i.Picture)
-                )
-            )))
-        )).ToDictionary(i => i.Item1, i => i.Item2);
+        VCard vcard = await PersonToVCard(person);
 
-        var res = await Task.WhenAll(
-            missing.Select(item => nextcloud_webdav.PutFile($"remote.php/dav/addressbooks/users/Administrator/default/{peopleSettings.IdPrefix + item.Id}.vcf", new StringContent(new VCard()
-            {
-                Version = MixERP.Net.VCards.Types.VCardVersion.V4,
-                FirstName = item.Firstname,
-                LastName = item.Lastname,
-                MiddleName = item.Middle_name,
-                FormattedName = $"{item.Lastname}, {item.Firstname}",
-                Emails = new[] { new Email() { EmailAddress = item.Email, Type = MixERP.Net.VCards.Types.EmailType.Smtp } },
-                Telephones = new[] {
-                    new Telephone() { Number = item.Phone, Type = MixERP.Net.VCards.Types.TelephoneType.Home},
-                    new Telephone() {Number= item.Mobile, Type = MixERP.Net.VCards.Types.TelephoneType.Cell}
-                }.Where(i => !string.IsNullOrWhiteSpace(i.Number)),
-                Photo = images["Elvnato-" + item.Id].Extension != "svg" ? images["Elvnato-" + item.Id] : null,
-                BirthDay = DateTime.TryParse(item.Birthday, out var bday) ? bday : null
-            }.Serialize())))
-        );
+        string uri = $"remote.php/dav/addressbooks/users/Administrator/default/{peopleSettings.IdPrefix + person.Id}.vcf";
+        var res = await nextcloud_webdav.PutFile(uri, new StringContent(vcard.Serialize()));
+        if (!res.IsSuccessful)
+        {
+            throw new Exception($"Add WebDav contact returned non success code {res.StatusCode} with message: {res.Description}");
+        }
+
+        return uri;
     }
 
-    public async override Task RemoveAdditionalAsync(IEnumerable<WebDavResource> additionals)
+    protected async override Task RemoveAdditional(WebDavResource additional)
     {
-        await Task.WhenAll(additionals
-            .Where(i => !i.IsCollection)
-            .Select(i => nextcloud_webdav.Delete(i.Uri))
-        );
+        if (additional.IsCollection)
+        {
+            return;
+        }
+
+        var res = await nextcloud_webdav.Delete(additional.Uri);
+        if (!res.IsSuccessful)
+        {
+            throw new Exception($"Delete WebDav contact returned non success code {res.StatusCode} with message: {res.Description}");
+        }
+    }
+
+    protected override async Task UpdateMatch(Person person, WebDavResource vCard)
+    {
+        if (DateTime.Parse(person.Date_modified) <= vCard.LastModifiedDate)
+        {
+            return;
+        }
+
+        var vcard = await PersonToVCard(person);
+
+        var res = await nextcloud_webdav.PutFile(vCard.Uri, new StringContent(vcard.Serialize()));
+        if (!res.IsSuccessful)
+        {
+            throw new Exception($"Update WebDav contact returned non success code {res.StatusCode} with message: {res.Description}");
+        }
+    }
+
+    private async Task<VCard> PersonToVCard(Person person)
+    {
+        byte[] personPhoto = await img_client.GetByteArrayAsync(person.Picture);
+        string photoExtension = person.Picture.Split('.')[^1];
+        var photo = new Photo(true, photoExtension, Convert.ToBase64String(personPhoto));
+
+        return new VCard()
+        {
+            Version = MixERP.Net.VCards.Types.VCardVersion.V4,
+            FirstName = person.Firstname,
+            LastName = person.Lastname,
+            MiddleName = person.Middle_name,
+            FormattedName = $"{person.Lastname}, {person.Firstname}",
+            Emails = new[] { new Email() { EmailAddress = person.Email, Type = MixERP.Net.VCards.Types.EmailType.Smtp } },
+            Telephones = (new[] {
+                            new Telephone() { Number = person.Phone, Type = MixERP.Net.VCards.Types.TelephoneType.Home},
+                            new Telephone() { Number= person.Mobile, Type = MixERP.Net.VCards.Types.TelephoneType.Cell}
+                    }).Where(i => !string.IsNullOrWhiteSpace(i.Number)),
+            Photo = photo.Extension != "svg" ? photo : null,
+            BirthDay = DateTime.TryParse(person.Birthday, out var bday) ? bday : null
+        };
     }
 }

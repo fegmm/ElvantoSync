@@ -1,11 +1,14 @@
 using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
+using Microsoft.Extensions.Logging;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.Provisioning;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace ElvantoSync.Nextcloud;
@@ -13,11 +16,15 @@ namespace ElvantoSync.Nextcloud;
 class PeopleToNextcloudSync(
     Client elvanto,
     INextcloudProvisioningClient provisioningClient,
-    PeopleToNextcloudSyncSettings settings
-) : Sync<Person, User>(settings)
+    DbContext dbContext,
+    PeopleToNextcloudSyncSettings settings,
+    ILogger<PeopleToNextcloudSync> logger
+) : Sync<Person, User>(dbContext, settings, logger)
 {
-    public override string FromKeySelector(Person i) => settings.IdPrefix + i.Id;
+    public override string FromKeySelector(Person i) => i.Id;
     public override string ToKeySelector(User i) => i.Id;
+    public override string FallbackFromKeySelector(Person i) => (GetDisplayName(i), i.Email).ToString();
+    public override string FallbackToKeySelector(User i) => (i.DisplayName, i.Email).ToString();
 
     public override async Task<IEnumerable<Person>> GetFromAsync() =>
         (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest())).People.Person;
@@ -28,27 +35,37 @@ class PeopleToNextcloudSync(
         return users.Where(i => i.Id.StartsWith(settings.IdPrefix));
     }
 
-    public override async Task AddMissingAsync(IEnumerable<Person> missing)
-    {
-        var requests = missing.Select(i => provisioningClient.CreateUser(new CreateUserRequest()
+    protected override async Task<string> AddMissing(Person person)
+        => await provisioningClient.CreateUser(new CreateUserRequest()
         {
-            UserId = settings.IdPrefix + i.Id,
-            DisplayName = $"{i.Lastname}, {i.Firstname}",
-            Email = i.Email,
+            UserId = settings.IdPrefix + person.Id,
+            DisplayName = GetDisplayName(person),
+            Email = person.Email,
             Password = Guid.NewGuid().ToString(),
             Quota = settings.Quoata
-        }));
+        });
 
-        await Task.WhenAll(requests);
-    }
 
-    public async override Task RemoveAdditionalAsync(IEnumerable<User> additionals)
+    protected async override Task RemoveAdditional(User user)
     {
-        var deleteEmptyUsers = additionals
-            .Where(i => i.Quota.Used == 0)
-            .Select(i => provisioningClient.DeleteUser(i.Id));
-
-        await Task.WhenAll(deleteEmptyUsers);
+        if (user.Quota.Used != 0)
+        {
+            logger.LogWarning("User {0} cannot be removed as contains {1} bytes of data.", user.Id, user.Quota.Used);
+            // TODO: Stop mapping deltion
+        }
+        await provisioningClient.DeleteUser(user.Id);
     }
 
+    protected override async Task UpdateMatch(Person person, User user)
+    {
+        var request = new EditUserRequest()
+        {
+            DisplayName = GetDisplayName(person) == user.DisplayName ? null : GetDisplayName(person),
+            Email = person.Email == user.Email ? null : user.Email,
+            Phone = person.Mobile == user.Phone ? null : person.Mobile
+        };
+        await provisioningClient.EditUser(user.Id, request);
+    }
+
+    private static string GetDisplayName(Person i) => $"{i.Lastname}, {i.Firstname}";
 }

@@ -1,5 +1,7 @@
 ﻿using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Elvanto;
+using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,16 +10,21 @@ namespace ElvantoSync.Elvanto;
 
 class DepartementsToGroupMemberSync(
     ElvantoApi.Client elvanto,
-    DepartementsToGroupMemberSyncSettings settings
-) : Sync<(Person person, string departement), (GroupMember member, string group)>(settings)
+    DbContext dbContext,
+    DepartementsToGroupMemberSyncSettings settings,
+    ILogger<DepartementsToGroupMemberSync> logger
+) : Sync<(Person person, Group group), (GroupMember member, Group group)>(dbContext, settings, logger)
 {
-    public override string FromKeySelector((Person person, string departement) i) => (i.person.Id, i.departement).ToString();
-    public override string ToKeySelector((GroupMember member, string group) i) => (i.member.Id, i.group).ToString();
+    public override string FromKeySelector((Person person, Group group) i) => (i.person.Id, i.group.Id).ToString();
+    public override string ToKeySelector((GroupMember member, Group group) i) => (i.member.Id, i.group.Id).ToString();
+    public override string FallbackFromKeySelector((Person person, Group group) i) => (i.person.Id, i.group.Name).ToString();
+    public override string FallbackToKeySelector((GroupMember member, Group group) i) => (i.member.Id, i.group.Name).ToString();
 
-    public override async Task<IEnumerable<(Person, string)>> GetFromAsync()
+    public override async Task<IEnumerable<(Person, Group)>> GetFromAsync()
     {
         var response = await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest() { Fields = ["departments"] });
         var groups = await elvanto.GroupsGetAllAsync(new GetAllRequest());
+        var groupNameToGroup = groups.Groups.Group.ToDictionary(i => i.Name);
 
         return response.People.Person
             .Where(i => i.Departments != null)
@@ -29,10 +36,11 @@ class DepartementsToGroupMemberSync(
                 .Concat(person.Departments.Department.Select(department => (person, department.Name)))
             )
             .Distinct()
-            .Where(i => groups.Groups.Group.Any(j => j.Name == i.Name));
+            .Where(i => groups.Groups.Group.Any(j => j.Name == i.Name))
+            .Select(i => (i.person, groupNameToGroup[i.Name]));
     }
 
-    public override async Task<IEnumerable<(GroupMember member, string group)>> GetToAsync()
+    public override async Task<IEnumerable<(GroupMember member, Group group)>> GetToAsync()
     {
         var departments = new HashSet<string>((await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest() { Fields = ["departments"] })).People.Person
             .Where(i => i.Departments != null)
@@ -50,24 +58,18 @@ class DepartementsToGroupMemberSync(
             .Where(i => i.People != null && i.People.Person != null)
             .Where(i => departments.Contains(i.Name))
             .SelectMany(group => group.People.Person
-                .Select(member => (member, group.Name))
+                .Select(member => (member, group))
             );
     }
 
-    public override async Task AddMissingAsync(IEnumerable<(Person person, string departement)> missing)
+    protected override async Task<string> AddMissing((Person person, Group group) missing)
     {
-        var response = await elvanto.GroupsGetAllAsync(new GetAllRequest());
-        var nameToIdDict = response.Groups.Group.ToDictionary(i => i.Name, i => i.Id);
-        var count = missing.Where(i => nameToIdDict.ContainsKey(i.departement));
-
-        await Task.WhenAll(missing.Where(i => nameToIdDict.ContainsKey(i.departement))
-                                  .Select(i => elvanto.GroupsAddPersonAsync(nameToIdDict[i.departement], i.person.Id)));
+        await elvanto.GroupsAddPersonAsync(missing.group.Id, missing.person.Id);
+        return FromKeySelector(missing);
     }
 
-    public override async Task RemoveAdditionalAsync(IEnumerable<(GroupMember member, string group)> additionals)
+    protected override async Task RemoveAdditional((GroupMember member, Group group) additional)
     {
-        var response = await elvanto.GroupsGetAllAsync(new GetAllRequest());
-        var nameToIdDict = response.Groups.Group.ToDictionary(i => i.Name, i => i.Id);
-        await Task.WhenAll(additionals.Select(i => elvanto.GroupsRemovePersonAsync(nameToIdDict[i.group], i.member.Id)));
+        await elvanto.GroupsRemovePersonAsync(additional.group.Id, additional.member.Id);
     }
 }
