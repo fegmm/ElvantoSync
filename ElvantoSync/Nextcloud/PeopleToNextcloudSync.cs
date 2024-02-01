@@ -14,9 +14,6 @@ public class PeopleToNextcloudSync(IElvantoClient elvanto, INextcloudProvisionin
 {
     readonly Random random = new Random();
 
-
-
-
     public override async Task<Dictionary<string, Person>> GetFromAsync()
     {
        return (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest()))

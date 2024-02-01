@@ -2,6 +2,7 @@
 using ElvantoSync.Elvanto;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Nextcloud;
+using KasApi;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -44,7 +45,7 @@ class Program
             .AddSingleton<Settings>(settings)
             .AddSingleton<ElvantoApi.Client>(elvanto)
             .AddSingleton<IElvantoClient, ExternalClientWrapper>()
-            .AddSingleton<KasApi.Client>(kas)
+            .AddSingleton<IKasClient>(kas)
             .AddNextCloudSync()
             .AddNextcloudClients(settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword, nameof(ElvantoSync))
             .BuildServiceProvider();

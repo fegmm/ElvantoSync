@@ -1,4 +1,6 @@
 ﻿using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.ElvantoService;
+using KasApi;
 using KasApi.Requests;
 using KasApi.Response;
 using System;
@@ -9,7 +11,7 @@ using static ElvantoSync.AllInkl.GroupsToEmailSync;
 
 namespace ElvantoSync.AllInkl;
 
-internal class GroupMembersToMailForwardMemberSync(ElvantoApi.Client elvanto, KasApi.Client kas, Settings settings) : Sync<(string groupName, string userMail), GroupMember, MailForward>(settings)
+internal class GroupMembersToMailForwardMemberSync(IElvantoClient elvanto, IKasClient kas, Settings settings) : Sync<(string groupName, string userMail), GroupMember, MailForward>(settings)
 {
     public override async Task<Dictionary<(string groupName, string userMail), GroupMember>> GetFromAsync()
     {

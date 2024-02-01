@@ -1,4 +1,6 @@
 ﻿using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.ElvantoService;
+using KasApi;
 using KasApi.Requests;
 using KasApi.Response;
 using MigraDoc.DocumentObjectModel;
@@ -11,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync.AllInkl;
 
-internal class GroupsToEmailSync(ElvantoApi.Client elvanto, NextcloudApi.Api nextcloud, KasApi.Client kas, Settings settings) : Sync<string, Group, MailForward>(settings)
+internal class GroupsToEmailSync(IElvantoClient elvanto, NextcloudApi.Api nextcloud, IKasClient kas, Settings settings) : Sync<string, Group, MailForward>(settings)
 {
     public override async Task<Dictionary<string, Group>> GetFromAsync()
     {
