@@ -1,6 +1,7 @@
 ﻿using ElvantoSync.Application;
+using ElvantoSync.Application.Nextcloud;
 using ElvantoSync.ElvantoApi.Models;
-using ElvantoSync.Nextcloud;
+using ElvantoSync.Settings;
 using KasApi;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -14,7 +15,7 @@ public abstract class TestBase : IAsyncLifetime
     public abstract Task ApplyAsync_ShouldAddNewElementFromElvanto();
     public abstract Task ApplyAsync_ShouldNotAddIfNoNewElement();
 
-    protected Settings Settings;
+    protected ApplicationSettings Settings;
     private readonly NextcloudContainer nextcloud;
     protected Mock<ElvantoService.IElvantoClient> _elvantoClientMock;
     protected ServiceCollection Services { get; private set; }
@@ -32,12 +33,6 @@ public abstract class TestBase : IAsyncLifetime
     protected IServiceProvider BuildServiceProvider()
     {
         return Services.BuildServiceProvider();
-    }
-
-    protected async Task setUpProvisioning(){
-          var _groupsToNextcloudSync = fetchSyncImplementation<GroupsToNextcloudSync>(_serviceProvider);
-          
-        await _groupsToNextcloudSync.ApplyAsync();
     }
 
     protected IEnumerable<Person> setUpPeopleMock()
@@ -100,11 +95,11 @@ new Person { Id = "7", Firstname = "Casey", Lastname = "Kim", Email = "caseyk@ex
 
     protected virtual void ConfigureServices(NextcloudContainer nextcloud)
     {
-        Settings = new Settings("./TestPath", null, null, null, null, null, null, null,"Leader",null);
+        Settings = new ApplicationSettings("./TestPath", null, null, null, null, null, null, null,"Leader",null);
        // Services.AddSingleton<PeopleToNextcloudSync>();
         Services.AddNextCloudSync();
         Services.AddSingleton<IKasClient >(new Mock<IKasClient>().Object);
-        Services.AddSingleton<Settings>(Settings);
+        Services.AddSingleton<ApplicationSettings>(Settings);
         Services.AddNextcloudClients(nextcloud.NextcloudUrl, "admin", "StrongPassword123!", "elvatnosync/1.0");
 
     }
