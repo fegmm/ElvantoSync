@@ -2,12 +2,13 @@
 using Microsoft.Extensions.DependencyInjection;
 using Nextcloud.Interfaces;
 using Xunit.Priority;
-using ElvantoSync.Nextcloud;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.ElvantoApi.Models;
 using Moq;
 using Nextcloud.Models.Provisioning;
 using Nextcloud.Tests;
+using ElvantoSync.Application.Nextcloud;
+using ElvantoSync.Application;
 
 
 namespace ElvantoSync.Tests;

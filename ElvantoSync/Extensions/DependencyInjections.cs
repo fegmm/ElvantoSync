@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
-using ElvantoSync.Nextcloud;
-using ElvantoSync;
-using ElvantoSync.Elvanto;
-using ElvantoSync.AllInkl;
+using ElvantoSync.Application.Nextcloud;
+using ElvantoSync.Application.Elvanto;
+using ElvantoSync.Application.AllInkl;
+using ElvantoSync.Application;
 
 public static class DependencyInjections
 {

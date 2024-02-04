@@ -3,9 +3,10 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-namespace ElvantoSync
+namespace ElvantoSync.Application
 {
-    public interface ISync{
+    public interface ISync
+    {
         public Task ApplyAsync();
         public bool IsActive();
     }
@@ -20,7 +21,7 @@ namespace ElvantoSync
         public virtual Task AddMissingAsync(Dictionary<TKey, TFrom> missing) => Task.CompletedTask;
         public virtual Task RemoveAdditionalAsync(Dictionary<TKey, TTo> additionals) => Task.CompletedTask;
         public virtual Task ApplyUpdate(IEnumerable<(TFrom, TTo)> matches) => Task.CompletedTask;
-       
+
 
         public async Task ApplyAsync()
         {
@@ -31,9 +32,9 @@ namespace ElvantoSync
             var matches = from.Where(i => to.ContainsKey(i.Key)).Select(i => (i.Value, to[i.Key]));
 
             System.IO.Directory.CreateDirectory(settings.OutputFolder);
-            await System.IO.File.WriteAllLinesAsync(System.IO.Path.Combine(settings.OutputFolder, this.GetType().Name + "-missings.txt"), missing.Keys.Select(i => i.ToString()));
-            await System.IO.File.WriteAllLinesAsync(System.IO.Path.Combine(settings.OutputFolder, this.GetType().Name + "-additionals.txt"), additional.Keys.Select(i => i.ToString())); 
-            
+            await System.IO.File.WriteAllLinesAsync(System.IO.Path.Combine(settings.OutputFolder, GetType().Name + "-missings.txt"), missing.Keys.Select(i => i.ToString()));
+            await System.IO.File.WriteAllLinesAsync(System.IO.Path.Combine(settings.OutputFolder, GetType().Name + "-additionals.txt"), additional.Keys.Select(i => i.ToString()));
+
             if (!settings.LogOnly)
             {
                 await AddMissingAsync(missing);

@@ -7,9 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using static ElvantoSync.AllInkl.GroupsToEmailSync;
+using static ElvantoSync.Application.AllInkl.GroupsToEmailSync;
 
-namespace ElvantoSync.AllInkl;
+namespace ElvantoSync.Application.AllInkl;
 
 internal class GroupMembersToMailForwardMemberSync(IElvantoClient elvanto, IKasClient kas, Settings settings) : Sync<(string groupName, string userMail), GroupMember, MailForward>(settings)
 {

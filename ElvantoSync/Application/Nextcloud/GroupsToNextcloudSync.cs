@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ElvantoSync.Nextcloud;
+namespace ElvantoSync.Application.Nextcloud;
 
 public class GroupsToNextcloudSync(IElvantoClient elvanto, INextcloudProvisioningClient provisioningClient, Settings settings)
     : Sync<string, ElvantoApi.Models.Group, Group>(settings)

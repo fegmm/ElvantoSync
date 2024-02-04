@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ElvantoSync.Nextcloud;
+namespace ElvantoSync.Application.Nextcloud;
 
 class GroupsToDeckSync(IElvantoClient elvanto, INextcloudDeckClient deckClient, Settings settings) : Sync<string, string, Board>(settings)
 {

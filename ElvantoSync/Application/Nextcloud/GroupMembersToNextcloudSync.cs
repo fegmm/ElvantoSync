@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ElvantoSync.Nextcloud;
+namespace ElvantoSync.Application.Nextcloud;
 
 class GroupMembersToNextcloudSync(IElvantoClient elvanto, INextcloudProvisioningClient provisioningClient, Settings settings)
     : Sync<(string group, string user), GroupMember, string>(settings)
@@ -45,7 +45,7 @@ class GroupMembersToNextcloudSync(IElvantoClient elvanto, INextcloudProvisioning
         var nextcloudGroups = await provisioningClient.GetGroups();
 
         foreach (var group in nextcloudGroups.Where(i => elvantoGroups.Contains(i.Id.Replace(Settings.GroupLeaderSuffix, ""))).Select(i => i.Id))
-            foreach (var user in (await provisioningClient.GetMembers(group)))
+            foreach (var user in await provisioningClient.GetMembers(group))
                 members.Add((group, user));
         return members.Where(i => i.user.Contains("Elvanto")).ToDictionary(i => i, i => i.group);
     }
