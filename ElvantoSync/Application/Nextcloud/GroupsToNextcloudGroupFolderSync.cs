@@ -7,7 +7,7 @@ using Nextcloud.Interfaces;
 using Nextcloud.Models.GroupFolders;
 using ElvantoSync.ElvantoService;
 
-namespace ElvantoSync.Nextcloud;
+namespace ElvantoSync.Application.Nextcloud;
 
 class GroupsToNextcloudGroupFolderSync(IElvantoClient elvanto, INextcloudGroupFolderClient groupFolderClient, Settings settings)
     : Sync<string, Group, GroupFolder>(settings)

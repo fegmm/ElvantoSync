@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ElvantoSync.Nextcloud;
+namespace ElvantoSync.Application.Nextcloud;
 
 public class PeopleToNextcloudSync(IElvantoClient elvanto, INextcloudProvisioningClient provisioningClient, Settings settings) : Sync<string, Person, User>(settings)
 {
@@ -16,8 +16,8 @@ public class PeopleToNextcloudSync(IElvantoClient elvanto, INextcloudProvisionin
 
     public override async Task<Dictionary<string, Person>> GetFromAsync()
     {
-       return (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest()))
-            .People.Person.ToDictionary(i => $"Elvanto-{i.Id}"); 
+        return (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest()))
+             .People.Person.ToDictionary(i => $"Elvanto-{i.Id}");
     }
     public override async Task<Dictionary<string, User>> GetToAsync()
     {
@@ -27,18 +27,19 @@ public class PeopleToNextcloudSync(IElvantoClient elvanto, INextcloudProvisionin
 
     public override async Task AddMissingAsync(Dictionary<string, Person> missing)
     {
- var requests = missing.Select(i => provisioningClient.CreateUser(new CreateUserRequest{
-           UserId = i.Key,
-           DisplayName = $"{i.Value.Lastname}, {i.Value.Firstname}",
-           Email = i.Value.Email,
-           Quota =  "1GB",
-           Password = Guid.NewGuid().ToString(),
+        var requests = missing.Select(i => provisioningClient.CreateUser(new CreateUserRequest
+        {
+            UserId = i.Key,
+            DisplayName = $"{i.Value.Lastname}, {i.Value.Firstname}",
+            Email = i.Value.Email,
+            Quota = "1GB",
+            Password = Guid.NewGuid().ToString(),
 
-            }));
+        }));
 
-await Task.WhenAll(requests);
+        await Task.WhenAll(requests);
 
-    } 
+    }
 
     public async override Task RemoveAdditionalAsync(Dictionary<string, User> additionals)
     {
@@ -53,5 +54,5 @@ await Task.WhenAll(requests);
         return settings.SyncNextcloudPeople;
     }
 
-   
+
 }

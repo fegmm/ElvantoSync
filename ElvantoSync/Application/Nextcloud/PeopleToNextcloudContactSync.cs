@@ -11,7 +11,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using WebDav;
 
-namespace ElvantoSync.Nextcloud
+namespace ElvantoSync.Application.Nextcloud
 {
     class PeopleToNextcloudContactSync(IElvantoClient elvanto, Settings settings, WebDavClient nextcloud_webdav) : Sync<string, Person, WebDavResource>(settings)
     {
@@ -43,7 +43,7 @@ namespace ElvantoSync.Nextcloud
                     )
                 )))
             )).ToDictionary(i => i.Key, i => i.Item2);
-            
+
             var res = await Task.WhenAll(
                 missing.Select(item => nextcloud_webdav.PutFile($"remote.php/dav/addressbooks/users/Administrator/default/{item.Key}.vcf", new StringContent(new VCard()
                 {
@@ -57,7 +57,7 @@ namespace ElvantoSync.Nextcloud
                         new Telephone() { Number = item.Value.Phone, Type = MixERP.Net.VCards.Types.TelephoneType.Home},
                         new Telephone() {Number= item.Value.Mobile, Type = MixERP.Net.VCards.Types.TelephoneType.Cell}
                     }.Where(i => !string.IsNullOrWhiteSpace(i.Number)),
-                    Photo = images[item.Key].Extension != "svg"?images[item.Key]:null,
+                    Photo = images[item.Key].Extension != "svg" ? images[item.Key] : null,
                     BirthDay = DateTime.TryParse(item.Value.Birthday, out var bday) ? bday : null
                 }.Serialize())))
             );
@@ -71,8 +71,8 @@ namespace ElvantoSync.Nextcloud
             );
         }
         public override bool IsActive()
-    {
-        return settings.SyncNextcloudContacts;
-    }
+        {
+            return settings.SyncNextcloudContacts;
+        }
     }
 }

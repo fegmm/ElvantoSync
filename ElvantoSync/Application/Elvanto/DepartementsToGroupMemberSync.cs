@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ElvantoSync.Elvanto;
+namespace ElvantoSync.Application.Elvanto;
 
 class DepartementsToGroupMemberSync(IElvantoClient elvanto, Settings settings) : Sync<(string personId, string groupName), Person, GroupMember>(settings)
 {

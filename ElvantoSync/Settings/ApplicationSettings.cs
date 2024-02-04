@@ -1,6 +1,6 @@
-﻿namespace ElvantoSync;
+﻿namespace ElvantoSync.Settings;
 
-public record Settings(
+public record ApplicationSettings(
     string OutputFolder,
     string ElvantoKey,
     string NextcloudServer,
@@ -23,5 +23,5 @@ public record Settings(
     bool SyncNextcloudGroupmembers = true,
     bool SyncNextcloudGroupfolders = true,
     bool SyncElvantoGroupsToKASMail = true
-   
+
 );

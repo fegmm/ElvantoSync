@@ -1,16 +1,21 @@
-﻿using ElvantoSync.AllInkl;
-using ElvantoSync.Elvanto;
+﻿using ElvantoSync.Application;
+using ElvantoSync.Application.AllInkl;
+using ElvantoSync.Application.Elvanto;
+using ElvantoSync.Application.Nextcloud;
+
+<<<<<<< HEAD
+using ElvantoSync.Extensions;
+
+=======
 using ElvantoSync.ElvantoService;
-using ElvantoSync.Nextcloud;
-using KasApi;
+>>>>>>> init commit
+using ElvantoSync.Settings.ApplicationSettings;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nextcloud.Extensions;
-using System;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace ElvantoSync;
@@ -21,10 +26,9 @@ class Program
     {
         var settings = new ConfigurationBuilder()
             .AddUserSecrets<Program>()
-            .AddJsonFile("appsettings.json", optional: true)
             .AddEnvironmentVariables()
             .Build()
-            .Get<Settings>();
+            .Get<ApplicationSettings>();
 
         var elvanto = new ElvantoApi.Client(settings.ElvantoKey);
         var kas = new KasApi.Client(new KasApi.Requests.AuthorizeHeader(
@@ -37,25 +41,42 @@ class Program
         await ExecuteSync(services);
     }
 
-    private static ServiceProvider BuildServiceProvider(Settings settings, ElvantoApi.Client elvanto, KasApi.Client kas)
+    private static ServiceProvider BuildServiceProvider(ApplicationSettings settings, ElvantoApi.Client elvanto, KasApi.Client kas)
     {
 
         return new ServiceCollection()
             .AddSingleton<ILogger>(ConfigureLogging())
-            .AddSingleton<Settings>(settings)
+            .AddOptions()
+            .AddApplicationOptions()
             .AddSingleton<ElvantoApi.Client>(elvanto)
             .AddSingleton<IElvantoClient, ExternalClientWrapper>()
-            .AddSingleton<IKasClient>(kas)
+            .AddSingleton<KasApi.Client>(kas)
+<<<<<<< HEAD
+            .AddTransient<ISync, GroupsToCollectivesSync>()
+            .AddTransient<ISync, PeopleToNextcloudSync>()
+            .AddSingleton<ISync, DepartementsToGroupMemberSync>()
+            .AddSingleton<ISync, PeopleToNextcloudContactSync>()
+            .AddSingleton<ISync, GroupsToNextcloudSync>()
+            .AddSingleton<ISync, GroupsToNextcloudGroupFolderSync>()
+            .AddSingleton<ISync, GroupsToDeckSync>()
+            .AddSingleton<ISync, GroupsToNextcloudGroupFolderSync>()
+            .AddSingleton<ISync, GroupsToEmailSync>()
+            .AddSingleton<ISync, GroupsToTalkSync>()
+            .AddNextcloud(settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword,nameof(ElvantoSync))
+            .AddDbContext<DbContext>(options =>
+                options.UseSqlite(settings.ConnectionString))
+=======
             .AddNextCloudSync()
             .AddNextcloudClients(settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword, nameof(ElvantoSync))
+>>>>>>> init commit
             .BuildServiceProvider();
     }
 
     private static async Task ExecuteSync(ServiceProvider provider)
     {
         var services = provider.GetServices<ISync>()
-        .Where(service => service.IsActive())
-        .Select(service => service.ApplyAsync());
+        .Where(service => service.IsActive)
+        .Select(service => service.Apply());
         await Task.WhenAll(services);
     }
     private static ILogger ConfigureLogging()

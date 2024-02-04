@@ -11,7 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ElvantoSync.AllInkl;
+namespace ElvantoSync.Application.AllInkl;
 
 internal class GroupsToEmailSync(IElvantoClient elvanto, NextcloudApi.Api nextcloud, IKasClient kas, Settings settings) : Sync<string, Group, MailForward>(settings)
 {
