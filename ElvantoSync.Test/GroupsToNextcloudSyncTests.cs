@@ -43,7 +43,7 @@ public class GroupsToNextcloudSyncTests : TestBase
     public override async Task ApplyAsync_ShouldAddNewElementFromElvanto()
     {
         
-        IEnumerable<ElvantoApi.Models.Group> groups = setUpGroupMock();
+        IEnumerable<ElvantoApi.Models.Group> groups = setUpGroupMock(setUpPeopleMock().ToArray());
         _groupsToNextcloudSync = fetchSyncImplementation<GroupsToNextcloudSync>(_serviceProvider);
         await _groupsToNextcloudSync.ApplyAsync();
 
@@ -68,7 +68,7 @@ public class GroupsToNextcloudSyncTests : TestBase
     public override async Task ApplyAsync_ShouldNotAddIfNoNewElement()
     {
 
-        IEnumerable<ElvantoApi.Models.Group> groups = setUpGroupMock();
+        IEnumerable<ElvantoApi.Models.Group> groups = setUpGroupMock(setUpPeopleMock().ToArray());
         _groupsToNextcloudSync = fetchSyncImplementation<GroupsToNextcloudSync>(_serviceProvider);
         await _groupsToNextcloudSync.ApplyAsync();
          var initialApply = await client.GetGroups();
@@ -85,7 +85,7 @@ public class GroupsToNextcloudSyncTests : TestBase
     public async Task ApplyAsync_ShouldAddLeaderGroup()
     {
 
-        IEnumerable<ElvantoApi.Models.Group> groups = setUpGroupMock();
+        IEnumerable<ElvantoApi.Models.Group> groups = setUpGroupMock(setUpPeopleMock().ToArray());
         _groupsToNextcloudSync = fetchSyncImplementation<GroupsToNextcloudSync>(_serviceProvider);
         await _groupsToNextcloudSync.ApplyAsync();
 

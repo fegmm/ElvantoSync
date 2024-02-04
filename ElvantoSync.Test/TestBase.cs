@@ -33,12 +33,21 @@ public abstract class TestBase : IAsyncLifetime
         return Services.BuildServiceProvider();
     }
 
+    protected async Task setUpProvisioning(){
+          var _groupsToNextcloudSync = fetchSyncImplementation<GroupsToNextcloudSync>(_serviceProvider);
+          
+        await _groupsToNextcloudSync.ApplyAsync();
+    }
+
     protected IEnumerable<Person> setUpPeopleMock()
     {
         IEnumerable<Person> people = new List<Person>
         {
-            new Person { Id = "1", Firstname = "Test", Lastname = "Tester", Email = "myemail@example.org" },
-            new Person { Id = "2", Firstname = "Test", Lastname = "Tester", Email = "myemail@example.org" }
+           new Person { Id = "3", Firstname = "Alex", Lastname = "Johnson", Email = "alexj@example.com" },
+           new Person { Id = "4", Firstname = "Chris", Lastname = "Smith", Email = "chriss@example.net" },
+new Person { Id = "5", Firstname = "Jordan", Lastname = "Brown", Email = "jordanb@example.org" },
+new Person { Id = "6", Firstname = "Jamie", Lastname = "Lee", Email = "jamiel@example.com" },
+new Person { Id = "7", Firstname = "Casey", Lastname = "Kim", Email = "caseyk@example.net" },
         };
 
         _elvantoClientMock
@@ -54,18 +63,23 @@ public abstract class TestBase : IAsyncLifetime
         return people;
     }
 
-    protected IEnumerable<Group> setUpGroupMock()
+    protected IEnumerable<Group> setUpGroupMock(Person[] person)
     {
        
 
-        // GroupMembers groupMembers = new GroupMembers
-        // {
-        //     Person = person.Select(x => new GroupMember { Id = x.Id, Firstname = x.Firstname, Lastname = x.Lastname, Email = x.Email}).ToArray()
-        // };
+        GroupMembers groupMembers = new GroupMembers
+        {
+            Person = person.Select(x => new GroupMember { Id = x.Id, Firstname = x.Firstname, Lastname = x.Lastname, Email = x.Email})
+            .Take(2)
+            .Select(x =>{ x.Position = "Assistant"; return x;}).ToArray()
+        };
+
+        groupMembers.Person.Take(2).Select(x => x.Position = "Leader");
+
         IEnumerable<Group> groups = new List<Group>
         {
-            new Group { Id = "1", Name = "Group 1"},
-            new Group { Id = "2", Name = "Group 2"}
+            new Group { Id = "1", Name = "Group 1", People = groupMembers},
+            new Group { Id = "2", Name = "Group 2", People = groupMembers}
         };
 
         _elvantoClientMock
