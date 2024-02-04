@@ -1,5 +1,6 @@
 ﻿using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.ElvantoService;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
@@ -16,7 +17,7 @@ using WebDav;
 namespace ElvantoSync.Nextcloud;
 
 class PeopleToNextcloudContactSync(
-    Client elvanto,
+    IElvantoClient elvanto,
     PeopleToNextcloudSyncSettings peopleSettings,
     WebDavClient nextcloud_webdav,
     HttpClient img_client,

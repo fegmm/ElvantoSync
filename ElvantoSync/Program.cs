@@ -1,7 +1,7 @@
-﻿using ElvantoSync.AllInkl;
-using ElvantoSync.Elvanto;
 using ElvantoSync.Extensions;
-using ElvantoSync.Nextcloud;
+using ElvantoSync.ElvantoService;
+using ElvantoSync.Settings.ApplicationSettings;
+using ElvantoSync.Extensions;
 using ElvantoSync.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -42,20 +42,11 @@ class Program
             .AddOptions()
             .AddApplicationOptions()
             .AddSingleton<ElvantoApi.Client>(elvanto)
+            .AddSingleton<IElvantoClient, ExternalClientWrapper>()
             .AddSingleton<KasApi.Client>(kas)
-            .AddTransient<ISync, GroupsToCollectivesSync>()
-            .AddTransient<ISync, PeopleToNextcloudSync>()
-            .AddSingleton<ISync, DepartementsToGroupMemberSync>()
-            .AddSingleton<ISync, PeopleToNextcloudContactSync>()
-            .AddSingleton<ISync, GroupsToNextcloudSync>()
-            .AddSingleton<ISync, GroupsToNextcloudGroupFolderSync>()
-            .AddSingleton<ISync, GroupsToDeckSync>()
-            .AddSingleton<ISync, GroupsToNextcloudGroupFolderSync>()
-            .AddSingleton<ISync, GroupsToEmailSync>()
-            .AddSingleton<ISync, GroupsToTalkSync>()
-            .AddNextcloud(settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword,nameof(ElvantoSync))
-            .AddDbContext<DbContext>(options =>
-                options.UseSqlite(settings.ConnectionString))
+            .AddSyncs()
+            .AddNextcloudClients(settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword, nameof(ElvantoSync))
+            .AddDbContext<DbContext>(options => options.UseSqlite(settings.ConnectionString))
             .BuildServiceProvider();
     }
 

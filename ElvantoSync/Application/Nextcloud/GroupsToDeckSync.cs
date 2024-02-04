@@ -1,5 +1,6 @@
-﻿using ElvantoSync.ElvantoApi;
+using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.ElvantoService;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
@@ -12,7 +13,7 @@ using System.Threading.Tasks;
 namespace ElvantoSync.Nextcloud;
 
 class GroupsToDeckSync(
-    Client elvanto,
+    IElvantoClient elvanto,
     INextcloudDeckClient deckClient,
     DbContext dbContext,
     GroupsToDeckSyncSettings settings,

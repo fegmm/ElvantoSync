@@ -1,4 +1,5 @@
-﻿using ElvantoSync.Extensions;
+using ElvantoSync.ElvantoService;
+using ElvantoSync.Extensions;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
@@ -11,7 +12,7 @@ using System.Threading.Tasks;
 namespace ElvantoSync.Nextcloud;
 
 class GroupsToNextcloudSync(
-    ElvantoApi.Client elvanto,
+    IElvantoClient elvanto,
     INextcloudProvisioningClient provisioningClient,
     DbContext dbContext,
     PeopleToNextcloudSyncSettings peopleSettings,

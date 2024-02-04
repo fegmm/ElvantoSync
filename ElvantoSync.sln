@@ -10,6 +10,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nextcloud", "Nextcloud\Next
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nextcloud.Tests", "Nextcloud.Tests\Nextcloud.Tests.csproj", "{8C329ED4-916B-491C-ABE0-63E0BF3DF2E9}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ElvantoSync.Test", "ElvantoSync.Test\ElvantoSync.Test.csproj", "{BCDB9CDD-FE36-4216-93D3-1B3F41D4C872}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ElvantoSync.Tests", "ElvantoSync.Tests\ElvantoSync.Tests.csproj", "{0BF03FB3-1833-4D91-939E-6EBACC899333}"
 EndProject
 Global
@@ -34,6 +36,10 @@ Global
 		{8C329ED4-916B-491C-ABE0-63E0BF3DF2E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8C329ED4-916B-491C-ABE0-63E0BF3DF2E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8C329ED4-916B-491C-ABE0-63E0BF3DF2E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BCDB9CDD-FE36-4216-93D3-1B3F41D4C872}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCDB9CDD-FE36-4216-93D3-1B3F41D4C872}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCDB9CDD-FE36-4216-93D3-1B3F41D4C872}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCDB9CDD-FE36-4216-93D3-1B3F41D4C872}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0BF03FB3-1833-4D91-939E-6EBACC899333}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0BF03FB3-1833-4D91-939E-6EBACC899333}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0BF03FB3-1833-4D91-939E-6EBACC899333}.Release|Any CPU.ActiveCfg = Release|Any CPU

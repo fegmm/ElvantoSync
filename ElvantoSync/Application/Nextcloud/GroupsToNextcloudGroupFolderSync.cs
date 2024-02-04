@@ -1,6 +1,7 @@
 using ElvantoSync;
 using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.ElvantoService;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
@@ -11,7 +12,7 @@ using System.Threading.Tasks;
 
 
 class GroupsToNextcloudGroupFolderSync(
-    Client elvanto,
+    IElvantoClient elvanto,
     INextcloudGroupFolderClient groupFolderClient,
     DbContext dbContext,
     GroupsToNextcloudGroupFolderSyncSettings settings,

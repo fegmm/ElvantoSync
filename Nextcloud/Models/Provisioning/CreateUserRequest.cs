@@ -7,7 +7,7 @@ public record CreateUserRequest
     [JsonPropertyName("userid")]
     public required string UserId { get; init; }
 
-    [JsonPropertyName("displayname")]
+    [JsonPropertyName("displayName")]
     public string? DisplayName { get; init; }
 
     [JsonPropertyName("email")]

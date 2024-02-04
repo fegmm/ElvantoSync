@@ -7,13 +7,19 @@ using System.Xml.Linq;
 
 namespace KasApi
 {
-    public class Client
+    public interface IKasClient
+    {
+        Task<MailForward[]> GetMailforwardsAsync();
+        Task ExecuteRequestWithParams(Dictionary<string, string> parameters);
+    }
+
+    public class Client : IKasClient
     {
         private readonly KasApiPortTypeClient client;
         private readonly AuthorizeHeader authorization;
 
         private Dictionary<string, DateTime> nextCallPossible;
-        private ConcurrentDictionary<string,  SemaphoreSlim> semaphores;
+        private ConcurrentDictionary<string, SemaphoreSlim> semaphores;
 
         public Client(AuthorizeHeader authorization)
         {
@@ -25,6 +31,8 @@ namespace KasApi
 
         private async Task<object?> ExecuteRequestAsync(IBaseRequest request)
         {
+            // Existing code...
+
             request.UpdateAuthorizationData(this.authorization);
 
             await this.semaphores.GetOrAdd(request.kas_action, new SemaphoreSlim(1,1)).WaitAsync();
@@ -75,7 +83,7 @@ namespace KasApi
             }
         }
 
-        public async Task<MailForward[]> GetMailforwardsAsync()
+       public async Task<MailForward[]> GetMailforwardsAsync()
         {
             var request = new BaseRequest() { kas_action = "get_mailforwards"};
             var result =  await this.ExecuteRequestAsync(request);
@@ -86,7 +94,7 @@ namespace KasApi
             return result_dicts.Select(i => new MailForward(i)).ToArray();
         }
 
-        public async Task ExecuteRequestWithParams(Dictionary<string, string> parameters)
+         public async Task ExecuteRequestWithParams(Dictionary<string, string> parameters)
         {
             parameters.Remove("kas_action", out string? kas_action);
             var request = new BaseRequest() { kas_action = kas_action, KasRequestParams = parameters};

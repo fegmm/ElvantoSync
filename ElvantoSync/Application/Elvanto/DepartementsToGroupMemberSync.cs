@@ -1,4 +1,5 @@
-﻿using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.ElvantoService;
+using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Elvanto;
 using Microsoft.Extensions.Logging;
@@ -6,10 +7,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
+namespace ElvantoSync.Application.Elvanto;
+
 namespace ElvantoSync.Elvanto;
 
 class DepartementsToGroupMemberSync(
-    ElvantoApi.Client elvanto,
+    IElvantoClient elvanto,
     DbContext dbContext,
     DepartementsToGroupMemberSyncSettings settings,
     ILogger<DepartementsToGroupMemberSync> logger

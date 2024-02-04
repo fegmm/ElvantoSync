@@ -1,4 +1,5 @@
 ﻿using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.ElvantoService;
 using ElvantoSync.Extensions;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.AllInkl;
@@ -16,7 +17,7 @@ using System.Threading.Tasks;
 namespace ElvantoSync.AllInkl;
 
 internal class GroupsToEmailSync(
-    ElvantoApi.Client elvanto,
+    IElvantoClient elvanto,
     NextcloudApi.Api nextcloud,
     KasApi.Client kas,
     DbContext dbContext,
