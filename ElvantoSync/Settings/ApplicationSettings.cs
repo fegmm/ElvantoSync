@@ -1,27 +1,14 @@
 ﻿namespace ElvantoSync.Settings;
 
-public record ApplicationSettings(
-    string OutputFolder,
-    string ElvantoKey,
-    string NextcloudServer,
-    string NextcloudUser,
-    string NextcloudPassword,
-    string KASLogin,
-    string KASAuthData,
-    string KASDomain,
-    string GroupLeaderSuffix,
-    string UploadGroupMailAddressesToNextcloudPath,
-    bool LogOnly = false,
-    bool SyncElvantoDepartementsToGroups = true,
-    bool SyncNextcloudPeople = true,
-    bool SyncNextcloudContacts = true,
-    bool SyncNextcloudGroups = true,
-    bool SyncNextCloudTalk = true,
-    bool SyncNextcloudGroupLeaders = true,
-    bool SyncNextcloudDeck = true,
-    bool SyncNextcloudCollectives = true,
-    bool SyncNextcloudGroupmembers = true,
-    bool SyncNextcloudGroupfolders = true,
-    bool SyncElvantoGroupsToKASMail = true
+internal record ApplicationSettings
+{
+    internal const string ConfigSection = "Application";
 
-);
+    public string ConnectionString { get; set; } = "Data Source=ElvantoSync.db";
+    public string ElvantoKey { get; init; }
+    public string KASLogin { get; init; }
+    public string KASAuthData { get; init; }
+    public string NextcloudServer { get; init; }
+    public string NextcloudUser { get; init; }
+    public string NextcloudPassword { get; init; }
+}

@@ -1,58 +1,72 @@
 using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
+using ElvantoSync.Persistence;
+using ElvantoSync.Settings.Nextcloud;
+using Microsoft.Extensions.Logging;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.Provisioning;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
-namespace ElvantoSync.Application.Nextcloud;
+namespace ElvantoSync.Nextcloud;
 
-public class PeopleToNextcloudSync(IElvantoClient elvanto, INextcloudProvisioningClient provisioningClient, Settings settings) : Sync<string, Person, User>(settings)
+class PeopleToNextcloudSync(
+    IElvantoClient elvanto,
+    INextcloudProvisioningClient provisioningClient,
+    DbContext dbContext,
+    PeopleToNextcloudSyncSettings settings,
+    ILogger<PeopleToNextcloudSync> logger
+) : Sync<Person, User>(dbContext, settings, logger)
 {
-    readonly Random random = new Random();
+    public override string FromKeySelector(Person i) => i.Id;
+    public override string ToKeySelector(User i) => i.Id;
+    public override string FallbackFromKeySelector(Person i) => (GetDisplayName(i), i.Email).ToString();
+    public override string FallbackToKeySelector(User i) => (i.DisplayName, i.Email).ToString();
 
-    public override async Task<Dictionary<string, Person>> GetFromAsync()
-    {
-        return (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest()))
-             .People.Person.ToDictionary(i => $"Elvanto-{i.Id}");
-    }
-    public override async Task<Dictionary<string, User>> GetToAsync()
+    public override async Task<IEnumerable<Person>> GetFromAsync() =>
+        (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest())).People.Person;
+
+    public override async Task<IEnumerable<User>> GetToAsync()
     {
         var users = await provisioningClient.GetUsers();
-        return users.Where(i => i.Id.StartsWith("Elvanto-")).ToDictionary(i => i.Id);
+        return users.Where(i => i.Id.StartsWith(settings.IdPrefix));
     }
 
-    public override async Task AddMissingAsync(Dictionary<string, Person> missing)
-    {
-        var requests = missing.Select(i => provisioningClient.CreateUser(new CreateUserRequest
+    protected override async Task<string> AddMissing(Person person)
+        => await provisioningClient.CreateUser(new CreateUserRequest()
         {
-            UserId = i.Key,
-            DisplayName = $"{i.Value.Lastname}, {i.Value.Firstname}",
-            Email = i.Value.Email,
-            Quota = "1GB",
+            UserId = settings.IdPrefix + person.Id,
+            DisplayName = GetDisplayName(person),
+            Email = person.Email,
             Password = Guid.NewGuid().ToString(),
+            Quota = settings.Quoata
+        });
 
-        }));
 
-        await Task.WhenAll(requests);
-
-    }
-
-    public async override Task RemoveAdditionalAsync(Dictionary<string, User> additionals)
+    protected async override Task RemoveAdditional(User user)
     {
-        var deleteEmptyUsers = additionals.Where(i => i.Value.Quota.Used == 0)
-            .Select(i => provisioningClient.DeleteUser(i.Key));
-
-        await Task.WhenAll(deleteEmptyUsers);
+        if (user.Quota.Used != 0)
+        {
+            logger.LogWarning("User {0} cannot be removed as contains {1} bytes of data.", user.Id, user.Quota.Used);
+            // TODO: Stop mapping deltion
+        }
+        await provisioningClient.DeleteUser(user.Id);
     }
 
-    public override bool IsActive()
+    protected override async Task UpdateMatch(Person person, User user)
     {
-        return settings.SyncNextcloudPeople;
+        var request = new EditUserRequest()
+        {
+            DisplayName = GetDisplayName(person) == user.DisplayName ? null : GetDisplayName(person),
+            Email = person.Email == user.Email ? null : user.Email,
+            Phone = person.Mobile == user.Phone ? null : person.Mobile
+        };
+        await provisioningClient.EditUser(user.Id, request);
     }
 
-
+    private static string GetDisplayName(Person i) => $"{i.Lastname}, {i.Firstname}";
 }

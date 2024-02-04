@@ -1,45 +1,64 @@
-﻿using ElvantoSync.ElvantoApi;
+using ElvantoSync;
+using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using ElvantoSync.ElvantoService;
+using ElvantoSync.Persistence;
+using ElvantoSync.Settings.Nextcloud;
+using Microsoft.Extensions.Logging;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.GroupFolders;
-using ElvantoSync.ElvantoService;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace ElvantoSync.Application.Nextcloud;
 
-class GroupsToNextcloudGroupFolderSync(IElvantoClient elvanto, INextcloudGroupFolderClient groupFolderClient, Settings settings)
-    : Sync<string, Group, GroupFolder>(settings)
+class GroupsToNextcloudGroupFolderSync(
+    IElvantoClient elvanto,
+    INextcloudGroupFolderClient groupFolderClient,
+    DbContext dbContext,
+    GroupsToNextcloudGroupFolderSyncSettings settings,
+    GroupsToNextcloudSyncSettings groupSettings,
+    ILogger<GroupsToNextcloudGroupFolderSync> logger
+) : Sync<Group, GroupFolder>(dbContext, settings, logger)
 {
-    public override async Task<Dictionary<string, Group>> GetFromAsync()
+    public override string FromKeySelector(Group i) => i.Id;
+    public override string ToKeySelector(GroupFolder i) => i.Id.ToString();
+    public override string FallbackFromKeySelector(Group i) => i.Name;
+    public override string FallbackToKeySelector(GroupFolder i) => i.MountPoint;
+
+    public override async Task<IEnumerable<Group>> GetFromAsync()
+        => (await elvanto.GroupsGetAllAsync(new GetAllRequest())).Groups.Group;
+
+    public override async Task<IEnumerable<GroupFolder>> GetToAsync()
+        => await groupFolderClient.GetGroupFolders();
+
+    protected override async Task<string> AddMissing(Group group)
     {
-        return (await elvanto.GroupsGetAllAsync(new GetAllRequest()))
-            .Groups.Group.ToDictionary(i => i.Name, i => i);
+        var groupFolderId = await groupFolderClient.CreateGroupFolder(group.Name);
+        await groupFolderClient.AddGroup(groupFolderId, group.Name);
+        await groupFolderClient.SetPermission(groupFolderId, group.Name, Permissions.All);
+        await groupFolderClient.SetAcl(groupFolderId, true);
+        await groupFolderClient.AddAclManager(groupFolderId, group.Name + groupSettings.GroupLeaderSuffix);
+        return groupFolderId.ToString();
     }
 
-    public override async Task<Dictionary<string, GroupFolder>> GetToAsync()
+    protected override async Task RemoveAdditional(GroupFolder groupFolder)
     {
-        var groupFolders = await groupFolderClient.GetGroupFolders();
-        return groupFolders.ToDictionary(i => i.MountPoint, i => i);
-    }
-
-    public override async Task AddMissingAsync(Dictionary<string, Group> missing)
-    {
-        var requests = missing.Select(async i =>
+        if (groupFolder.Size == 0)
         {
-            var groupFolder = await groupFolderClient.CreateGroupFolder(i.Key);
-            await groupFolderClient.AddGroup(groupFolder, i.Key);
-            await groupFolderClient.SetPermission(groupFolder, i.Key, Permissions.All);
-            await groupFolderClient.SetAcl(groupFolder, true);
-            await groupFolderClient.AddAclManager(groupFolder, i.Key + Settings.GroupLeaderSuffix);
-        });
-
-        await Task.WhenAll(requests);
+            await groupFolderClient.DeleteGroupFolder(groupFolder.Id);
+        }
+        else
+        {
+            logger.LogWarning("Group folder {id} is not empty and will not be deleted", groupFolder.Id);
+            // TODO: Capture id removal
+        }
     }
 
-    public override bool IsActive()
+    protected override async Task UpdateMatch(Group group, GroupFolder groupFolder)
     {
-        return settings.SyncNextcloudGroupfolders;
+        if (group.Name != groupFolder.MountPoint)
+        {
+            await groupFolderClient.SetMountpoint(groupFolder.Id, group.Name);
+        }
     }
 }

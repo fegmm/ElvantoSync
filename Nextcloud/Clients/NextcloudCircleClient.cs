@@ -19,6 +19,6 @@ public class NextcloudCircleClient(HttpClient client) : INextcloudCircleClient
         var response = await client.PostAsJsonAsync($"/ocs/v2.php/apps/circles/circles/{circleId}/members", reqBody, cancellationToken);
         var result = await response.EnsureSuccessStatusCode()
             .Content.ReadFromJsonAsync<OCSResponse<IdResponse>>(cancellationToken);
-        return result.Ocs.Data.Id;
+        return result!.Ocs.Data.Id;
     }
 }

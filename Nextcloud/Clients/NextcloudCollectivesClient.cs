@@ -38,4 +38,20 @@ public class NextcloudCollectivesClient(HttpClient client) : INextcloudCollectiv
         csrfToken = result!.Token;
         return csrfToken;
     }
+
+    public async Task DeleteCollective(int collectiveId, CancellationToken cancellationToken = default)
+    {
+        var response = await client.DeleteAsync($"/index.php/apps/collectives/_api/{collectiveId}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var deletePermanentResponse = await client.DeleteAsync($"/index.php/apps/collectives/_api/trash/{collectiveId}?circle=1", cancellationToken);
+        deletePermanentResponse.EnsureSuccessStatusCode();
+    }
+
+    public async Task SetDisplayName(string circleId, string name, CancellationToken cancellationToken = default)
+    {
+        var reqBody = new { name = name };
+        var response = await client.PutAsJsonAsync($"/ocs/v2.php/apps/circles/circles/{circleId}/name", reqBody, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
 }

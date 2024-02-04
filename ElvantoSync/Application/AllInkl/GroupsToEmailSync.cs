@@ -1,8 +1,11 @@
 ﻿using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
-using KasApi;
+using ElvantoSync.Extensions;
+using ElvantoSync.Persistence;
+using ElvantoSync.Settings.AllInkl;
 using KasApi.Requests;
 using KasApi.Response;
+using Microsoft.Extensions.Logging;
 using MigraDoc.DocumentObjectModel;
 using MigraDoc.Rendering;
 using System.Collections.Generic;
@@ -11,69 +14,101 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ElvantoSync.Application.AllInkl;
+namespace ElvantoSync.AllInkl;
 
-internal class GroupsToEmailSync(IElvantoClient elvanto, NextcloudApi.Api nextcloud, IKasClient kas, Settings settings) : Sync<string, Group, MailForward>(settings)
+internal class GroupsToEmailSync(
+    IElvantoClient elvanto,
+    NextcloudApi.Api nextcloud,
+    KasApi.Client kas,
+    DbContext dbContext,
+    GroupsToEmailSyncSettings settings,
+    ILogger<GroupsToEmailSync> logger
+) : Sync<Group, MailForward>(dbContext, settings, logger)
 {
-    public override async Task<Dictionary<string, Group>> GetFromAsync()
+    public override string FromKeySelector(Group i) => i.Name;
+    public override string ToKeySelector(MailForward i) => i.MailForwardAdress;
+    public override string FallbackFromKeySelector(Group i) => SanitizeName(i.Name);
+    public override string FallbackToKeySelector(MailForward i) => i.MailForwardAdress.Split('@')[0];
+
+    public override async Task<IEnumerable<Group>> GetFromAsync() =>
+        (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"] })).Groups.Group
+            .Where(i => i.People?.Person != null && i.People.Person.Length != 0);
+
+    public override async Task<IEnumerable<MailForward>> GetToAsync()
+        => (await kas.GetMailforwardsAsync()).Where(i => i.MailForwardAdress.Split("@")[1] == settings.KASDomain);
+
+    protected override async Task UpdateMatch(Group group, MailForward mail)
     {
-        var from = (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = new[] { "people" } })).Groups.Group
-            .Where(i => i.People?.Person != null && i.People.Person.Any())
-            .ToDictionary(i => SanitizeName(i.Name), i => i);
-
-        if (Settings.UploadGroupMailAddressesToNextcloudPath != null)
+        var compare = group.People.Person.CompareTo(mail.MailForwardTargets, i => i.Email, j => j);
+        var mails = group.People.Person.Select(i => i.Email).Distinct().Where(i => string.IsNullOrEmpty(i)).ToArray();
+        if (compare.additional.Any() || compare.missing.Any())
         {
-            var path = Settings.UploadGroupMailAddressesToNextcloudPath;
+            await kas.ExecuteRequestWithParams(new UpdateMailForward() { MailForward = mail.MailForwardAdress, Targets = mails });
+        }
+    }
 
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            Document document = new Document();
-            Section section = document.AddSection();
-            var table = section.AddTable();
-            table.AddColumn("8cm");
-            table.AddColumn("10cm");
-            foreach (var item in from.OrderBy(i => i.Value.Name))
-            {
-                var row = table.AddRow();
-                row.Cells[0].AddParagraph(item.Value.Name);
-                var mail_link = row.Cells[1].AddParagraph().AddHyperlink($"mailto:{item.Key}@{Settings.KASDomain}", HyperlinkType.Url);
-                mail_link.AddFormattedText($"{item.Key}@{Settings.KASDomain}");
-            }
+    public override async Task UpdateMatches(IEnumerable<(Group, MailForward)> matches)
+    {
+        await base.UpdateMatches(matches);
+        await CreateAndUploadPdf(matches);
+    }
 
-            PdfDocumentRenderer pdfRenderer = new PdfDocumentRenderer(false);
-            pdfRenderer.Document = document;
-            pdfRenderer.RenderDocument();
-
-            using var stream = new MemoryStream();
-            pdfRenderer.Save(stream, false);
-
-            await NextcloudApi.CloudFile.Upload(nextcloud, $"{nextcloud.Settings.Username}/{path}", stream);
+    private async Task CreateAndUploadPdf(IEnumerable<(Group Group, MailForward MailForward)> matches)
+    {
+        var path = settings.UploadGroupMailAddressesToNextcloudPath;
+        if (string.IsNullOrEmpty(path))
+        {
+            return;
         }
 
-        return from;
+
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        Document document = new Document();
+        Section section = document.AddSection();
+        var table = section.AddTable();
+        table.AddColumn("8cm");
+        table.AddColumn("10cm");
+        foreach (var item in matches.OrderBy(i => i.Group.Name))
+        {
+            var row = table.AddRow();
+            row.Cells[0].AddParagraph(item.Group.Name);
+            var mail_link = row.Cells[1].AddParagraph().AddHyperlink($"mailto:{item.MailForward.MailForwardAdress}", HyperlinkType.Url);
+            mail_link.AddFormattedText(item.MailForward.MailForwardAdress);
+        }
+
+        PdfDocumentRenderer pdfRenderer = new PdfDocumentRenderer(false);
+        pdfRenderer.Document = document;
+        pdfRenderer.RenderDocument();
+
+        using var stream = new MemoryStream();
+        pdfRenderer.Save(stream, false);
+
+        await NextcloudApi.CloudFile.Upload(nextcloud, $"{nextcloud.Settings.Username}/{path}", stream);
     }
 
-    public override async Task<Dictionary<string, MailForward>> GetToAsync()
+    protected async override Task<string> AddMissing(Group group)
     {
-        return (await kas.GetMailforwardsAsync())
-            .Where(i => i.MailForwardAdress.Split("@")[1] == Settings.KASDomain)
-            .ToDictionary(i => SanitizeName(i.MailForwardAdress.Split("@")[0]), i => i);
+        string sanitizedGroupName = SanitizeName(group.Name);
+        string[] targets = group.People.Person
+                            .Select(i => i.Email)
+                            .Distinct()
+                            .Where(i => !string.IsNullOrEmpty(i))
+                            .ToArray();
+
+        await kas.ExecuteRequestWithParams(new AddMailForward()
+        {
+            LocalPart = sanitizedGroupName,
+            DomainPart = settings.KASDomain,
+            Targets = targets
+        });
+
+        return $"{sanitizedGroupName}@{settings.KASDomain}";
     }
 
-    public override async Task AddMissingAsync(Dictionary<string, Group> missing)
-    {
-        var tasks = missing
-            .Select(i => kas.ExecuteRequestWithParams(new AddMailForward() { LocalPart = i.Key, DomainPart = Settings.KASDomain, Targets = new[] { "technik@fegmm.de" } }));
-        await Task.WhenAll(tasks);
-    }
+    protected override async Task RemoveAdditional(MailForward forward)
+        => await kas.ExecuteRequestWithParams(new DeleteMailForward() { MailForward = forward.MailForwardAdress });
 
-    public override async Task RemoveAdditionalAsync(Dictionary<string, MailForward> additionals)
-    {
-        var tasks = additionals
-            .Select(i => kas.ExecuteRequestWithParams(new DeleteMailForward() { MailForward = $"{i.Key}@{Settings.KASDomain}" }));
-        await Task.WhenAll(tasks);
-    }
-
-    internal static string SanitizeName(string name)
+    private static string SanitizeName(string name)
     {
         name = ReplaceSpecialCharacters(name);
         name = name.Replace(" ", "-").Trim('-', '.');
@@ -117,9 +152,5 @@ internal class GroupsToEmailSync(IElvantoClient elvanto, NextcloudApi.Api nextcl
             }
             return name;
         }
-    }
-    public override bool IsActive()
-    {
-        return settings.SyncElvantoGroupsToKASMail;
     }
 }

@@ -1,44 +1,53 @@
-﻿using ElvantoSync.ElvantoApi;
+using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
+using ElvantoSync.Persistence;
+using ElvantoSync.Settings.Nextcloud;
+using Microsoft.Extensions.Logging;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.Deck;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
-namespace ElvantoSync.Application.Nextcloud;
+namespace ElvantoSync.Nextcloud;
 
-class GroupsToDeckSync(IElvantoClient elvanto, INextcloudDeckClient deckClient, Settings settings) : Sync<string, string, Board>(settings)
+class GroupsToDeckSync(
+    IElvantoClient elvanto,
+    INextcloudDeckClient deckClient,
+    DbContext dbContext,
+    GroupsToDeckSyncSettings settings,
+    GroupsToNextcloudSyncSettings groupSettings,
+    ILogger<GroupsToDeckSync> logger
+) : Sync<Group, Board>(dbContext, settings, logger)
 {
-    private readonly Random random = new();
+    public override string FromKeySelector(Group i) => i.Id;
+    public override string ToKeySelector(Board i) => i.Id.ToString();
+    public override string FallbackFromKeySelector(Group i) => i.Name;
+    public override string FallbackToKeySelector(Board i) => i.Title;
 
-    public override async Task<Dictionary<string, string>> GetFromAsync()
+    public override async Task<IEnumerable<Group>> GetFromAsync()
+        => (await elvanto.GroupsGetAllAsync(new GetAllRequest())).Groups.Group;
+
+    public override async Task<IEnumerable<Board>> GetToAsync()
+        => await deckClient.GetBoards();
+
+    protected override async Task<string> AddMissing(Group group)
     {
-        return (await elvanto.GroupsGetAllAsync(new GetAllRequest()))
-            .Groups.Group.ToDictionary(i => i.Name, i => i.Name);
+        var createdBoard = await deckClient.CreateBoard(group.Name, string.Format("{0:X6}", Random.Shared.Next(0x1000000)));
+        await deckClient.AddMember(createdBoard.Id, group.Name, MemberTypes.Group, true, false, false);
+        await deckClient.AddMember(createdBoard.Id, group.Name + groupSettings.GroupLeaderSuffix, MemberTypes.Group, true, true, false);
+        return ToKeySelector(createdBoard);
     }
 
-    public override async Task<Dictionary<string, Board>> GetToAsync()
-    {
-        var boards_response = await deckClient.GetBoards();
-        return boards_response.Where(i => i.DeletedAt == 0).ToDictionary(i => i.Title);
-    }
+    protected override async Task RemoveAdditional(Board board)
+        => await deckClient.DeleteBoard(board.Id);
 
-    public override async Task AddMissingAsync(Dictionary<string, string> missing)
+    protected override async Task UpdateMatch(Group group, Board board)
     {
-        var requests = missing.Select(async i =>
+        if (group.Name != board.Title)
         {
-            var createdBoard = await deckClient.CreateBoard(i.Value, string.Format("{0:X6}", random.Next(0x1000000)));
-            await deckClient.AddMember(createdBoard.Id, i.Value, MemberTypes.Group, true, false, false);
-            await deckClient.AddMember(createdBoard.Id, i.Value + Settings.GroupLeaderSuffix, MemberTypes.Group, true, true, false);
-        });
-        await Task.WhenAll(requests);
-    }
-
-    public override bool IsActive()
-    {
-        return settings.SyncNextcloudDeck;
+            await deckClient.SetDisplayName(board.Id, group.Name);
+        }
     }
 }

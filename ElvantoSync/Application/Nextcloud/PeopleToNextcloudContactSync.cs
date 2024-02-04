@@ -1,6 +1,9 @@
 ﻿using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
+using ElvantoSync.Persistence;
+using ElvantoSync.Settings.Nextcloud;
+using Microsoft.Extensions.Logging;
 using MixERP.Net.VCards;
 using MixERP.Net.VCards.Models;
 using MixERP.Net.VCards.Serializer;
@@ -11,68 +14,96 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using WebDav;
 
-namespace ElvantoSync.Application.Nextcloud
+namespace ElvantoSync.Nextcloud;
+
+class PeopleToNextcloudContactSync(
+    IElvantoClient elvanto,
+    PeopleToNextcloudSyncSettings peopleSettings,
+    WebDavClient nextcloud_webdav,
+    HttpClient img_client,
+    DbContext dbContext,
+    PeopleToContactSyncSettings settings,
+    ILogger<PeopleToNextcloudContactSync> logger
+) : Sync<Person, WebDavResource>(dbContext, settings, logger)
 {
-    class PeopleToNextcloudContactSync(IElvantoClient elvanto, Settings settings, WebDavClient nextcloud_webdav) : Sync<string, Person, WebDavResource>(settings)
+    public override string FromKeySelector(Person i) => i.Id;
+    public override string ToKeySelector(WebDavResource i) => i.Uri;
+    public override string FallbackFromKeySelector(Person i) => $"{i.Lastname}, {i.Firstname}";
+    public override string FallbackToKeySelector(WebDavResource i) => i.DisplayName;
+
+    public override async Task<IEnumerable<Person>> GetFromAsync()
+        => (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest())).People.Person;
+
+    public override async Task<IEnumerable<WebDavResource>> GetToAsync()
     {
-        public override async Task<Dictionary<string, Person>> GetFromAsync()
+        var contact_response = await nextcloud_webdav.Propfind("remote.php/dav/addressbooks/users/Administrator/default/");
+        return contact_response.Resources.Where(i => ToKeySelector(i).Contains(peopleSettings.IdPrefix));
+    }
+
+    protected override async Task<string> AddMissing(Person person)
+    {
+        VCard vcard = await PersonToVCard(person);
+
+        string uri = $"remote.php/dav/addressbooks/users/Administrator/default/{peopleSettings.IdPrefix + person.Id}.vcf";
+        var res = await nextcloud_webdav.PutFile(uri, new StringContent(vcard.Serialize()));
+        if (!res.IsSuccessful)
         {
-            return (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest())).People.Person
-                .ToDictionary(i => $"Elvanto-{i.Id}");
+            throw new Exception($"Add WebDav contact returned non success code {res.StatusCode} with message: {res.Description}");
         }
 
-        public override async Task<Dictionary<string, WebDavResource>> GetToAsync()
+        return uri;
+    }
+
+    protected async override Task RemoveAdditional(WebDavResource additional)
+    {
+        if (additional.IsCollection)
         {
-            var people = await GetFromAsync();
-            var contact_response = await nextcloud_webdav.Propfind("remote.php/dav/addressbooks/users/Administrator/default/");
-            var contacts = contact_response.Resources.ToDictionary(i => i.Uri.Split("/")[^1].Replace(".vcf", ""));
-            return contacts
-                .Where(i => !people.ContainsKey(i.Key) || DateTime.Parse(people[i.Key].Date_modified) < i.Value.LastModifiedDate.Value.ToUniversalTime())
-                .ToDictionary(i => i.Key, i => i.Value);
+            return;
         }
 
-        public override async Task AddMissingAsync(Dictionary<string, Person> missing)
+        var res = await nextcloud_webdav.Delete(additional.Uri);
+        if (!res.IsSuccessful)
         {
-            using var img_client = new HttpClient();
-            var images = (await Task.WhenAll(
-                missing.Select(async i => (i.Key, new Photo(
-                    true,
-                    i.Value.Picture.Split('.')[^1],
-                    Convert.ToBase64String(
-                        await img_client.GetByteArrayAsync(i.Value.Picture)
-                    )
-                )))
-            )).ToDictionary(i => i.Key, i => i.Item2);
+            throw new Exception($"Delete WebDav contact returned non success code {res.StatusCode} with message: {res.Description}");
+        }
+    }
 
-            var res = await Task.WhenAll(
-                missing.Select(item => nextcloud_webdav.PutFile($"remote.php/dav/addressbooks/users/Administrator/default/{item.Key}.vcf", new StringContent(new VCard()
-                {
-                    Version = MixERP.Net.VCards.Types.VCardVersion.V4,
-                    FirstName = item.Value.Firstname,
-                    LastName = item.Value.Lastname,
-                    MiddleName = item.Value.Middle_name,
-                    FormattedName = $"{item.Value.Lastname}, {item.Value.Firstname}",
-                    Emails = new[] { new Email() { EmailAddress = item.Value.Email, Type = MixERP.Net.VCards.Types.EmailType.Smtp } },
-                    Telephones = new[] {
-                        new Telephone() { Number = item.Value.Phone, Type = MixERP.Net.VCards.Types.TelephoneType.Home},
-                        new Telephone() {Number= item.Value.Mobile, Type = MixERP.Net.VCards.Types.TelephoneType.Cell}
-                    }.Where(i => !string.IsNullOrWhiteSpace(i.Number)),
-                    Photo = images[item.Key].Extension != "svg" ? images[item.Key] : null,
-                    BirthDay = DateTime.TryParse(item.Value.Birthday, out var bday) ? bday : null
-                }.Serialize())))
-            );
+    protected override async Task UpdateMatch(Person person, WebDavResource vCard)
+    {
+        if (DateTime.Parse(person.Date_modified) <= vCard.LastModifiedDate)
+        {
+            return;
         }
 
-        public async override Task RemoveAdditionalAsync(Dictionary<string, WebDavResource> additionals)
+        var vcard = await PersonToVCard(person);
+
+        var res = await nextcloud_webdav.PutFile(vCard.Uri, new StringContent(vcard.Serialize()));
+        if (!res.IsSuccessful)
         {
-            await Task.WhenAll(additionals
-                .Where(i => !i.Value.IsCollection)
-                .Select(i => nextcloud_webdav.Delete(i.Value.Uri))
-            );
+            throw new Exception($"Update WebDav contact returned non success code {res.StatusCode} with message: {res.Description}");
         }
-        public override bool IsActive()
+    }
+
+    private async Task<VCard> PersonToVCard(Person person)
+    {
+        byte[] personPhoto = await img_client.GetByteArrayAsync(person.Picture);
+        string photoExtension = person.Picture.Split('.')[^1];
+        var photo = new Photo(true, photoExtension, Convert.ToBase64String(personPhoto));
+
+        return new VCard()
         {
-            return settings.SyncNextcloudContacts;
-        }
+            Version = MixERP.Net.VCards.Types.VCardVersion.V4,
+            FirstName = person.Firstname,
+            LastName = person.Lastname,
+            MiddleName = person.Middle_name,
+            FormattedName = $"{person.Lastname}, {person.Firstname}",
+            Emails = new[] { new Email() { EmailAddress = person.Email, Type = MixERP.Net.VCards.Types.EmailType.Smtp } },
+            Telephones = (new[] {
+                            new Telephone() { Number = person.Phone, Type = MixERP.Net.VCards.Types.TelephoneType.Home},
+                            new Telephone() { Number= person.Mobile, Type = MixERP.Net.VCards.Types.TelephoneType.Cell}
+                    }).Where(i => !string.IsNullOrWhiteSpace(i.Number)),
+            Photo = photo.Extension != "svg" ? photo : null,
+            BirthDay = DateTime.TryParse(person.Birthday, out var bday) ? bday : null
+        };
     }
 }

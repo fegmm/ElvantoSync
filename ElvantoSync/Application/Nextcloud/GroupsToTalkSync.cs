@@ -1,63 +1,47 @@
-﻿using ElvantoSync.ElvantoApi;
+using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Infrastructure.Nextcloud;
-using Nextcloud.Interfaces;
-using Nextcloud.Models.Circles;
-using Nextcloud.Models.Collectives;
+using ElvantoSync.Persistence;
+using ElvantoSync.Settings.Nextcloud;
+using Microsoft.Extensions.Logging;
 using Nextcloud.Models.Talk;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
-namespace ElvantoSync.Application.Nextcloud;
+namespace ElvantoSync.Nextcloud;
 
 class GroupsToTalkSync(
-   IElvantoClient elvanto,
-    INextcloudTalkClient talkRepo,
-    Settings settings
-) : Sync<string, string, Conversation>(settings)
+    IElvantoClient elvanto,
+    INextcloudTalkClient talkClient,
+    DbContext dbContext,
+    GroupsToTalkSyncSettings settings,
+    ILogger<GroupsToTalkSync> logger
+) : Sync<Group, Conversation>(dbContext, settings, logger)
 {
+    public override string FromKeySelector(Group i) => i.Id;
+    public override string ToKeySelector(Conversation i) => i.Token;
+    public override string FallbackFromKeySelector(Group i) => i.Name;
+    public override string FallbackToKeySelector(Conversation i) => i.Name;
 
+    public override async Task<IEnumerable<Group>> GetFromAsync() =>
+        (await elvanto.GroupsGetAllAsync(new GetAllRequest())).Groups.Group;
 
+    public override async Task<IEnumerable<Conversation>> GetToAsync() =>
+        await talkClient.GetConversations();
 
-    public override async Task<Dictionary<string, string>> GetFromAsync()
+    protected override async Task<string> AddMissing(Group group)
     {
-        return (await elvanto.GroupsGetAllAsync(new GetAllRequest()))
-           .Groups.Group.ToDictionary(i => i.Name, i => i.Name);
+        var createdConvo = await talkClient.CreateConversation(2, group.Id, "groups", group.Name);
+        await talkClient.SetDescription(createdConvo.Token, settings.GroupChatDescription);
+        return ToKeySelector(createdConvo);
     }
 
-    public override async Task<Dictionary<string, Conversation>> GetToAsync()
+    protected override async Task UpdateMatch(Group from, Conversation to)
     {
-        var response = await talkRepo.GetConversations();
-        // await TestCreation();
-        return response.ToDictionary(i => i.Name);
-    }
-
-    public async Task TestCreation()
-    {
-        var fakeMissing = new Dictionary<string, string>
+        if (from.Name != to.Name)
         {
-            { "Admin", "Admin" }
-        };
-        await AddMissingAsync(fakeMissing);
-    }
-
-    public override async Task AddMissingAsync(Dictionary<string, string> missing)
-    {
-
-        string description = @"Euer Gruppenchat für's Team! 
-
-Anmerkungen: Neue Mitarbeiter, die ihr in Elvanto hinzufügt, haben am nächsten Tag automatisch Zugriff. Um wie bei WhatsApp über jede neue Nachricht ein Push zu erhalten, stellt die Benachrichtigungseinstellungen auf Alle Nachrichten.";
-        var createCollectivesWithMembersTasks = missing.Keys.Select(async group =>
-        {
-            var createdConvo = await talkRepo.CreateConversation(2, group, "groups", group);
-            await talkRepo.SetDescription(createdConvo.Token, description);
-        });
-        await Task.WhenAll(createCollectivesWithMembersTasks);
-    }
-    public override bool IsActive()
-    {
-        return settings.SyncNextCloudTalk;
+            await talkClient.SetRoomName(to.Token, from.Name);
+        }
     }
 }
