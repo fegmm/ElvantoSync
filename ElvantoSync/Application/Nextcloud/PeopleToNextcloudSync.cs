@@ -1,4 +1,3 @@
-using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Persistence;
@@ -9,7 +8,6 @@ using Nextcloud.Models.Provisioning;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace ElvantoSync.Nextcloud;

@@ -1,5 +1,4 @@
 using ElvantoSync;
-using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Persistence;
