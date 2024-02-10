@@ -1,69 +1,34 @@
 using ElvantoSync.ElvantoService;
-using ElvantoSync.Extensions;
 using ElvantoSync.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 using Nextcloud.Extensions;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ElvantoSync;
+var builder = Host.CreateApplicationBuilder();
 
-class Program
-{
-    static async Task Main(string[] args)
-    {
-        var settings = new ConfigurationBuilder()
-            .AddUserSecrets<Program>()
-            .AddEnvironmentVariables()
-            .Build()
-            .Get<ApplicationSettings>();
+var settings = builder.Configuration.Get<ApplicationSettings>();
 
-        var elvanto = new ElvantoApi.Client(settings.ElvantoKey);
-        var kas = new KasApi.Client(new KasApi.Requests.AuthorizeHeader(
-            kas_login: settings.KASLogin,
-            kas_auth_data: settings.KASAuthData,
-            kas_auth_type: "plain"
-        ));
+var elvanto = new ElvantoSync.ElvantoApi.Client(settings.ElvantoKey);
+var kas = new KasApi.Client(new KasApi.Requests.AuthorizeHeader(
+    kas_login: settings.KASLogin,
+    kas_auth_data: settings.KASAuthData,
+    kas_auth_type: "plain"
+));
 
-        ServiceProvider services = BuildServiceProvider(settings, elvanto, kas);
-        await ExecuteSync(services);
-    }
+builder.Services
+    .AddDbContext<DbContext>(options => options.UseSqlite(settings.ConnectionString))
+    .AddOptions()
 
-    private static ServiceProvider BuildServiceProvider(ApplicationSettings settings, ElvantoApi.Client elvanto, KasApi.Client kas) 
-        => new ServiceCollection()
-            .AddSingleton<ILogger>(ConfigureLogging())
-            .AddOptions()
-            .AddApplicationOptions()
-            .AddSingleton<ElvantoApi.Client>(elvanto)
-            .AddSingleton<IElvantoClient, ExternalClientWrapper>()
-            .AddSingleton<KasApi.Client>(kas)
-            .AddSyncs()
-            .AddNextcloudClients(settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword, nameof(ElvantoSync))
-            .AddDbContext<DbContext>(options => options.UseSqlite(settings.ConnectionString))
-            .BuildServiceProvider();
+    .AddSingleton(elvanto)
+    .AddSingleton(kas)
+    .AddSingleton<IElvantoClient, ExternalClientWrapper>()
 
-    private static async Task ExecuteSync(ServiceProvider provider)
-    {
-        var services = provider.GetServices<ISync>()
-        .Where(service => service.IsActive)
-        .Select(service => service.Apply());
-        await Task.WhenAll(services);
-    }
-    private static ILogger ConfigureLogging()
-    {
+    .AddApplicationOptions()
+    .AddNextcloudClients(settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword, nameof(ElvantoSync))
+    .AddSyncs()
 
-        var loggerFactory = LoggerFactory.Create(builder =>
-        {
-            builder
-                .AddFilter("Microsoft", LogLevel.Warning)
-                .AddFilter("System", LogLevel.Warning)
-                .AddFilter("ElvantoSync", LogLevel.Debug)
-                .AddConsole();
-        });
+    .AddHostedService<ElvantoSync.ElvantoSync>();
 
-        return loggerFactory.CreateLogger<Program>();
-    }
-}
+builder.Build().Run();
