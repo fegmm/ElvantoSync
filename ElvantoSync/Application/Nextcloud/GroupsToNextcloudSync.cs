@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync.Nextcloud;
 
-class GroupsToNextcloudSync(
+public class GroupsToNextcloudSync(
     IElvantoClient elvanto,
     INextcloudProvisioningClient provisioningClient,
     DbContext dbContext,

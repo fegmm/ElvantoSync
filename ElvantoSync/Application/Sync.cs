@@ -11,13 +11,13 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync;
 
-interface ISync
+public interface ISync
 {
     public bool IsActive { get; }
     public Task Apply();
 }
 
-abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, SyncSettings settings, ILogger logger) : ISync
+public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, SyncSettings settings, ILogger logger) : ISync
 {
     public bool IsActive => settings.IsEnabled;
 

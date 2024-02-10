@@ -1,6 +1,4 @@
-using ElvantoSync.Extensions;
 using ElvantoSync.ElvantoService;
-using ElvantoSync.Settings.ApplicationSettings;
 using ElvantoSync.Extensions;
 using ElvantoSync.Settings;
 using Microsoft.EntityFrameworkCore;
@@ -34,10 +32,8 @@ class Program
         await ExecuteSync(services);
     }
 
-    private static ServiceProvider BuildServiceProvider(ApplicationSettings settings, ElvantoApi.Client elvanto, KasApi.Client kas)
-    {
-
-        return new ServiceCollection()
+    private static ServiceProvider BuildServiceProvider(ApplicationSettings settings, ElvantoApi.Client elvanto, KasApi.Client kas) 
+        => new ServiceCollection()
             .AddSingleton<ILogger>(ConfigureLogging())
             .AddOptions()
             .AddApplicationOptions()
@@ -48,7 +44,6 @@ class Program
             .AddNextcloudClients(settings.NextcloudServer, settings.NextcloudUser, settings.NextcloudPassword, nameof(ElvantoSync))
             .AddDbContext<DbContext>(options => options.UseSqlite(settings.ConnectionString))
             .BuildServiceProvider();
-    }
 
     private static async Task ExecuteSync(ServiceProvider provider)
     {

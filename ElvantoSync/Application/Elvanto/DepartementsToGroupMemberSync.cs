@@ -9,8 +9,6 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync.Application.Elvanto;
 
-namespace ElvantoSync.Elvanto;
-
 class DepartementsToGroupMemberSync(
     IElvantoClient elvanto,
     DbContext dbContext,

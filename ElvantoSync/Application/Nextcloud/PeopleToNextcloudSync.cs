@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync.Nextcloud;
 
-class PeopleToNextcloudSync(
+public class PeopleToNextcloudSync(
     IElvantoClient elvanto,
     INextcloudProvisioningClient provisioningClient,
     DbContext dbContext,

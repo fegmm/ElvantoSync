@@ -1,6 +1,6 @@
 ﻿namespace ElvantoSync.Settings;
 
-internal record ApplicationSettings
+public record ApplicationSettings
 {
     internal const string ConfigSection = "Application";
 

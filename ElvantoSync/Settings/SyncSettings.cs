@@ -1,6 +1,6 @@
 ﻿namespace ElvantoSync.Settings;
 
-internal record SyncSettings
+public record SyncSettings
 {
     public string OutputFolder { get; init; } = "output";
     public bool LogOnly { get; init; } = false;
