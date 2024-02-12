@@ -4,6 +4,7 @@ using ElvantoSync.ElvantoService;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.GroupFolders;
 using System.Collections.Generic;
@@ -14,8 +15,8 @@ class GroupsToNextcloudGroupFolderSync(
     IElvantoClient elvanto,
     INextcloudGroupFolderClient groupFolderClient,
     DbContext dbContext,
-    GroupsToNextcloudGroupFolderSyncSettings settings,
-    GroupsToNextcloudSyncSettings groupSettings,
+    IOptions<GroupsToNextcloudGroupFolderSyncSettings> settings,
+    IOptions<GroupsToNextcloudSyncSettings> groupSettings,
     ILogger<GroupsToNextcloudGroupFolderSync> logger
 ) : Sync<Group, GroupFolder>(dbContext, settings, logger)
 {
@@ -36,7 +37,7 @@ class GroupsToNextcloudGroupFolderSync(
         await groupFolderClient.AddGroup(groupFolderId, group.Name);
         await groupFolderClient.SetPermission(groupFolderId, group.Name, Permissions.All);
         await groupFolderClient.SetAcl(groupFolderId, true);
-        await groupFolderClient.AddAclManager(groupFolderId, group.Name + groupSettings.GroupLeaderSuffix);
+        await groupFolderClient.AddAclManager(groupFolderId, group.Name + groupSettings.Value.GroupLeaderSuffix);
         return groupFolderId.ToString();
     }
 

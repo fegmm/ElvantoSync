@@ -3,6 +3,7 @@ using ElvantoSync.Extensions;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.Provisioning;
 using System.Collections.Generic;
@@ -15,8 +16,8 @@ public class GroupsToNextcloudSync(
     IElvantoClient elvanto,
     INextcloudProvisioningClient provisioningClient,
     DbContext dbContext,
-    PeopleToNextcloudSyncSettings peopleSettings,
-    GroupsToNextcloudSyncSettings settings,
+    IOptions<PeopleToNextcloudSyncSettings> peopleSettings,
+    IOptions<GroupsToNextcloudSyncSettings> settings,
     ILogger<GroupsToNextcloudSync> logger
 ) : Sync<ElvantoApi.Models.Group, Group>(dbContext, settings, logger)
 {
@@ -35,7 +36,7 @@ public class GroupsToNextcloudSync(
     {
         await Task.WhenAll(
             provisioningClient.CreateGroup(group.Id, group.Name),
-            provisioningClient.CreateGroup(group.Id + settings.GroupLeaderSuffix, group.Name + settings.GroupLeaderSuffix)
+            provisioningClient.CreateGroup(group.Id + settings.Value.GroupLeaderSuffix, group.Name + settings.Value.GroupLeaderSuffix)
         );
         return group.Id;
     }
@@ -43,7 +44,7 @@ public class GroupsToNextcloudSync(
     protected override async Task RemoveAdditional(Group group)
         => await Task.WhenAll([
             provisioningClient.DeleteGroup(group.Id),
-            provisioningClient.DeleteGroup(group.Id + settings.GroupLeaderSuffix)
+            provisioningClient.DeleteGroup(group.Id + settings.Value.GroupLeaderSuffix)
         ]);
 
     protected override async Task UpdateMatch(ElvantoApi.Models.Group elvantoGroup, Group nextcloudGroup)
@@ -51,18 +52,18 @@ public class GroupsToNextcloudSync(
         if (elvantoGroup.Name != nextcloudGroup.Id)
         {
             await provisioningClient.EditGroup(nextcloudGroup.Id, elvantoGroup.Name);
-            await provisioningClient.EditGroup(nextcloudGroup.Id + settings.GroupLeaderSuffix, elvantoGroup.Name + settings.GroupLeaderSuffix);
+            await provisioningClient.EditGroup(nextcloudGroup.Id + settings.Value.GroupLeaderSuffix, elvantoGroup.Name + settings.Value.GroupLeaderSuffix);
         }
 
         var members = await provisioningClient.GetMembers(nextcloudGroup.Id);
-        var compare = elvantoGroup.People.Person.CompareTo(members, i => peopleSettings.IdPrefix + i.Id, id => id);
+        var compare = elvantoGroup.People.Person.CompareTo(members, i => peopleSettings.Value.IdPrefix + i.Id, id => id);
         var addMemberRequests = compare.additional.Select(async i =>
         {
-            await provisioningClient.AddUserToGroup(peopleSettings.IdPrefix + i.Id, nextcloudGroup.Id);
+            await provisioningClient.AddUserToGroup(peopleSettings.Value.IdPrefix + i.Id, nextcloudGroup.Id);
             if (i.Position == "Leader" || i.Position == "Assistant Leader")
                 await provisioningClient.AddUserToGroup(
-                    peopleSettings.IdPrefix + i.Id,
-                    nextcloudGroup.Id + settings.GroupLeaderSuffix
+                    peopleSettings.Value.IdPrefix + i.Id,
+                    nextcloudGroup.Id + settings.Value.GroupLeaderSuffix
                 );
         });
         var removeMemberRequests = compare.missing.Select(id => provisioningClient.RemoveUserFromGroup(id, nextcloudGroup.Id));

@@ -6,13 +6,14 @@ using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 
 namespace ElvantoSync.Application.Elvanto;
 
 class DepartementsToGroupMemberSync(
     IElvantoClient elvanto,
     DbContext dbContext,
-    DepartementsToGroupMemberSyncSettings settings,
+    IOptions<DepartementsToGroupMemberSyncSettings> settings,
     ILogger<DepartementsToGroupMemberSync> logger
 ) : Sync<(Person person, Group group), (GroupMember member, Group group)>(dbContext, settings, logger)
 {

@@ -3,6 +3,7 @@ using ElvantoSync.Persistence.Entities;
 using ElvantoSync.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,9 +18,9 @@ public interface ISync
     public Task Apply();
 }
 
-public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, SyncSettings settings, ILogger logger) : ISync
+public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions<SyncSettings> settings, ILogger logger) : ISync
 {
-    public bool IsActive => settings.IsEnabled;
+    public bool IsActive => settings.Value.IsEnabled;
 
     public abstract string FromKeySelector(TFrom i);
     public abstract string ToKeySelector(TTo i);
@@ -33,7 +34,7 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, SyncSett
     protected abstract Task<string> AddMissing(TFrom missing);
     public async Task AddMissings(IEnumerable<TFrom> missings)
     {
-        if (settings.AddMissing)
+        if (settings.Value.AddMissing)
         {
             return;
         }
@@ -62,7 +63,7 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, SyncSett
     protected virtual Task RemoveAdditional(TTo additional) => Task.CompletedTask;
     public async Task RemoveAdditionals(IEnumerable<TTo> additionals)
     {
-        if (settings.DeleteAdditionals)
+        if (settings.Value.DeleteAdditionals)
         {
             return;
         }
@@ -90,7 +91,7 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, SyncSett
     protected virtual Task UpdateMatch(TFrom from, TTo to) => Task.CompletedTask;
     public virtual async Task UpdateMatches(IEnumerable<(TFrom, TTo)> matches)
     {
-        if (settings.UpdateExisting)
+        if (settings.Value.UpdateExisting)
         {
             var tasks = matches.ToDictionary(
                 match => (FromKeySelector(match.Item1), ToKeySelector(match.Item2)),
@@ -114,26 +115,30 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, SyncSett
         var from = await GetFromAsync();
         var to = await GetToAsync();
 
-        var compare = await RunComparison(from, to);
+        var compare = await RunComparison(from.ToList(), to.ToList());
 
-        Directory.CreateDirectory(settings.OutputFolder);
-        await File.WriteAllLinesAsync(Path.Combine(settings.OutputFolder, this.GetType().Name + "-missings.txt"), compare.additional.Select(FromKeySelector));
-        await File.WriteAllLinesAsync(Path.Combine(settings.OutputFolder, this.GetType().Name + "-additionals.txt"), compare.missing.Select(ToKeySelector));
+        Directory.CreateDirectory(settings.Value.OutputFolder);
+        await File.WriteAllLinesAsync(Path.Combine(settings.Value.OutputFolder, this.GetType().Name + "-missings.txt"), compare.additional.Select(FromKeySelector));
+        await File.WriteAllLinesAsync(Path.Combine(settings.Value.OutputFolder, this.GetType().Name + "-additionals.txt"), compare.missing.Select(ToKeySelector));
 
-        if (!settings.LogOnly)
+        if (!settings.Value.LogOnly)
         {
             await AddMissings(compare.additional);
             await UpdateMatches(compare.matches);
             await RemoveAdditionals(compare.missing);
         }
+        else
+        {
+            logger.LogInformation("Would have added {count} items, updated {count} items and removed {count} items", compare.additional.Count(), compare.matches.Count(), compare.missing.Count());
+        }
     }
 
-    private async Task<CompareResult<TFrom, TTo>> RunComparison(IEnumerable<TFrom> from, IEnumerable<TTo> to)
+    private async Task<CompareResult<TFrom, TTo>> RunComparison(List<TFrom> from, List<TTo> to)
     {
         var fromIds = from.ToDictionary(FromKeySelector, i => i);
         var mappedFroms = await dbContext.IndexMappings
             .Where(i => i.Type == this.GetType().Name)
-            .Where(i => fromIds.ContainsKey(i.FromId))
+            .Where(i => fromIds.Keys.Contains(i.FromId))
             .ToDictionaryAsync(i => i.ToId, i => fromIds[i.FromId]);
         var mappedCompare = mappedFroms.CompareTo(to, i => i.Key, ToKeySelector);
         var (additional, matches, missing) = (
@@ -142,22 +147,22 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, SyncSett
             mappedCompare.missing
         );
 
-        if (!settings.EnableFallback)
+        if (!settings.Value.EnableFallback)
         {
             return new CompareResult<TFrom, TTo>(additional, matches, missing);
         }
 
         var fallbackCompare = from.CompareTo(to, FallbackFromKeySelector, FallbackToKeySelector);
 
-        additional = additional.Where(i => fallbackCompare.additional.Contains(i));
-        missing = missing.Where(i => fallbackCompare.missing.Contains(i));
+        var filteredAdditional = additional.Where(i => fallbackCompare.additional.Contains(i));
+        var filteredMissing = missing.Where(i => fallbackCompare.missing.Contains(i));
+        var foundAdditional = additional.Except(filteredAdditional);
+        var foundMissing = missing.Except(filteredMissing);
 
-        var missingAdditionals = additional.Where(i => !fallbackCompare.additional.Contains(i));
-        var missingMissings = missing.Where(i => !fallbackCompare.missing.Contains(i));
         matches = matches
-            .Concat(fallbackCompare.matches.Where(i => missingAdditionals.Contains(i.Item1) || missingMissings.Contains(i.Item2)))
+            .Concat(fallbackCompare.matches.Where(i => foundAdditional.Contains(i.Item1) || foundMissing.Contains(i.Item2)))
             .Distinct();
 
-        return new CompareResult<TFrom, TTo>(additional, matches, missing);
+        return new CompareResult<TFrom, TTo>(filteredAdditional, matches, filteredMissing);
     }
 }

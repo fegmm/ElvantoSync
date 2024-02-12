@@ -3,6 +3,7 @@ using ElvantoSync.ElvantoService;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.Provisioning;
 using System;
@@ -16,7 +17,7 @@ public class PeopleToNextcloudSync(
     IElvantoClient elvanto,
     INextcloudProvisioningClient provisioningClient,
     DbContext dbContext,
-    PeopleToNextcloudSyncSettings settings,
+    IOptions<PeopleToNextcloudSyncSettings> settings,
     ILogger<PeopleToNextcloudSync> logger
 ) : Sync<Person, User>(dbContext, settings, logger)
 {
@@ -31,17 +32,17 @@ public class PeopleToNextcloudSync(
     public override async Task<IEnumerable<User>> GetToAsync()
     {
         var users = await provisioningClient.GetUsers();
-        return users.Where(i => i.Id.StartsWith(settings.IdPrefix));
+        return users.Where(i => i.Id.StartsWith(settings.Value.IdPrefix));
     }
 
     protected override async Task<string> AddMissing(Person person)
         => await provisioningClient.CreateUser(new CreateUserRequest()
         {
-            UserId = settings.IdPrefix + person.Id,
+            UserId = settings.Value.IdPrefix + person.Id,
             DisplayName = GetDisplayName(person),
             Email = person.Email,
             Password = Guid.NewGuid().ToString(),
-            Quota = settings.Quoata
+            Quota = settings.Value.Quoata
         });
 
 

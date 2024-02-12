@@ -4,6 +4,7 @@ using ElvantoSync.Infrastructure.Nextcloud;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.Circles;
 using Nextcloud.Models.Collectives;
@@ -17,8 +18,8 @@ class GroupsToCollectivesSync(
     INextcloudCollectivesClient collectivesRepo,
     INextcloudCircleClient circleRepo,
     DbContext dbContext,
-    GroupsToCollectiveSyncSettings settings,
-    GroupsToNextcloudSyncSettings groupSettings,
+    IOptions<GroupsToCollectiveSyncSettings> settings,
+    IOptions<GroupsToNextcloudSyncSettings> groupSettings,
     ILogger<GroupsToCollectivesSync> logger
 ) : Sync<Group, Collective>(dbContext, settings, logger)
 {
@@ -37,7 +38,7 @@ class GroupsToCollectivesSync(
     {
         var createdCollective = await collectivesRepo.CreateCollective(group.Name);
         await circleRepo.AddMemberToCircle(createdCollective.CircleId, group.Name, MemberTypes.Group);
-        string leaderGroupName = group.Name + groupSettings.GroupLeaderSuffix;
+        string leaderGroupName = group.Name + groupSettings.Value.GroupLeaderSuffix;
         var leaderMemberId = await circleRepo.AddMemberToCircle(createdCollective.CircleId, leaderGroupName, MemberTypes.Group);
         await circleRepo.SetMemberLevel(createdCollective.CircleId, leaderMemberId, MemberLevels.Admin);
         return ToKeySelector(createdCollective);

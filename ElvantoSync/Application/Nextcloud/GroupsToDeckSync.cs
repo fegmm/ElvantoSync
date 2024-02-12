@@ -3,6 +3,7 @@ using ElvantoSync.ElvantoService;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.Deck;
 using System;
@@ -15,8 +16,8 @@ class GroupsToDeckSync(
     IElvantoClient elvanto,
     INextcloudDeckClient deckClient,
     DbContext dbContext,
-    GroupsToDeckSyncSettings settings,
-    GroupsToNextcloudSyncSettings groupSettings,
+    IOptions<GroupsToDeckSyncSettings> settings,
+    IOptions<GroupsToNextcloudSyncSettings> groupSettings,
     ILogger<GroupsToDeckSync> logger
 ) : Sync<Group, Board>(dbContext, settings, logger)
 {
@@ -35,7 +36,7 @@ class GroupsToDeckSync(
     {
         var createdBoard = await deckClient.CreateBoard(group.Name, string.Format("{0:X6}", Random.Shared.Next(0x1000000)));
         await deckClient.AddMember(createdBoard.Id, group.Name, MemberTypes.Group, true, false, false);
-        await deckClient.AddMember(createdBoard.Id, group.Name + groupSettings.GroupLeaderSuffix, MemberTypes.Group, true, true, false);
+        await deckClient.AddMember(createdBoard.Id, group.Name + groupSettings.Value.GroupLeaderSuffix, MemberTypes.Group, true, true, false);
         return ToKeySelector(createdBoard);
     }
 

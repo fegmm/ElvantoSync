@@ -6,6 +6,7 @@ using ElvantoSync.Settings.AllInkl;
 using KasApi.Requests;
 using KasApi.Response;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MigraDoc.DocumentObjectModel;
 using MigraDoc.Rendering;
 using System.Collections.Generic;
@@ -21,7 +22,7 @@ internal class GroupsToEmailSync(
     NextcloudApi.Api nextcloud,
     KasApi.Client kas,
     DbContext dbContext,
-    GroupsToEmailSyncSettings settings,
+    IOptions<GroupsToEmailSyncSettings> settings,
     ILogger<GroupsToEmailSync> logger
 ) : Sync<Group, MailForward>(dbContext, settings, logger)
 {
@@ -35,7 +36,7 @@ internal class GroupsToEmailSync(
             .Where(i => i.People?.Person != null && i.People.Person.Length != 0);
 
     public override async Task<IEnumerable<MailForward>> GetToAsync()
-        => (await kas.GetMailforwardsAsync()).Where(i => i.MailForwardAdress.Split("@")[1] == settings.KASDomain);
+        => (await kas.GetMailforwardsAsync()).Where(i => i.MailForwardAdress.Split("@")[1] == settings.Value.KASDomain);
 
     protected override async Task UpdateMatch(Group group, MailForward mail)
     {
@@ -55,7 +56,7 @@ internal class GroupsToEmailSync(
 
     private async Task CreateAndUploadPdf(IEnumerable<(Group Group, MailForward MailForward)> matches)
     {
-        var path = settings.UploadGroupMailAddressesToNextcloudPath;
+        var path = settings.Value.UploadGroupMailAddressesToNextcloudPath;
         if (string.IsNullOrEmpty(path))
         {
             return;
@@ -98,11 +99,11 @@ internal class GroupsToEmailSync(
         await kas.ExecuteRequestWithParams(new AddMailForward()
         {
             LocalPart = sanitizedGroupName,
-            DomainPart = settings.KASDomain,
+            DomainPart = settings.Value.KASDomain,
             Targets = targets
         });
 
-        return $"{sanitizedGroupName}@{settings.KASDomain}";
+        return $"{sanitizedGroupName}@{settings.Value.KASDomain}";
     }
 
     protected override async Task RemoveAdditional(MailForward forward)
