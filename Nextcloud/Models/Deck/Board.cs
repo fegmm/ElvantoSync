@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using Nextcloud.Utils;
+using System.Text.Json.Serialization;
 
 namespace Nextcloud.Models.Deck;
 
@@ -29,6 +30,7 @@ public record Board
     public required object Users { get; init; }
     
     [JsonPropertyName("shared")]
+    [JsonConverter(typeof(IntToBooleanConverter))]
     public required bool Shared { get; init; }
     
     [JsonPropertyName("deletedAt")]
@@ -40,6 +42,6 @@ public record Board
     [JsonPropertyName("lastModified")]
     public required long LastModified { get; init; }
     
-    [JsonPropertyName("setting")]
-    public required object Setting { get; init; }
+    [JsonPropertyName("settings")]
+    public required object Settings { get; init; }
 }

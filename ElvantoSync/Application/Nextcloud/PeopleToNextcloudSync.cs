@@ -51,7 +51,6 @@ public class PeopleToNextcloudSync(
         if (user.Quota.Used != 0)
         {
             logger.LogWarning("User {0} cannot be removed as contains {1} bytes of data.", user.Id, user.Quota.Used);
-            // TODO: Stop mapping deltion
         }
         await provisioningClient.DeleteUser(user.Id);
     }

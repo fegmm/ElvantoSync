@@ -48,6 +48,6 @@ public record Collective
     [JsonPropertyName("userPageOrder")]
     public required int UserPageOrder { get; init; }
 
-    [JsonPropertyName("userShowRecentPage")]
-    public bool? UserShowRecentPage { get; init; }
+    [JsonPropertyName("userShowRecentPages")]
+    public required bool UserShowRecentPages { get; init; }
 }

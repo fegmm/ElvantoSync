@@ -40,13 +40,12 @@ builder.Services
 
 if (builder.Environment.IsDevelopment())
 {
-    builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Debug);
-    var host = builder.Build();
-    using (IServiceScope scope = host.Services.CreateScope())
-    {
-        var syncs = scope.ServiceProvider.GetService<IEnumerable<ISync>>();
-        await new ElvantoSync.ElvantoSync(syncs).Execute(null);
-    }
+    builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
+    builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
+    builder.Services.AddHostedService<Nextcloud.Tests.NextcloudHost>();
+    builder.Services.AddHostedService<ElvantoSync.HostedElvantoSync>();
+    
+    builder.Build().Run();
 }
 else
 {

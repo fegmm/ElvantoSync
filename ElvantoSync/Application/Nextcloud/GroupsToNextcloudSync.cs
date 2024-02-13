@@ -30,7 +30,9 @@ public class GroupsToNextcloudSync(
         => (await elvanto.GroupsGetAllAsync(new ElvantoApi.Models.GetAllRequest() { Fields = ["people"] })).Groups.Group;
 
     public override async Task<IEnumerable<Group>> GetToAsync()
-        => (await provisioningClient.GetGroups());
+        => (await provisioningClient.GetGroups())
+        .Where(i => !i.Id.EndsWith(settings.Value.GroupLeaderSuffix))
+        .Where(i => i.Id != "admin");
 
     protected override async Task<string> AddMissing(ElvantoApi.Models.Group group)
     {
