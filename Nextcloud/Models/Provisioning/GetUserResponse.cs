@@ -1,4 +1,4 @@
-﻿using Nextcloud.Utils;
+﻿using Nextcloud.Utils.Json;
 using System.Text.Json.Serialization;
 
 namespace Nextcloud.Models.Provisioning;

@@ -37,9 +37,9 @@ class GroupsToCollectivesSync(
     protected override async Task<string> AddMissing(Group group)
     {
         var createdCollective = await collectivesRepo.CreateCollective(group.Name);
-        await circleRepo.AddMemberToCircle(createdCollective.CircleId, group.Name, MemberTypes.Group);
-        string leaderGroupName = group.Name + groupSettings.Value.GroupLeaderSuffix;
-        var leaderMemberId = await circleRepo.AddMemberToCircle(createdCollective.CircleId, leaderGroupName, MemberTypes.Group);
+        await circleRepo.AddMemberToCircle(createdCollective.CircleId, group.Id, MemberTypes.Group);
+        string leaderGroupId = group.Id + groupSettings.Value.GroupLeaderSuffix;
+        var leaderMemberId = await circleRepo.AddMemberToCircle(createdCollective.CircleId, leaderGroupId, MemberTypes.Group);
         await circleRepo.SetMemberLevel(createdCollective.CircleId, leaderMemberId, MemberLevels.Admin);
         return ToKeySelector(createdCollective);
     }

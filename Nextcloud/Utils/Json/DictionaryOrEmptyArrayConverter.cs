@@ -2,8 +2,8 @@
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
-namespace Nextcloud.Utils;
-public class DictionaryOrEmptyArrayConverter<T, F> : JsonConverter<Dictionary<T,F>> where T : notnull
+namespace Nextcloud.Utils.Json;
+public class DictionaryOrEmptyArrayConverter<T, F> : JsonConverter<Dictionary<T, F>> where T : notnull
 {
     public override Dictionary<T, F>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {

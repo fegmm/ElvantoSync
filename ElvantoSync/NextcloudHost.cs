@@ -8,7 +8,7 @@ using Testcontainers.MySql;
 
 namespace Nextcloud.Tests;
 
-public class NextcloudHost : IHostedService
+public class NextcloudHost : BackgroundService
 {
     public string NextcloudUrl => $"http://localhost:{port}";
 
@@ -21,7 +21,7 @@ public class NextcloudHost : IHostedService
         port = 8080;
     }
 
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public override async Task StartAsync(CancellationToken cancellationToken)
     {
         if (container != null)
         {
@@ -40,6 +40,9 @@ public class NextcloudHost : IHostedService
 
         await sql_container.StartAsync(cancellationToken);
 
+        await sql_container.ExecAsync(["mysql", "-p", "mysql", "-e", "ALTER DATABASE nextcloud CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"]);
+
+
         container = new ContainerBuilder()
             .WithImage("nextcloud-test:latest")
             .WithPortBinding(port, 80)
@@ -50,10 +53,10 @@ public class NextcloudHost : IHostedService
         await container.StartAsync(cancellationToken);
 
         await container.ExecAsync(["su", "www-data", "-s", "/bin/bash", "-c", $"php occ db:convert-type --clear-schema --password mysql --port 3306 -n mysql mysql db nextcloud"], cancellationToken);
-
+        await container.ExecAsync(["su", "www-data", "-s", "/bin/bash", "-c", $"php occ config:system:set mysql.utf8mb4 --type boolean --value=\"true\" && php occ maintenance:repair"], cancellationToken);
     }
 
-    public async Task StopAsync(CancellationToken cancellationToken)
+    public override async Task StopAsync(CancellationToken cancellationToken)
     {
         if (container == null || sql_container == null)
         {
@@ -61,6 +64,10 @@ public class NextcloudHost : IHostedService
         }
         await container.DisposeAsync();
         await sql_container.DisposeAsync();
+    }
 
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        return Task.CompletedTask;
     }
 }

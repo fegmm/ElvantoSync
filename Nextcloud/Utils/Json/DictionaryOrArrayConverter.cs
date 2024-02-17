@@ -2,7 +2,7 @@
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
-namespace Nextcloud.Utils
+namespace Nextcloud.Utils.Json
 {
     internal class DictionaryOrArrayConverter<F> : JsonConverter<IEnumerable<F>>
     {

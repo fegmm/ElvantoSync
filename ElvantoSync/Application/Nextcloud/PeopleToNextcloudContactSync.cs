@@ -1,6 +1,7 @@
 ﻿using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Persistence;
+using ElvantoSync.Settings;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -19,6 +20,7 @@ namespace ElvantoSync.Nextcloud;
 class PeopleToNextcloudContactSync(
     IElvantoClient elvanto,
     IOptions<PeopleToNextcloudSyncSettings> peopleSettings,
+    IOptions<ApplicationSettings> applicationSettings,
     WebDavClient nextcloud_webdav,
     HttpClient img_client,
     DbContext dbContext,
@@ -36,7 +38,7 @@ class PeopleToNextcloudContactSync(
 
     public override async Task<IEnumerable<WebDavResource>> GetToAsync()
     {
-        var contact_response = await nextcloud_webdav.Propfind("remote.php/dav/addressbooks/users/Administrator/default/");
+        var contact_response = await nextcloud_webdav.Propfind($"remote.php/dav/addressbooks/users/{applicationSettings.Value.NextcloudUser}/{settings.Value.ContactBook}/");
         return contact_response.Resources.Where(i => ToKeySelector(i).Contains(peopleSettings.Value.IdPrefix));
     }
 
@@ -44,7 +46,7 @@ class PeopleToNextcloudContactSync(
     {
         VCard vcard = await PersonToVCard(person);
 
-        string uri = $"remote.php/dav/addressbooks/users/Administrator/default/{peopleSettings.Value.IdPrefix + person.Id}.vcf";
+        string uri = $"remote.php/dav/addressbooks/users/{applicationSettings.Value.NextcloudUser}/{settings.Value.ContactBook}/{peopleSettings.Value.IdPrefix + person.Id}.vcf";
         var res = await nextcloud_webdav.PutFile(uri, new StringContent(vcard.Serialize()));
         if (!res.IsSuccessful)
         {

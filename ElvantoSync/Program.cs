@@ -1,5 +1,3 @@
-using ElvantoSync;
-using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Settings;
 using Microsoft.EntityFrameworkCore;
@@ -9,8 +7,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nextcloud.Extensions;
 using Quartz;
-using System.Collections;
-using System.Collections.Generic;
 
 var builder = Host.CreateApplicationBuilder();
 
@@ -40,7 +36,7 @@ builder.Services
 
 if (builder.Environment.IsDevelopment())
 {
-    builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
+    builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Debug);
     builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
     builder.Services.AddHostedService<Nextcloud.Tests.NextcloudHost>();
     builder.Services.AddHostedService<ElvantoSync.HostedElvantoSync>();

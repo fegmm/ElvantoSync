@@ -18,22 +18,16 @@ internal class ElvantoSync(IEnumerable<ISync> syncs) : IJob
             await activeSync.Apply();
         };
     }
-
 }
 
-internal class HostedElvantoSync(IServiceProvider serviceProvider) : IHostedService
+internal class HostedElvantoSync(IServiceProvider serviceProvider) : BackgroundService
 {
-    public async Task StartAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using (IServiceScope scope = serviceProvider.CreateScope())
         {
             var syncs = scope.ServiceProvider.GetService<IEnumerable<ISync>>();
             await new ElvantoSync(syncs).Execute(null);
         }
-    }
-
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
     }
 }

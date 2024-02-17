@@ -4,6 +4,7 @@ using ElvantoSync.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Quartz;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -152,34 +153,30 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
         var matchedAdditionals = mappedComp.matches.Select(i => i.Item1.Value).ToHashSet();
         var matchedMissings = mappedComp.matches.Select(i => i.Item2).ToHashSet();
 
-        additionals = additionals.Where(i => !matchedAdditionals.Contains(i));
-        missings = missings.Where(i => !matchedMissings.Contains(i));
+        additionals = additionals.Where(i => !matchedAdditionals.Contains(i)).ToList();
+        missings = missings.Where(i => !matchedMissings.Contains(i)).ToList();
         var matches = mappedComp.matches.Select(i => (i.Item1.Value, i.Item2));
 
         // Resolve via fallback mapping
-        var fallbackComp = from.CompareTo(to, FallbackFromKeySelector, FallbackToKeySelector);
+        // TODO: From and To are mixed up here
+        var fallbackComp = additionals.CompareTo(missings, FallbackFromKeySelector, FallbackToKeySelector);
         var fallbackMatchedAdditionals = fallbackComp.matches
             .Select(i => i.Item1)
-            .Where(i => !matchedAdditionals.Contains(i))
             .ToHashSet();
         var fallbackMatchedMissings = fallbackComp.matches
             .Select(i => i.Item2)
-            .Where(i => !matchedMissings.Contains(i))
             .ToHashSet();
 
-        var removedAdditionals = additionals.Where(i => fallbackMatchedAdditionals.Contains(i)).ToHashSet();
-        var removedMissings = missings.Where(i => !fallbackMatchedMissings.Contains(i)).ToHashSet();
-        additionals = additionals.Where(i => !fallbackMatchedAdditionals.Contains(i));
-        missings = missings.Where(i => !fallbackMatchedMissings.Contains(i));
+        additionals = additionals.Where(i => !fallbackMatchedAdditionals.Contains(i)).ToList();
+        missings = missings.Where(i => !fallbackMatchedMissings.Contains(i)).ToList();
+        matches = matches.Concat(fallbackComp.matches);
 
-        var newMatches = fallbackComp.matches.Where(i => removedAdditionals.Contains(i.Item1) || removedMissings.Contains(i.Item2));
-        matches = matches.Concat(newMatches);
-
-        await dbContext.IndexMappings.AddRangeAsync(newMatches
-            .Select(i => new IndexMapping() { 
-                FromId = FromKeySelector(i.Item1), 
-                ToId = ToKeySelector(i.Item2), 
-                Type = this.GetType().Name 
+        await dbContext.IndexMappings.AddRangeAsync(fallbackComp.matches
+            .Select(i => new IndexMapping()
+            {
+                FromId = FromKeySelector(i.Item1),
+                ToId = ToKeySelector(i.Item2),
+                Type = this.GetType().Name
             })
         );
         await dbContext.SaveChangesAsync();

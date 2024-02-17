@@ -1,4 +1,4 @@
-﻿using Nextcloud.Utils;
+﻿using Nextcloud.Utils.Json;
 using System.Text.Json.Serialization;
 
 namespace Nextcloud.Models.Deck;
@@ -31,7 +31,7 @@ public record Board
     
     [JsonPropertyName("shared")]
     [JsonConverter(typeof(IntToBooleanConverter))]
-    public required bool Shared { get; init; }
+    public bool? Shared { get; init; }
     
     [JsonPropertyName("deletedAt")]
     public required long DeletedAt { get; init; }

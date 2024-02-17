@@ -10,8 +10,6 @@ public class NextcloudCollectivesClient(HttpClient client) : INextcloudCollectiv
     private string? csrfToken;
     public async Task<Collective[]> GetCollectives(CancellationToken cancellationToken = default)
     {
-        var token = await GetCsrfToken(cancellationToken);
-        client.DefaultRequestHeaders.Add("requesttoken", token);
         var response = await client.GetAsync("/index.php/apps/collectives/_api", cancellationToken);
         var result = await response.Content.ReadFromJsonAsync<OCS<Collective[]>>(cancellationToken);
         return result!.Data;
@@ -20,23 +18,17 @@ public class NextcloudCollectivesClient(HttpClient client) : INextcloudCollectiv
     public async Task<Collective> CreateCollective(string name, CancellationToken cancellationToken = default)
     {
         var reqBody = new { name = name };
-        var token = await GetCsrfToken(cancellationToken);
-        client.DefaultRequestHeaders.Add("requesttoken", token);
         var response = await client.PostAsJsonAsync("/index.php/apps/collectives/_api", reqBody, cancellationToken);
         var result = await response.Content.ReadFromJsonAsync<OCS<Collective>>(cancellationToken);
         return result!.Data;
     }
 
-    private async Task<string> GetCsrfToken(CancellationToken cancellationToken = default)
+    internal static async Task<string> GetCsrfToken(HttpClient httpClient)
     {
-        if (csrfToken != null)
-            return csrfToken;
-
-        var response = await client.GetAsync("/index.php/csrftoken", cancellationToken);
+        var response = await httpClient.GetAsync("/index.php/csrftoken");
         var result = await response.EnsureSuccessStatusCode()
-            .Content.ReadFromJsonAsync<CSRFToken>(cancellationToken);
-        csrfToken = result!.Token;
-        return csrfToken;
+            .Content.ReadFromJsonAsync<CSRFToken>();
+        return result!.Token;
     }
 
     public async Task DeleteCollective(int collectiveId, CancellationToken cancellationToken = default)
