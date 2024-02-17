@@ -40,6 +40,10 @@ public class GroupsToNextcloudSync(
             provisioningClient.CreateGroup(group.Id, group.Name),
             provisioningClient.CreateGroup(group.Id + settings.Value.GroupLeaderSuffix, group.Name + settings.Value.GroupLeaderSuffix)
         );
+
+        await UpdateMembersOfGroup(group.People.Person, group.Id);
+        await UpdateMembersOfGroup(group.People.Person.Where(IsLeader), group.Id + settings.Value.GroupLeaderSuffix);
+
         return group.Id;
     }
 
@@ -51,24 +55,29 @@ public class GroupsToNextcloudSync(
 
     protected override async Task UpdateMatch(ElvantoApi.Models.Group elvantoGroup, Group nextcloudGroup)
     {
-        if (elvantoGroup.Name != nextcloudGroup.Id)
+        if (elvantoGroup.Name != nextcloudGroup.DisplayName)
         {
             await provisioningClient.EditGroup(nextcloudGroup.Id, elvantoGroup.Name);
             await provisioningClient.EditGroup(nextcloudGroup.Id + settings.Value.GroupLeaderSuffix, elvantoGroup.Name + settings.Value.GroupLeaderSuffix);
         }
 
-        var members = await provisioningClient.GetMembers(nextcloudGroup.Id);
-        var compare = elvantoGroup.People.Person.CompareTo(members, i => peopleSettings.Value.IdPrefix + i.Id, id => id);
-        var addMemberRequests = compare.additional.Select(async i =>
-        {
-            await provisioningClient.AddUserToGroup(peopleSettings.Value.IdPrefix + i.Id, nextcloudGroup.Id);
-            if (i.Position == "Leader" || i.Position == "Assistant Leader")
-                await provisioningClient.AddUserToGroup(
-                    peopleSettings.Value.IdPrefix + i.Id,
-                    nextcloudGroup.Id + settings.Value.GroupLeaderSuffix
-                );
-        });
-        var removeMemberRequests = compare.missing.Select(id => provisioningClient.RemoveUserFromGroup(id, nextcloudGroup.Id));
+        await UpdateMembersOfGroup(elvantoGroup.People.Person, nextcloudGroup.Id);
+        await UpdateMembersOfGroup(elvantoGroup.People.Person.Where(IsLeader), nextcloudGroup.Id + settings.Value.GroupLeaderSuffix);
+    }
+
+    private async Task UpdateMembersOfGroup(IEnumerable<ElvantoApi.Models.GroupMember> members, string nextcloudGroupId)
+    {
+        var nextcloudMembers = await provisioningClient.GetMembers(nextcloudGroupId);
+        var compare = members.CompareTo(nextcloudMembers, i => peopleSettings.Value.IdPrefix + i.Id, id => id);
+
+        var addMemberRequests = compare.additional
+            .Select(i => provisioningClient.AddUserToGroup(peopleSettings.Value.IdPrefix + i.Id, nextcloudGroupId));
+
+        var removeMemberRequests = compare.missing
+            .Select(id => provisioningClient.RemoveUserFromGroup(id, nextcloudGroupId));
         await Task.WhenAll([.. addMemberRequests, .. removeMemberRequests]);
     }
+
+    private static bool IsLeader(ElvantoApi.Models.GroupMember member)
+        => member.Position == "Leader" || member.Position == "Assistant Leader";
 }

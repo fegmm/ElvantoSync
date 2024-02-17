@@ -4,7 +4,6 @@ using ElvantoSync.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Quartz;
 using System;
 using System.Collections.Generic;
 using System.IO;
