@@ -11,8 +11,8 @@ internal static class IEnumerableExtensions
         var fromDictionary = from.ToDictionary(fromKeySelector);
         var toDictionary = to.ToDictionary(toKeySelector);
 
-        var additional = toDictionary.Where(i => !fromDictionary.ContainsKey(i.Key)).Select(i => fromDictionary[i.Key]);
-        var missing = fromDictionary.Where(i => !toDictionary.ContainsKey(i.Key)).Select(i => toDictionary[i.Key]);
+        var additional = fromDictionary.Where(i => !toDictionary.ContainsKey(i.Key)).Select(i => i.Value);
+        var missing = toDictionary.Where(i => !fromDictionary.ContainsKey(i.Key)).Select(i => i.Value);
         var matches = fromDictionary.Where(i => toDictionary.ContainsKey(i.Key)).Select(i => (i.Value, toDictionary[i.Key]));
 
         return new CompareResult<TFrom, TTo>(additional, matches, missing);

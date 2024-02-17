@@ -7,7 +7,9 @@ public class DbContext : Microsoft.EntityFrameworkCore.DbContext
 {
     public virtual DbSet<IndexMapping> IndexMappings { get; set; }
 
-    public DbContext(DbContextOptions<DbContext> options) : base(options) { }
+    public DbContext(DbContextOptions<DbContext> options) : base(options) {
+        Database.EnsureCreated();
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

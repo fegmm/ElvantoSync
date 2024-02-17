@@ -1,0 +1,21 @@
+services:
+  db:
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=dbPassword123
+      - MYSQL_DATABASE=nextcloud
+
+  app:
+    image: nextcloud
+    links:
+      - db
+    environment:
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=dbPassword123
+      - MYSQL_HOST=db
+      - NEXTCLOUD_ADMIN_USER=admin
+      - NEXTCLOUD_ADMIN_PASSWORD=StrongPassword123!
+
+    ports:
+      - 80:80 

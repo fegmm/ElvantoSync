@@ -1,4 +1,4 @@
-﻿using Nextcloud.Utils;
+﻿using Nextcloud.Utils.Json;
 using System.Text.Json.Serialization;
 
 namespace Nextcloud.Models.GroupFolders;
@@ -27,6 +27,7 @@ public record GroupFolder
     public required bool Acl { get; init; }
 
     [JsonPropertyName("manage")]
+    [JsonConverter(typeof(DictionaryOrArrayConverter<ACLManage>))]
     public required IEnumerable<ACLManage> Manage { get; init; }
 
     [JsonPropertyName("group_details")]
@@ -48,13 +49,13 @@ public record ACLManage
 
 public record GroupDetail
 {
-    
+
     [JsonPropertyName("displayName")]
     public required string DisplayName { get; init; }
-    
+
     [JsonPropertyName("permissions")]
     public required int Permissions { get; init; }
-    
+
     [JsonPropertyName("type")]
     public required string Type { get; init; }
 }

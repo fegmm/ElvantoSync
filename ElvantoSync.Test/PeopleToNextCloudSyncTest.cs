@@ -1,20 +1,17 @@
-﻿using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
-using Nextcloud.Interfaces;
-using Xunit.Priority;
+﻿using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
-using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.Nextcloud;
+using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
-using Nextcloud.Models.Provisioning;
+using Nextcloud.Interfaces;
 using Nextcloud.Tests;
-using ElvantoSync.Application.Nextcloud;
-using ElvantoSync.Application;
+using Xunit.Priority;
 
 
 namespace ElvantoSync.Tests;
 
 [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
-
 public class PeopleToNextcloudSyncTests : TestBase
 {
 
@@ -24,10 +21,7 @@ public class PeopleToNextcloudSyncTests : TestBase
 
     public PeopleToNextcloudSyncTests() : base()
     {
-
         _serviceProvider = BuildServiceProvider();
-
-
 
         client = _serviceProvider.GetRequiredService<INextcloudProvisioningClient>();
     }
@@ -41,13 +35,13 @@ public class PeopleToNextcloudSyncTests : TestBase
     }
 
     [Fact, Priority(0)]
-    public override async Task ApplyAsync_ShouldAddNewElementFromElvanto()
+    public override async Task Apply_ShouldAddNewElementFromElvanto()
     {
 
-        IEnumerable<Person> people = setUpPeopleMock();
-       _peopleToNextcloudSync = fetchSyncImplementation<PeopleToNextcloudSync>(_serviceProvider);
+        IEnumerable<Person> people = SetUpPeopleMock();
+        _peopleToNextcloudSync = FetchSyncImplementation<PeopleToNextcloudSync>(_serviceProvider);
 
-        await _peopleToNextcloudSync.ApplyAsync();
+        await _peopleToNextcloudSync.Apply();
         var result = await client.GetUsers();
 
         // Assert
@@ -63,19 +57,19 @@ public class PeopleToNextcloudSyncTests : TestBase
         }
     }
 
-    
+
 
     [Fact, Priority(0)]
-    public override async Task ApplyAsync_ShouldNotAddIfNoNewElement()
+    public override async Task Apply_ShouldNotAddIfNoNewElement()
     {
 
-        var people = setUpPeopleMock();
-        _peopleToNextcloudSync = fetchSyncImplementation<PeopleToNextcloudSync>(_serviceProvider);
-        await _peopleToNextcloudSync.ApplyAsync();
+        var people = SetUpPeopleMock();
+        _peopleToNextcloudSync = FetchSyncImplementation<PeopleToNextcloudSync>(_serviceProvider);
+        await _peopleToNextcloudSync.Apply();
         var initialApply = await client.GetUsers();
         // Act
-        
-        await _peopleToNextcloudSync.ApplyAsync();
+
+        await _peopleToNextcloudSync.Apply();
         var secondApply = await client.GetUsers();
         // Assert
 

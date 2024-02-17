@@ -1,22 +1,22 @@
 using ElvantoSync;
-using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
+using ElvantoSync.Exceptions;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.GroupFolders;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-
 class GroupsToNextcloudGroupFolderSync(
     IElvantoClient elvanto,
     INextcloudGroupFolderClient groupFolderClient,
     DbContext dbContext,
-    GroupsToNextcloudGroupFolderSyncSettings settings,
-    GroupsToNextcloudSyncSettings groupSettings,
+    IOptions<GroupsToNextcloudGroupFolderSyncSettings> settings,
+    IOptions<GroupsToNextcloudSyncSettings> groupSettings,
     ILogger<GroupsToNextcloudGroupFolderSync> logger
 ) : Sync<Group, GroupFolder>(dbContext, settings, logger)
 {
@@ -37,21 +37,18 @@ class GroupsToNextcloudGroupFolderSync(
         await groupFolderClient.AddGroup(groupFolderId, group.Name);
         await groupFolderClient.SetPermission(groupFolderId, group.Name, Permissions.All);
         await groupFolderClient.SetAcl(groupFolderId, true);
-        await groupFolderClient.AddAclManager(groupFolderId, group.Name + groupSettings.GroupLeaderSuffix);
+        await groupFolderClient.AddAclManager(groupFolderId, group.Name + groupSettings.Value.GroupLeaderSuffix);
         return groupFolderId.ToString();
     }
 
     protected override async Task RemoveAdditional(GroupFolder groupFolder)
     {
-        if (groupFolder.Size == 0)
+        if (groupFolder.Size > 0)
         {
-            await groupFolderClient.DeleteGroupFolder(groupFolder.Id);
+            throw new ContainsDataException($"Group folder {groupFolder.Id} is not empty and will not be deleted");
         }
-        else
-        {
-            logger.LogWarning("Group folder {id} is not empty and will not be deleted", groupFolder.Id);
-            // TODO: Capture id removal
-        }
+
+        await groupFolderClient.DeleteGroupFolder(groupFolder.Id);
     }
 
     protected override async Task UpdateMatch(Group group, GroupFolder groupFolder)

@@ -1,6 +1,4 @@
-﻿using ElvantoSync.Application;
-using ElvantoSync.Application.Nextcloud;
-using ElvantoSync.ElvantoApi.Models;
+﻿using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.Settings;
 using KasApi;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,8 +10,8 @@ namespace ElvantoSync.Tests;
 
 public abstract class TestBase : IAsyncLifetime
 {
-    public abstract Task ApplyAsync_ShouldAddNewElementFromElvanto();
-    public abstract Task ApplyAsync_ShouldNotAddIfNoNewElement();
+    public abstract Task Apply_ShouldAddNewElementFromElvanto();
+    public abstract Task Apply_ShouldNotAddIfNoNewElement();
 
     protected ApplicationSettings Settings;
     private readonly NextcloudContainer nextcloud;
@@ -24,9 +22,9 @@ public abstract class TestBase : IAsyncLifetime
     {
         Services = new ServiceCollection();
         var nextcloud = new NextcloudContainer();
-        
+
         ConfigureServices(nextcloud);
-        
+
         this.nextcloud = nextcloud;
     }
 
@@ -35,16 +33,15 @@ public abstract class TestBase : IAsyncLifetime
         return Services.BuildServiceProvider();
     }
 
-    protected IEnumerable<Person> setUpPeopleMock()
+    protected IEnumerable<Person> SetUpPeopleMock()
     {
-        IEnumerable<Person> people = new List<Person>
-        {
-           new Person { Id = "3", Firstname = "Alex", Lastname = "Johnson", Email = "alexj@example.com" },
-           new Person { Id = "4", Firstname = "Chris", Lastname = "Smith", Email = "chriss@example.net" },
-new Person { Id = "5", Firstname = "Jordan", Lastname = "Brown", Email = "jordanb@example.org" },
-new Person { Id = "6", Firstname = "Jamie", Lastname = "Lee", Email = "jamiel@example.com" },
-new Person { Id = "7", Firstname = "Casey", Lastname = "Kim", Email = "caseyk@example.net" },
-        };
+        IEnumerable<Person> people = [
+            new Person { Id = "3", Firstname = "Alex", Lastname = "Johnson", Email = "alexj@example.com" },
+            new Person { Id = "4", Firstname = "Chris", Lastname = "Smith", Email = "chriss@example.net" },
+            new Person { Id = "5", Firstname = "Jordan", Lastname = "Brown", Email = "jordanb@example.org" },
+            new Person { Id = "6", Firstname = "Jamie", Lastname = "Lee", Email = "jamiel@example.com" },
+            new Person { Id = "7", Firstname = "Casey", Lastname = "Kim", Email = "caseyk@example.net" },
+        ];
 
         _elvantoClientMock
             .Setup(x => x.PeopleGetAllAsync(It.IsAny<GetAllPeopleRequest>()))
@@ -59,15 +56,13 @@ new Person { Id = "7", Firstname = "Casey", Lastname = "Kim", Email = "caseyk@ex
         return people;
     }
 
-    protected IEnumerable<Group> setUpGroupMock(Person[] person)
+    protected IEnumerable<Group> SetUpGroupMock(Person[] person)
     {
-       
-
         GroupMembers groupMembers = new GroupMembers
         {
-            Person = person.Select(x => new GroupMember { Id = x.Id, Firstname = x.Firstname, Lastname = x.Lastname, Email = x.Email})
+            Person = person.Select(x => new GroupMember { Id = x.Id, Firstname = x.Firstname, Lastname = x.Lastname, Email = x.Email })
             .Take(2)
-            .Select(x =>{ x.Position = "Assistant"; return x;}).ToArray()
+            .Select(x => { x.Position = "Assistant"; return x; }).ToArray()
         };
 
         groupMembers.Person.Take(2).Select(x => x.Position = "Leader");
@@ -91,34 +86,33 @@ new Person { Id = "7", Firstname = "Casey", Lastname = "Kim", Email = "caseyk@ex
         return groups;
     }
 
-    
+
 
     protected virtual void ConfigureServices(NextcloudContainer nextcloud)
     {
-        Settings = new ApplicationSettings("./TestPath", null, null, null, null, null, null, null,"Leader",null);
-       // Services.AddSingleton<PeopleToNextcloudSync>();
-        Services.AddNextCloudSync();
-        Services.AddSingleton<IKasClient >(new Mock<IKasClient>().Object);
-        Services.AddSingleton<ApplicationSettings>(Settings);
+        Settings = new ApplicationSettings();
+
+        Services.AddSyncs();
+        Services.AddApplicationOptions();
+        Services.AddSingleton(new Mock<IKasClient>().Object);
+        Services.AddSingleton(Settings);
         Services.AddNextcloudClients(nextcloud.NextcloudUrl, "admin", "StrongPassword123!", "elvatnosync/1.0");
-
     }
 
-    protected ISync fetchSyncImplementation<T>(IServiceProvider serviceProvider)
+    protected ISync FetchSyncImplementation<T>(IServiceProvider serviceProvider)
     {
-        // Act
-       return serviceProvider.GetServices<ISync>()
-        .Where(service => service.GetType().Equals(typeof(T)))
-        .Select(service => service).First();
+        return serviceProvider.GetServices<ISync>()
+         .Where(service => service.GetType() is T)
+         .Select(service => service).First();
     }
 
 
-      public void Dispose()
+    public void Dispose()
     {
         // Dispose of unmanaged resources
         nextcloud.DisposeAsync();
         Dispose(true);
-        
+
         // Suppress finalization
         GC.SuppressFinalize(this);
     }

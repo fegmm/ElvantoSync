@@ -1,4 +1,4 @@
-﻿using Nextcloud.Utils;
+﻿using Nextcloud.Utils.Json;
 using System.Text.Json.Serialization;
 
 namespace Nextcloud.Models;
@@ -15,8 +15,9 @@ internal record OCS<T>
     public required T Data { get; init; }
 
     [JsonPropertyName("meta")]
-    public required OCSMeta Meta { get; init; }
+    public OCSMeta? Meta { get; init; }
 }
+
 internal record OCSMeta
 {
     [JsonPropertyName("status")]

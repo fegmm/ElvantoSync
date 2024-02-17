@@ -1,9 +1,10 @@
 ﻿namespace ElvantoSync.Settings;
 
-internal record ApplicationSettings
+public record ApplicationSettings
 {
     internal const string ConfigSection = "Application";
 
+    public string CronSchedule { get; set; } = "0 0 0 1/1 * ? *";
     public string ConnectionString { get; set; } = "Data Source=ElvantoSync.db";
     public string ElvantoKey { get; init; }
     public string KASLogin { get; init; }

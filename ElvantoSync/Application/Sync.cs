@@ -3,6 +3,7 @@ using ElvantoSync.Persistence.Entities;
 using ElvantoSync.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,15 +12,15 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync;
 
-interface ISync
+public interface ISync
 {
     public bool IsActive { get; }
     public Task Apply();
 }
 
-abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, SyncSettings settings, ILogger logger) : ISync
+public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions<SyncSettings> settings, ILogger logger) : ISync
 {
-    public bool IsActive => settings.IsEnabled;
+    public bool IsActive => settings.Value.IsEnabled;
 
     public abstract string FromKeySelector(TFrom i);
     public abstract string ToKeySelector(TTo i);
@@ -33,7 +34,7 @@ abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, SyncSettings se
     protected abstract Task<string> AddMissing(TFrom missing);
     public async Task AddMissings(IEnumerable<TFrom> missings)
     {
-        if (settings.AddMissing)
+        if (!settings.Value.AddMissing)
         {
             return;
         }
@@ -62,7 +63,7 @@ abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, SyncSettings se
     protected virtual Task RemoveAdditional(TTo additional) => Task.CompletedTask;
     public async Task RemoveAdditionals(IEnumerable<TTo> additionals)
     {
-        if (settings.DeleteAdditionals)
+        if (!settings.Value.DeleteAdditionals)
         {
             return;
         }
@@ -90,22 +91,24 @@ abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, SyncSettings se
     protected virtual Task UpdateMatch(TFrom from, TTo to) => Task.CompletedTask;
     public virtual async Task UpdateMatches(IEnumerable<(TFrom, TTo)> matches)
     {
-        if (settings.UpdateExisting)
+        if (!settings.Value.UpdateExisting)
         {
-            var tasks = matches.ToDictionary(
-                match => (FromKeySelector(match.Item1), ToKeySelector(match.Item2)),
-                match => UpdateMatch(match.Item1, match.Item2)
-            );
+            return;
+        }
 
-            try
-            {
-                await Task.WhenAll(tasks.Values);
-            }
-            catch (Exception e)
-            {
-                var failedIds = tasks.Where(i => i.Value.IsFaulted).Select(i => i.Key);
-                logger.LogError(e, "Applying updates failed for ids:\n{ids}", failedIds);
-            }
+        var tasks = matches.ToDictionary(
+            match => (FromKeySelector(match.Item1), ToKeySelector(match.Item2)),
+            match => UpdateMatch(match.Item1, match.Item2)
+        );
+
+        try
+        {
+            await Task.WhenAll(tasks.Values);
+        }
+        catch (Exception e)
+        {
+            var failedIds = tasks.Where(i => i.Value.IsFaulted).Select(i => i.Key);
+            logger.LogError(e, "Applying updates failed for ids:\n{ids}", failedIds);
         }
     }
 
@@ -114,50 +117,69 @@ abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, SyncSettings se
         var from = await GetFromAsync();
         var to = await GetToAsync();
 
-        var compare = await RunComparison(from, to);
+        var compare = await RunComparison(from.ToList(), to.ToList());
 
-        Directory.CreateDirectory(settings.OutputFolder);
-        await File.WriteAllLinesAsync(Path.Combine(settings.OutputFolder, this.GetType().Name + "-missings.txt"), compare.additional.Select(FromKeySelector));
-        await File.WriteAllLinesAsync(Path.Combine(settings.OutputFolder, this.GetType().Name + "-additionals.txt"), compare.missing.Select(ToKeySelector));
+        Directory.CreateDirectory(settings.Value.OutputFolder);
+        await File.WriteAllLinesAsync(Path.Combine(settings.Value.OutputFolder, this.GetType().Name + "-missings.txt"), compare.additional.Select(FromKeySelector));
+        await File.WriteAllLinesAsync(Path.Combine(settings.Value.OutputFolder, this.GetType().Name + "-additionals.txt"), compare.missing.Select(ToKeySelector));
 
-        if (!settings.LogOnly)
+        if (!settings.Value.LogOnly)
         {
+            logger.LogInformation("Will add {count} items, updated {count} and remove {count} items", compare.additional.Count(), compare.matches.Count(), compare.missing.Count());
             await AddMissings(compare.additional);
             await UpdateMatches(compare.matches);
             await RemoveAdditionals(compare.missing);
         }
+        else
+        {
+            logger.LogInformation("Would have added {count} items, updated {count} items and removed {count} items", compare.additional.Count(), compare.matches.Count(), compare.missing.Count());
+        }
     }
 
-    private async Task<CompareResult<TFrom, TTo>> RunComparison(IEnumerable<TFrom> from, IEnumerable<TTo> to)
+    private async Task<CompareResult<TFrom, TTo>> RunComparison(List<TFrom> from, List<TTo> to)
     {
-        var fromIds = from.ToDictionary(FromKeySelector, i => i);
-        var mappedFroms = await dbContext.IndexMappings
+        IEnumerable<TFrom> additionals = from;
+        IEnumerable<TTo> missings = to;
+
+        // Resolve via database mapping
+        var fromDict = from.ToDictionary(FromKeySelector);
+        var mappedFrom = await dbContext.IndexMappings
             .Where(i => i.Type == this.GetType().Name)
-            .Where(i => fromIds.ContainsKey(i.FromId))
-            .ToDictionaryAsync(i => i.ToId, i => fromIds[i.FromId]);
-        var mappedCompare = mappedFroms.CompareTo(to, i => i.Key, ToKeySelector);
-        var (additional, matches, missing) = (
-            mappedCompare.additional.Select(i => i.Value),
-            mappedCompare.matches.Select(i => (i.Item1.Value, i.Item2)),
-            mappedCompare.missing
+            .ToDictionaryAsync(i => i.ToId, i => fromDict[i.FromId]);
+
+        var mappedComp = mappedFrom.CompareTo(to, i => i.Key, ToKeySelector);
+
+        var matchedAdditionals = mappedComp.matches.Select(i => i.Item1.Value).ToHashSet();
+        var matchedMissings = mappedComp.matches.Select(i => i.Item2).ToHashSet();
+
+        additionals = additionals.Where(i => !matchedAdditionals.Contains(i)).ToList();
+        missings = missings.Where(i => !matchedMissings.Contains(i)).ToList();
+        var matches = mappedComp.matches.Select(i => (i.Item1.Value, i.Item2));
+
+        // Resolve via fallback mapping
+        // TODO: From and To are mixed up here
+        var fallbackComp = additionals.CompareTo(missings, FallbackFromKeySelector, FallbackToKeySelector);
+        var fallbackMatchedAdditionals = fallbackComp.matches
+            .Select(i => i.Item1)
+            .ToHashSet();
+        var fallbackMatchedMissings = fallbackComp.matches
+            .Select(i => i.Item2)
+            .ToHashSet();
+
+        additionals = additionals.Where(i => !fallbackMatchedAdditionals.Contains(i)).ToList();
+        missings = missings.Where(i => !fallbackMatchedMissings.Contains(i)).ToList();
+        matches = matches.Concat(fallbackComp.matches);
+
+        await dbContext.IndexMappings.AddRangeAsync(fallbackComp.matches
+            .Select(i => new IndexMapping()
+            {
+                FromId = FromKeySelector(i.Item1),
+                ToId = ToKeySelector(i.Item2),
+                Type = this.GetType().Name
+            })
         );
+        await dbContext.SaveChangesAsync();
 
-        if (!settings.EnableFallback)
-        {
-            return new CompareResult<TFrom, TTo>(additional, matches, missing);
-        }
-
-        var fallbackCompare = from.CompareTo(to, FallbackFromKeySelector, FallbackToKeySelector);
-
-        additional = additional.Where(i => fallbackCompare.additional.Contains(i));
-        missing = missing.Where(i => fallbackCompare.missing.Contains(i));
-
-        var missingAdditionals = additional.Where(i => !fallbackCompare.additional.Contains(i));
-        var missingMissings = missing.Where(i => !fallbackCompare.missing.Contains(i));
-        matches = matches
-            .Concat(fallbackCompare.matches.Where(i => missingAdditionals.Contains(i.Item1) || missingMissings.Contains(i.Item2)))
-            .Distinct();
-
-        return new CompareResult<TFrom, TTo>(additional, matches, missing);
+        return new CompareResult<TFrom, TTo>(additionals, matches, missings);
     }
 }

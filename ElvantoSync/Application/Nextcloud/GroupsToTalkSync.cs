@@ -1,10 +1,10 @@
-using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Infrastructure.Nextcloud;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nextcloud.Models.Talk;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -15,7 +15,7 @@ class GroupsToTalkSync(
     IElvantoClient elvanto,
     INextcloudTalkClient talkClient,
     DbContext dbContext,
-    GroupsToTalkSyncSettings settings,
+    IOptions<GroupsToTalkSyncSettings> settings,
     ILogger<GroupsToTalkSync> logger
 ) : Sync<Group, Conversation>(dbContext, settings, logger)
 {
@@ -33,7 +33,7 @@ class GroupsToTalkSync(
     protected override async Task<string> AddMissing(Group group)
     {
         var createdConvo = await talkClient.CreateConversation(2, group.Id, "groups", group.Name);
-        await talkClient.SetDescription(createdConvo.Token, settings.GroupChatDescription);
+        await talkClient.SetDescription(createdConvo.Token, settings.Value.GroupChatDescription);
         return ToKeySelector(createdConvo);
     }
 
@@ -44,4 +44,7 @@ class GroupsToTalkSync(
             await talkClient.SetRoomName(to.Token, from.Name);
         }
     }
+
+    protected override async Task RemoveAdditional(Conversation conversation)
+        => await talkClient.DeleteConversation(conversation.Token);
 }

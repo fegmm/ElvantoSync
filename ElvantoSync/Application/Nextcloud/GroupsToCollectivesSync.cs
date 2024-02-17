@@ -1,10 +1,10 @@
-using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Infrastructure.Nextcloud;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.Circles;
 using Nextcloud.Models.Collectives;
@@ -14,12 +14,12 @@ using System.Threading.Tasks;
 namespace ElvantoSync.Nextcloud;
 
 class GroupsToCollectivesSync(
-    IElvantoClient elvanto,,
+    IElvantoClient elvanto,
     INextcloudCollectivesClient collectivesRepo,
     INextcloudCircleClient circleRepo,
     DbContext dbContext,
-    GroupsToCollectiveSyncSettings settings,
-    GroupsToNextcloudSyncSettings groupSettings,
+    IOptions<GroupsToCollectiveSyncSettings> settings,
+    IOptions<GroupsToNextcloudSyncSettings> groupSettings,
     ILogger<GroupsToCollectivesSync> logger
 ) : Sync<Group, Collective>(dbContext, settings, logger)
 {
@@ -37,14 +37,14 @@ class GroupsToCollectivesSync(
     protected override async Task<string> AddMissing(Group group)
     {
         var createdCollective = await collectivesRepo.CreateCollective(group.Name);
-        await circleRepo.AddMemberToCircle(createdCollective.CircleId, group.Name, MemberTypes.Group);
-        string leaderGroupName = group.Name + groupSettings.GroupLeaderSuffix;
-        var leaderMemberId = await circleRepo.AddMemberToCircle(createdCollective.CircleId, leaderGroupName, MemberTypes.Group);
+        await circleRepo.AddMemberToCircle(createdCollective.CircleId, group.Id, MemberTypes.Group);
+        string leaderGroupId = group.Id + groupSettings.Value.GroupLeaderSuffix;
+        var leaderMemberId = await circleRepo.AddMemberToCircle(createdCollective.CircleId, leaderGroupId, MemberTypes.Group);
         await circleRepo.SetMemberLevel(createdCollective.CircleId, leaderMemberId, MemberLevels.Admin);
         return ToKeySelector(createdCollective);
     }
 
-    protected override async Task RemoveAdditional(Collective collective)
+    protected override async Task RemoveAdditional(Collective collective) 
         => await collectivesRepo.DeleteCollective(collective.Id);
 
     protected override async Task UpdateMatch(Group group, Collective collective)

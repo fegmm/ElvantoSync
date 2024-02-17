@@ -1,9 +1,10 @@
-﻿using ElvantoSync.ElvantoApi;
-using ElvantoSync.ElvantoApi.Models;
+﻿using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Persistence;
+using ElvantoSync.Settings;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MixERP.Net.VCards;
 using MixERP.Net.VCards.Models;
 using MixERP.Net.VCards.Serializer;
@@ -18,33 +19,34 @@ namespace ElvantoSync.Nextcloud;
 
 class PeopleToNextcloudContactSync(
     IElvantoClient elvanto,
-    PeopleToNextcloudSyncSettings peopleSettings,
+    IOptions<PeopleToNextcloudSyncSettings> peopleSettings,
+    IOptions<ApplicationSettings> applicationSettings,
     WebDavClient nextcloud_webdav,
     HttpClient img_client,
     DbContext dbContext,
-    PeopleToContactSyncSettings settings,
+    IOptions<PeopleToContactSyncSettings> settings,
     ILogger<PeopleToNextcloudContactSync> logger
 ) : Sync<Person, WebDavResource>(dbContext, settings, logger)
 {
     public override string FromKeySelector(Person i) => i.Id;
     public override string ToKeySelector(WebDavResource i) => i.Uri;
-    public override string FallbackFromKeySelector(Person i) => $"{i.Lastname}, {i.Firstname}";
-    public override string FallbackToKeySelector(WebDavResource i) => i.DisplayName;
+    public override string FallbackFromKeySelector(Person i) => peopleSettings.Value.IdPrefix + i.Id + ".vcf";
+    public override string FallbackToKeySelector(WebDavResource i) => i.Uri.Split("/")[^1];
 
     public override async Task<IEnumerable<Person>> GetFromAsync()
         => (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest())).People.Person;
 
     public override async Task<IEnumerable<WebDavResource>> GetToAsync()
     {
-        var contact_response = await nextcloud_webdav.Propfind("remote.php/dav/addressbooks/users/Administrator/default/");
-        return contact_response.Resources.Where(i => ToKeySelector(i).Contains(peopleSettings.IdPrefix));
+        var contact_response = await nextcloud_webdav.Propfind($"remote.php/dav/addressbooks/users/{applicationSettings.Value.NextcloudUser}/{settings.Value.ContactBook}/");
+        return contact_response.Resources.Where(i => ToKeySelector(i).Contains(peopleSettings.Value.IdPrefix));
     }
 
     protected override async Task<string> AddMissing(Person person)
     {
         VCard vcard = await PersonToVCard(person);
 
-        string uri = $"remote.php/dav/addressbooks/users/Administrator/default/{peopleSettings.IdPrefix + person.Id}.vcf";
+        string uri = $"remote.php/dav/addressbooks/users/{applicationSettings.Value.NextcloudUser}/{settings.Value.ContactBook}/{peopleSettings.Value.IdPrefix + person.Id}.vcf";
         var res = await nextcloud_webdav.PutFile(uri, new StringContent(vcard.Serialize()));
         if (!res.IsSuccessful)
         {
