@@ -12,8 +12,8 @@ public class NextcloudHost : BackgroundService
 {
     public string NextcloudUrl => $"http://localhost:{port}";
 
-    private IContainer? container;
-    private MySqlContainer? sql_container;
+    private IContainer container;
+    private MySqlContainer sql_container;
     private readonly ushort port;
 
     public NextcloudHost()

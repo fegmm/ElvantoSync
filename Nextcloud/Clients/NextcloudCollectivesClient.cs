@@ -7,7 +7,6 @@ namespace ElvantoSync.Infrastructure.Nextcloud;
 
 public class NextcloudCollectivesClient(HttpClient client) : INextcloudCollectivesClient
 {
-    private string? csrfToken;
     public async Task<Collective[]> GetCollectives(CancellationToken cancellationToken = default)
     {
         var response = await client.GetAsync("/index.php/apps/collectives/_api", cancellationToken);
