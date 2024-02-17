@@ -1,6 +1,7 @@
 using ElvantoSync;
 using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
+using ElvantoSync.Exceptions;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
@@ -9,7 +10,6 @@ using Nextcloud.Interfaces;
 using Nextcloud.Models.GroupFolders;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-
 
 class GroupsToNextcloudGroupFolderSync(
     IElvantoClient elvanto,
@@ -43,15 +43,12 @@ class GroupsToNextcloudGroupFolderSync(
 
     protected override async Task RemoveAdditional(GroupFolder groupFolder)
     {
-        if (groupFolder.Size == 0)
+        if (groupFolder.Size > 0)
         {
-            await groupFolderClient.DeleteGroupFolder(groupFolder.Id);
+            throw new ContainsDataException($"Group folder {groupFolder.Id} is not empty and will not be deleted");
         }
-        else
-        {
-            logger.LogWarning("Group folder {id} is not empty and will not be deleted", groupFolder.Id);
-            // TODO: Capture id removal
-        }
+
+        await groupFolderClient.DeleteGroupFolder(groupFolder.Id);
     }
 
     protected override async Task UpdateMatch(Group group, GroupFolder groupFolder)

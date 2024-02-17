@@ -1,5 +1,4 @@
 ﻿using Nextcloud.Models;
-using Nextcloud.Models.Circles;
 using Nextcloud.Models.Talk;
 using System.Net.Http.Json;
 
@@ -17,6 +16,12 @@ public class NextcloudTalkClient(HttpClient client) : INextcloudTalkClient
         var response = await client.PostAsJsonAsync(basePath, reqBody);
         var result = await response.EnsureSuccessStatusCode().Content.ReadFromJsonAsync<OCSResponse<Conversation>>();
         return result!.Ocs.Data;
+    }
+
+    public async Task DeleteConversation(string token)
+    {
+        var response = await client.DeleteAsync($"{basePath}/{token}");
+        response.EnsureSuccessStatusCode();
     }
 
     public async Task<IEnumerable<Conversation>> GetConversations()

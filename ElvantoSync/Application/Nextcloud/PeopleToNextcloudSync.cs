@@ -1,5 +1,6 @@
 using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
+using ElvantoSync.Exceptions;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
@@ -50,7 +51,7 @@ public class PeopleToNextcloudSync(
     {
         if (user.Quota.Used != 0)
         {
-            logger.LogWarning("User {0} cannot be removed as contains {1} bytes of data.", user.Id, user.Quota.Used);
+            throw new ContainsDataException($"User {user.Id} cannot be removed as it contains {user.Quota.Used} bytes of data.");
         }
         await provisioningClient.DeleteUser(user.Id);
     }

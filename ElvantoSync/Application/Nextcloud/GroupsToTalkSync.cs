@@ -44,4 +44,7 @@ class GroupsToTalkSync(
             await talkClient.SetRoomName(to.Token, from.Name);
         }
     }
+
+    protected override async Task RemoveAdditional(Conversation conversation)
+        => await talkClient.DeleteConversation(conversation.Token);
 }

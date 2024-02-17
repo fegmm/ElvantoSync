@@ -44,7 +44,7 @@ class GroupsToCollectivesSync(
         return ToKeySelector(createdCollective);
     }
 
-    protected override async Task RemoveAdditional(Collective collective)
+    protected override async Task RemoveAdditional(Collective collective) 
         => await collectivesRepo.DeleteCollective(collective.Id);
 
     protected override async Task UpdateMatch(Group group, Collective collective)
