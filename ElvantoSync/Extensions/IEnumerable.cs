@@ -17,6 +17,20 @@ internal static class IEnumerableExtensions
 
         return new CompareResult<TFrom, TTo>(additional, matches, missing);
     }
+
+    public static (List<T>, HashSet<string>) SplitByUniquenessBy<T>(this IEnumerable<T> items, Func<T, string> keySelector)
+    {
+        var duplicates = items
+            .GroupBy(keySelector)
+            .Where(i => i.Count() > 1)
+            .Select(i => i.Key)
+            .ToHashSet();
+
+        var unique = items
+            .Where(i => !duplicates.Contains(keySelector(i)))
+            .ToList();
+        return (unique, duplicates);
+    }
 }
 
 record CompareResult<TFrom, TTo>(IEnumerable<TFrom> additional, IEnumerable<(TFrom, TTo)> matches, IEnumerable<TTo> missing);

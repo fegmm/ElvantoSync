@@ -18,8 +18,7 @@ public static class DependencyInjection
         byte[] authToken = Encoding.UTF8.GetBytes($"{username}:{password}");
         var auth = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(authToken));
 
-
-        services.AddHttpClient<INextcloudCircleClient, NextcloudCircleClient>(i =>
+        var client = services.AddHttpClient<INextcloudCircleClient, NextcloudCircleClient>(i =>
         {
             i.BaseAddress = new Uri(nextcloudUrl);
             i.Timeout = TimeSpan.FromMinutes(5);
@@ -27,9 +26,10 @@ public static class DependencyInjection
             i.DefaultRequestHeaders.UserAgent.ParseAdd(applicationName);
             i.DefaultRequestHeaders.Add("OCS-ApiRequest", "true");
             i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        }).AddResilienceHandler("rate-limit", GetRateLimiter);
+        });
+        client.AddResilienceHandler("rate-limit", GetRateLimiter);
 
-        services.AddHttpClient<INextcloudCollectivesClient, NextcloudCollectivesClient>(i =>
+        client = services.AddHttpClient<INextcloudCollectivesClient, NextcloudCollectivesClient>(i =>
         {
             i.BaseAddress = new Uri(nextcloudUrl);
             i.Timeout = TimeSpan.FromMinutes(5);
@@ -37,35 +37,28 @@ public static class DependencyInjection
             i.DefaultRequestHeaders.UserAgent.ParseAdd(applicationName);
             i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             i.DefaultRequestHeaders.Add("requesttoken", NextcloudCollectivesClient.GetCsrfToken(i).Result);
-        }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
+        });
+        client.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
         {
             UseCookies = true,
-        }).AddResilienceHandler("rate-limit-1", i => i.AddConcurrencyLimiter(new ConcurrencyLimiterOptions()
+        });
+        client.AddResilienceHandler("rate-limit-1", i => i.AddConcurrencyLimiter(new ConcurrencyLimiterOptions()
         {
             PermitLimit = 1,
             QueueLimit = 10000,
         }));
 
-        services.AddHttpClient<INextcloudDeckClient, NextcloudDeckClient>(i =>
+        client = services.AddHttpClient<INextcloudDeckClient, NextcloudDeckClient>(i =>
         {
             i.BaseAddress = new Uri(nextcloudUrl);
             i.Timeout = TimeSpan.FromMinutes(5);
             i.DefaultRequestHeaders.Authorization = auth;
             i.DefaultRequestHeaders.UserAgent.ParseAdd(applicationName);
             i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        }).AddResilienceHandler("rate-limit", GetRateLimiter);
+        });
+        client.AddResilienceHandler("rate-limit", GetRateLimiter);
 
-        services.AddHttpClient<INextcloudTalkClient, NextcloudTalkClient>(i =>
-        {
-            i.BaseAddress = new Uri(nextcloudUrl);
-            i.Timeout = TimeSpan.FromMinutes(5);
-            i.DefaultRequestHeaders.Authorization = auth;
-            i.DefaultRequestHeaders.Add("OCS-ApiRequest", "true");
-            i.DefaultRequestHeaders.UserAgent.ParseAdd(applicationName);
-            i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        }).AddResilienceHandler("rate-limit", GetRateLimiter);
-
-        services.AddHttpClient<INextcloudProvisioningClient, NextcloudProvisioningClient>(i =>
+        client = services.AddHttpClient<INextcloudTalkClient, NextcloudTalkClient>(i =>
         {
             i.BaseAddress = new Uri(nextcloudUrl);
             i.Timeout = TimeSpan.FromMinutes(5);
@@ -73,10 +66,10 @@ public static class DependencyInjection
             i.DefaultRequestHeaders.Add("OCS-ApiRequest", "true");
             i.DefaultRequestHeaders.UserAgent.ParseAdd(applicationName);
             i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        }).AddResilienceHandler("rate-limit", GetRateLimiter);
+        });
+        client.AddResilienceHandler("rate-limit", GetRateLimiter);
 
-
-        services.AddHttpClient<INextcloudGroupFolderClient, NextcloudGroupFolderClient>(i =>
+        client = services.AddHttpClient<INextcloudProvisioningClient, NextcloudProvisioningClient>(i =>
         {
             i.BaseAddress = new Uri(nextcloudUrl);
             i.Timeout = TimeSpan.FromMinutes(5);
@@ -84,15 +77,29 @@ public static class DependencyInjection
             i.DefaultRequestHeaders.Add("OCS-ApiRequest", "true");
             i.DefaultRequestHeaders.UserAgent.ParseAdd(applicationName);
             i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        }).AddResilienceHandler("rate-limit", GetRateLimiter);
+        });
+        client.AddResilienceHandler("rate-limit", GetRateLimiter);
 
-        services.AddHttpClient<WebDavClient, WebDavClient>(i =>
+
+        client = services.AddHttpClient<INextcloudGroupFolderClient, NextcloudGroupFolderClient>(i =>
+        {
+            i.BaseAddress = new Uri(nextcloudUrl);
+            i.Timeout = TimeSpan.FromMinutes(5);
+            i.DefaultRequestHeaders.Authorization = auth;
+            i.DefaultRequestHeaders.Add("OCS-ApiRequest", "true");
+            i.DefaultRequestHeaders.UserAgent.ParseAdd(applicationName);
+            i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        });
+        client.AddResilienceHandler("rate-limit", GetRateLimiter);
+
+        client = services.AddHttpClient<WebDavClient, WebDavClient>(i =>
         {
             string encoded = System.Convert.ToBase64String(Encoding.UTF8.GetBytes(username + ":" + password));
             i.BaseAddress = new Uri(nextcloudUrl);
             i.DefaultRequestHeaders.Add("OCS-APIRequest", "true");
             i.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encoded);
-        }).AddResilienceHandler("rate-limit", GetRateLimiter);
+        });
+        client.AddResilienceHandler("rate-limit", GetRateLimiter);
 
         //services.AddSingleton<WebDavClient>(GetWebDav(username, password, nextcloudUrl));
         services.AddSingleton<NextcloudApi.Api>(GetNextCloudApi(username, password, nextcloudUrl));
@@ -103,7 +110,7 @@ public static class DependencyInjection
     {
         builder.AddConcurrencyLimiter(new ConcurrencyLimiterOptions()
         {
-            PermitLimit = 20,
+            PermitLimit = 5,
             QueueLimit = 10000,
         });
     }

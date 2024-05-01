@@ -24,8 +24,8 @@ public class PeopleToNextcloudSync(
 {
     public override string FromKeySelector(Person i) => i.Id;
     public override string ToKeySelector(User i) => i.Id;
-    public override string FallbackFromKeySelector(Person i) => (GetDisplayName(i), i.Email).ToString();
-    public override string FallbackToKeySelector(User i) => (i.DisplayName, i.Email).ToString();
+    public override string FallbackFromKeySelector(Person i) => settings.Value.IdPrefix + i.Id.ToString();
+    public override string FallbackToKeySelector(User i) => i.Id.ToString();
 
     public override async Task<IEnumerable<Person>> GetFromAsync() =>
         (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest())).People.Person;
@@ -61,8 +61,7 @@ public class PeopleToNextcloudSync(
         var request = new EditUserRequest()
         {
             DisplayName = GetDisplayName(person) == user.DisplayName ? null : GetDisplayName(person),
-            Email = person.Email == user.Email ? null : user.Email,
-            Phone = person.Mobile == user.Phone ? null : person.Mobile
+            Email = person.Email?.ToLower() == user.Email?.ToLower() ? null : user.Email,
         };
         await provisioningClient.EditUser(user.Id, request);
     }

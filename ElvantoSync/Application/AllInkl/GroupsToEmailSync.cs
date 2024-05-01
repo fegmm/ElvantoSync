@@ -33,7 +33,7 @@ internal class GroupsToEmailSync(
 
     public override async Task<IEnumerable<Group>> GetFromAsync() =>
         (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"] })).Groups.Group
-            .Where(i => i.People?.Person != null && i.People.Person.Length != 0);
+            .Where(i => i.People?.Person.Any() ?? false);
 
     public override async Task<IEnumerable<MailForward>> GetToAsync()
         => (await kas.GetMailforwardsAsync()).Where(i => i.MailForwardAdress.Split("@")[1] == settings.Value.KASDomain);
