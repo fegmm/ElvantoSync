@@ -2,8 +2,6 @@
 using Nextcloud.Models;
 using Nextcloud.Models.Provisioning;
 using System.Net.Http.Json;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Nextcloud.Clients;
 
@@ -80,25 +78,18 @@ public class NextcloudProvisioningClient(HttpClient client) : INextcloudProvisio
 
     public async Task EditUser(string userId, EditUserRequest user, CancellationToken cancellationToken = default)
     {
-        var requests = user.ToDictionary()
-            .Select(async i =>
-            {
-                var reqBody = new { key = i.Key, value = i.Value };
-                var request = await client.PutAsJsonAsync($"/ocs/v2.php/cloud/users/{userId}", reqBody, cancellationToken);
-                request.EnsureSuccessStatusCode();
-            });
-        foreach (var request in requests)
+        foreach (var (key, value) in user.ToDictionary())
         {
-            await request;
+            var reqBody = new { key = key, value = value };
+            var request = await client.PutAsJsonAsync($"/ocs/v2.php/cloud/users/{userId}", reqBody, cancellationToken);
+            request.EnsureSuccessStatusCode();
         }
-        //await Task.WhenAll(requests);
-        
     }
+
     public async Task EditGroup(string groupId, string newDisplayName, CancellationToken cancellationToken = default)
     {
         var reqBody = new { key = "displayname", value = newDisplayName };
         var request = await client.PutAsJsonAsync($"/ocs/v2.php/cloud/groups/{groupId}", reqBody, cancellationToken);
         request.EnsureSuccessStatusCode();
     }
-
 }

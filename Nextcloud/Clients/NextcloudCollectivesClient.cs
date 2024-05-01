@@ -18,7 +18,8 @@ public class NextcloudCollectivesClient(HttpClient client) : INextcloudCollectiv
     {
         var reqBody = new { name = name };
         var response = await client.PostAsJsonAsync("/index.php/apps/collectives/_api", reqBody, cancellationToken);
-        var result = await response.Content.ReadFromJsonAsync<OCS<Collective>>(cancellationToken);
+        var result = await response.EnsureSuccessStatusCode()
+            .Content.ReadFromJsonAsync<OCS<Collective>>(cancellationToken);
         return result!.Data;
     }
 
@@ -41,8 +42,9 @@ public class NextcloudCollectivesClient(HttpClient client) : INextcloudCollectiv
 
     public async Task SetDisplayName(string circleId, string name, CancellationToken cancellationToken = default)
     {
-        var reqBody = new { name = name };
-        var response = await client.PutAsJsonAsync($"/ocs/v2.php/apps/circles/circles/{circleId}/name", reqBody, cancellationToken);
+        var query = new System.Collections.Generic.Dictionary<string, string> { { "value", name } };
+        var queryString = await new FormUrlEncodedContent(query).ReadAsStringAsync();
+        var response = await client.PutAsJsonAsync($"/ocs/v2.php/apps/circles/circles/{circleId}/name?{queryString}", "", cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 }

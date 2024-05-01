@@ -1,7 +1,9 @@
-﻿using DotNet.Testcontainers.Builders;
+﻿using Azure;
+using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using Microsoft.Extensions.Hosting;
 using System;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Testcontainers.MySql;
@@ -15,15 +17,26 @@ public class NextcloudHost : BackgroundService
     private IContainer container;
     private MySqlContainer sql_container;
     private readonly ushort port;
+    private readonly HttpClient client;
 
-    public NextcloudHost()
+    public NextcloudHost(HttpClient client)
     {
         port = 8080;
+        this.client = client;
     }
 
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
-        if (container != null)
+        HttpResponseMessage response;
+        try
+        {
+            response = await client.GetAsync(NextcloudUrl);
+        }
+        catch (Exception)
+        {
+            response = new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.ServiceUnavailable };
+        }
+        if (container != null || response.IsSuccessStatusCode)
         {
             return;
         }
@@ -36,6 +49,8 @@ public class NextcloudHost : BackgroundService
             .WithDatabase("nextcloud")
             .WithNetwork(network)
             .WithNetworkAliases("db")
+            .WithAutoRemove(false)
+            .WithReuse(true)
             .Build();
 
         await sql_container.StartAsync(cancellationToken);
@@ -48,6 +63,8 @@ public class NextcloudHost : BackgroundService
             .WithPortBinding(port, 80)
             .WithNetwork(network)
             .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(80))
+            .WithAutoRemove(false)
+            .WithReuse(true)
             .Build();
 
         await container.StartAsync(cancellationToken);

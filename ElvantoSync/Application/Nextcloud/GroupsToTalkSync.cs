@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nextcloud.Models.Talk;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace ElvantoSync.Nextcloud;
@@ -25,15 +26,26 @@ class GroupsToTalkSync(
     public override string FallbackToKeySelector(Conversation i) => i.Name;
 
     public override async Task<IEnumerable<Group>> GetFromAsync() =>
-        (await elvanto.GroupsGetAllAsync(new GetAllRequest())).Groups.Group;
+        (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"] })).Groups.Group
+           .Where(i => i.People?.Person.Any() ?? false);
 
     public override async Task<IEnumerable<Conversation>> GetToAsync() =>
         await talkClient.GetConversations();
 
     protected override async Task<string> AddMissing(Group group)
     {
-        var createdConvo = await talkClient.CreateConversation(2, group.Id, "groups", group.Name);
-        await talkClient.SetDescription(createdConvo.Token, settings.Value.GroupChatDescription);
+        string nextcloudGroupId = dbContext.ElvantoToNextcloudGroupId(group.Id);
+
+        var createdConvo = await talkClient.CreateConversation(2, nextcloudGroupId, "groups", group.Name);
+        try
+        {
+            await talkClient.SetDescription(createdConvo.Token, settings.Value.GroupChatDescription);
+        }
+        catch
+        {
+            await talkClient.DeleteConversation(createdConvo.Token);
+            throw;
+        }
         return ToKeySelector(createdConvo);
     }
 

@@ -39,25 +39,40 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
             return;
         }
 
-        var tasks = missings.ToDictionary(FromKeySelector, AddMissing);
+        List<IndexMapping> created = [];
+        var creationTaskBatched = missings
+            .Chunk(1)
+            .Select(batch => batch.ToDictionary(FromKeySelector, AddMissing));
+        
 
-        try
+        foreach (var tasks in creationTaskBatched)
         {
-            await Task.WhenAll(tasks.Values);
+            try
+            {
+                await Task.WhenAll(tasks.Values);
+            }
+            catch
+            {
+                foreach (var faulted in tasks.Where(i => i.Value.IsFaulted))
+                {
+                    logger.LogError(faulted.Value.Exception, "Adding missing item failed for id: {id}", faulted.Key);
+                }
+            }
+            finally
+            {
+                created.AddRange(tasks
+                    .Where(i => i.Value.IsCompletedSuccessfully)
+                    .Select(i => new IndexMapping()
+                    {
+                        FromId = i.Key,
+                        ToId = i.Value.Result,
+                        Type = this.GetType().Name
+                    })
+                );
+            }
         }
-        catch (Exception e)
-        {
-            var failedIds = tasks.Where(i => i.Value.IsFaulted).Select(i => i.Key);
-            logger.LogError(e, "Adding missing items failed for ids:\n{ids}", failedIds);
-        }
-        finally
-        {
-            var newMappings = tasks.Where(i => i.Value.IsCompletedSuccessfully)
-                .Select(i => new IndexMapping() { FromId = i.Key, ToId = i.Value.Result, Type = this.GetType().Name });
-
-            await dbContext.IndexMappings.AddRangeAsync(newMappings);
-            await dbContext.SaveChangesAsync();
-        }
+        await dbContext.IndexMappings.AddRangeAsync(created);
+        await dbContext.SaveChangesAsync();
     }
 
     protected virtual Task RemoveAdditional(TTo additional) => Task.CompletedTask;
@@ -68,24 +83,35 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
             return;
         }
 
-        var tasks = additionals.ToDictionary(ToKeySelector, RemoveAdditional);
+        List<string> removed = [];
+        var deletionTaskBatched = additionals
+            .Chunk(1)
+            .Select(batch => batch.ToDictionary(ToKeySelector, RemoveAdditional));
 
-        try
+        foreach (var tasks in deletionTaskBatched)
         {
-            await Task.WhenAll(tasks.Values);
+            try
+            {
+                await Task.WhenAll(tasks.Values);
+            }
+            catch
+            {
+                foreach (var faulted in tasks.Where(i => i.Value.IsFaulted))
+                {
+                    logger.LogError(faulted.Value.Exception, "Removing additional item failed for id: {id}", faulted.Key);
+                }
+            }
+            finally
+            {
+                removed.AddRange(tasks
+                    .Where(i => i.Value.IsCompletedSuccessfully)
+                    .Select(i => i.Key)
+                );
+            }
         }
-        catch (Exception e)
-        {
-            var failedIds = tasks.Where(i => i.Value.IsFaulted).Select(i => i.Key);
-            logger.LogError(e, "Removing additional items failed for ids:\n{ids}", failedIds);
-        }
-        finally
-        {
-            var mappingToDelete = tasks.Where(i => i.Value.IsCompletedSuccessfully).Select(i => i.Key);
-            await dbContext.IndexMappings
-                .Where(i => i.Type == this.GetType().Name && mappingToDelete.Contains(i.ToId))
-                .ExecuteDeleteAsync();
-        }
+        await dbContext.IndexMappings
+            .Where(i => i.Type == this.GetType().Name && removed.Contains(i.ToId))
+            .ExecuteDeleteAsync();
     }
 
     protected virtual Task UpdateMatch(TFrom from, TTo to) => Task.CompletedTask;
@@ -96,19 +122,23 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
             return;
         }
 
-        var tasks = matches.ToDictionary(
-            match => (FromKeySelector(match.Item1), ToKeySelector(match.Item2)),
-            match => UpdateMatch(match.Item1, match.Item2)
-        );
+        var updateTaskBatched = matches
+            .Chunk(1)
+            .Select(batch => batch.ToDictionary(i => (FromKeySelector(i.Item1), ToKeySelector(i.Item2)), i => UpdateMatch(i.Item1, i.Item2)));
 
-        try
+        foreach (var tasks in updateTaskBatched)
         {
-            await Task.WhenAll(tasks.Values);
-        }
-        catch (Exception e)
-        {
-            var failedIds = tasks.Where(i => i.Value.IsFaulted).Select(i => i.Key);
-            logger.LogError(e, "Applying updates failed for ids:\n{ids}", failedIds);
+            try
+            {
+                await Task.WhenAll(tasks.Values);
+            }
+            catch
+            {
+                foreach (var faulted in tasks.Where(i => i.Value.IsFaulted))
+                {
+                    logger.LogError(faulted.Value.Exception, "Updating match failed for ids:\n{fromId}\n{toId}", faulted.Key.Item1, faulted.Key.Item2);
+                }
+            }
         }
     }
 
@@ -120,8 +150,9 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
         var compare = await RunComparison(from.ToList(), to.ToList());
 
         Directory.CreateDirectory(settings.Value.OutputFolder);
-        await File.WriteAllLinesAsync(Path.Combine(settings.Value.OutputFolder, this.GetType().Name + "-missings.txt"), compare.additional.Select(FromKeySelector));
-        await File.WriteAllLinesAsync(Path.Combine(settings.Value.OutputFolder, this.GetType().Name + "-additionals.txt"), compare.missing.Select(ToKeySelector));
+        await File.WriteAllLinesAsync(Path.Combine(settings.Value.OutputFolder, this.GetType().Name + "-missings.txt"), compare.additional.Select(i => $"{FallbackFromKeySelector(i)}:{FromKeySelector(i)}"));
+        await File.WriteAllLinesAsync(Path.Combine(settings.Value.OutputFolder, this.GetType().Name + "-additionals.txt"), compare.missing.Select(i => $"{FallbackToKeySelector(i)}:{ToKeySelector(i)}"));
+
 
         if (!settings.Value.LogOnly)
         {
@@ -138,47 +169,88 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
 
     private async Task<CompareResult<TFrom, TTo>> RunComparison(List<TFrom> from, List<TTo> to)
     {
+        if (dbContext.IndexMappings.Where(i => i.Type == this.GetType().Name).Any())
+        {
+            return await RunComparisonWithMappings(from, to);
+        }
+        else
+        {
+            return await RunComparisonWithFallback(from, to);
+        }
+    }
+
+    private async Task<CompareResult<TFrom, TTo>> RunComparisonWithFallback(List<TFrom> from, List<TTo> to)
+    {
+        // Handle duplicate fuzzy Ids by sorting them out and log warning
+        (from, to) = FilterDuplicateFallbackIds(from, to);
+
+        // Initial state (only items with unique keys)
         IEnumerable<TFrom> additionals = from;
         IEnumerable<TTo> missings = to;
+        IEnumerable<(TFrom, TTo)> matches = [];
 
-        // Resolve via database mapping
-        var fromDict = from.ToDictionary(FromKeySelector);
-        var mappedFrom = await dbContext.IndexMappings
-            .Where(i => i.Type == this.GetType().Name)
+        // Run comparison
+        CompareResult<TFrom, TTo> comparison = additionals.CompareTo(missings, FallbackFromKeySelector, FallbackToKeySelector);
+        HashSet<TFrom> matchedAdditionals = comparison.matches.Select(i => i.Item1).ToHashSet();
+        HashSet<TTo> matchedMissings = comparison.matches.Select(i => i.Item2).ToHashSet();
+
+        // Filter out matched items
+        additionals = additionals.Where(i => !matchedAdditionals.Contains(i)).ToList();
+        missings = missings.Where(i => !matchedMissings.Contains(i)).ToList();
+        matches = matches.Concat(comparison.matches).ToList();
+
+        // Save found mappings
+        IEnumerable<IndexMapping> newMappings = comparison.matches.Select(i => new IndexMapping()
+        {
+            FromId = FromKeySelector(i.Item1),
+            ToId = ToKeySelector(i.Item2),
+            Type = this.GetType().Name
+        });
+        await dbContext.IndexMappings.AddRangeAsync(newMappings);
+        await dbContext.SaveChangesAsync();
+
+        return new CompareResult<TFrom, TTo>(additionals, matches, missings);
+    }
+
+    private (List<TFrom>, List<TTo>) FilterDuplicateFallbackIds(List<TFrom> from, List<TTo> to)
+    {
+        var (fromUnique, fromDuplicates) = from.SplitByUniquenessBy(FallbackFromKeySelector);
+        var (toUnique, toDuplicates) = to.SplitByUniquenessBy(FallbackToKeySelector);
+
+        foreach (var duplicate in fromDuplicates)
+        {
+            logger.LogWarning("Ignoring entities with duplicate fallback key found in From: {key}", duplicate);
+        }
+
+        foreach (var duplicate in toDuplicates)
+        {
+            logger.LogWarning("Ignoring entities with duplicate fallback key found in To: {key}", duplicate);
+        }
+
+        return (fromUnique, toUnique);
+    }
+
+    private async Task<CompareResult<TFrom, TTo>> RunComparisonWithMappings(List<TFrom> from, List<TTo> to)
+    {
+        // Initial state
+        IEnumerable<TFrom> additionals = from;
+        IEnumerable<TTo> missings = to;
+        IEnumerable<(TFrom, TTo)> matches = [];
+
+        // Convert from to use stored ToIds
+        Dictionary<string, TFrom> fromDict = from.ToDictionary(FromKeySelector);
+        Dictionary<string, TFrom> mappedFrom = await dbContext.IndexMappings
+            .Where(i => i.Type == this.GetType().Name && fromDict.Keys.Contains(i.FromId))
             .ToDictionaryAsync(i => i.ToId, i => fromDict[i.FromId]);
 
+        // Run comparison
         var mappedComp = mappedFrom.CompareTo(to, i => i.Key, ToKeySelector);
-
         var matchedAdditionals = mappedComp.matches.Select(i => i.Item1.Value).ToHashSet();
         var matchedMissings = mappedComp.matches.Select(i => i.Item2).ToHashSet();
 
         additionals = additionals.Where(i => !matchedAdditionals.Contains(i)).ToList();
         missings = missings.Where(i => !matchedMissings.Contains(i)).ToList();
-        var matches = mappedComp.matches.Select(i => (i.Item1.Value, i.Item2));
-
-        // Resolve via fallback mapping
-        // TODO: From and To are mixed up here
-        var fallbackComp = additionals.CompareTo(missings, FallbackFromKeySelector, FallbackToKeySelector);
-        var fallbackMatchedAdditionals = fallbackComp.matches
-            .Select(i => i.Item1)
-            .ToHashSet();
-        var fallbackMatchedMissings = fallbackComp.matches
-            .Select(i => i.Item2)
-            .ToHashSet();
-
-        additionals = additionals.Where(i => !fallbackMatchedAdditionals.Contains(i)).ToList();
-        missings = missings.Where(i => !fallbackMatchedMissings.Contains(i)).ToList();
-        matches = matches.Concat(fallbackComp.matches);
-
-        await dbContext.IndexMappings.AddRangeAsync(fallbackComp.matches
-            .Select(i => new IndexMapping()
-            {
-                FromId = FromKeySelector(i.Item1),
-                ToId = ToKeySelector(i.Item2),
-                Type = this.GetType().Name
-            })
-        );
-        await dbContext.SaveChangesAsync();
+        matches = mappedComp.matches.Select(i => (i.Item1.Value, i.Item2));
 
         return new CompareResult<TFrom, TTo>(additionals, matches, missings);
     }

@@ -47,9 +47,9 @@ internal class NextcloudDeckClient(HttpClient client) : INextcloudDeckClient
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task SetDisplayName(int boardId, string name)
+    public async Task SetDisplayName(int boardId, string name, string color)
     {
-        var reqBody = new { title = name };
+        var reqBody = new { title = name, color = color };
         var response = await client.PutAsJsonAsync($"index.php/apps/deck/api/v1.1/boards/{boardId}", reqBody);
         response.EnsureSuccessStatusCode();
     }
