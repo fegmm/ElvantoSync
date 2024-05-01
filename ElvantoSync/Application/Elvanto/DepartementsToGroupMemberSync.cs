@@ -70,8 +70,6 @@ class DepartementsToGroupMemberSync(
         return FromKeySelector(missing);
     }
 
-    protected override async Task RemoveAdditional((GroupMember member, Group group) additional)
-    {
-        await elvanto.GroupsRemovePersonAsync(additional.group.Id, additional.member.Id);
-    }
+    protected override async Task RemoveAdditional((GroupMember member, Group group) additional) 
+        => await elvanto.GroupsRemovePersonAsync(additional.group.Id, additional.member.Id);
 }

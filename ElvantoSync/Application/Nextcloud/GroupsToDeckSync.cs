@@ -8,6 +8,7 @@ using Nextcloud.Interfaces;
 using Nextcloud.Models.Deck;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace ElvantoSync.Nextcloud;
@@ -27,7 +28,8 @@ class GroupsToDeckSync(
     public override string FallbackToKeySelector(Board i) => i.Title;
 
     public override async Task<IEnumerable<Group>> GetFromAsync()
-        => (await elvanto.GroupsGetAllAsync(new GetAllRequest())).Groups.Group;
+        => (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"] })).Groups.Group
+        .Where(i => i.People?.Person.Any() ?? false);
 
     public override async Task<IEnumerable<Board>> GetToAsync()
         => await deckClient.GetBoards();
@@ -35,8 +37,16 @@ class GroupsToDeckSync(
     protected override async Task<string> AddMissing(Group group)
     {
         var createdBoard = await deckClient.CreateBoard(group.Name, string.Format("{0:X6}", Random.Shared.Next(0x1000000)));
-        await deckClient.AddMember(createdBoard.Id, group.Name, MemberTypes.Group, true, false, false);
-        await deckClient.AddMember(createdBoard.Id, group.Name + groupSettings.Value.GroupLeaderSuffix, MemberTypes.Group, true, true, false);
+        try
+        {
+            await deckClient.AddMember(createdBoard.Id, group.Name, MemberTypes.Group, true, false, false);
+            await deckClient.AddMember(createdBoard.Id, group.Name + groupSettings.Value.GroupLeaderSuffix, MemberTypes.Group, true, true, false);
+        }
+        catch
+        {
+            await deckClient.DeleteBoard(createdBoard.Id);
+            throw;
+        }
         return ToKeySelector(createdBoard);
     }
 
@@ -47,7 +57,7 @@ class GroupsToDeckSync(
     {
         if (group.Name != board.Title)
         {
-            await deckClient.SetDisplayName(board.Id, group.Name);
+            await deckClient.SetDisplayName(board.Id, group.Name, board.Color);
         }
     }
 }

@@ -8,5 +8,5 @@ public interface INextcloudDeckClient
     Task<IEnumerable<Board>> GetBoards(CancellationToken cancellationToken = default);
     Task AddMember(int boardId, string memberId, MemberTypes memberType, bool canEdit, bool canShare, bool canManage, CancellationToken cancellationToken = default);
     Task DeleteBoard(int boardId);
-    Task SetDisplayName(int boardId, string name);
+    Task SetDisplayName(int boardId, string name, string color);
 }

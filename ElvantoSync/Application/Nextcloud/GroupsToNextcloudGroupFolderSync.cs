@@ -2,6 +2,7 @@ using ElvantoSync;
 using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Exceptions;
+using ElvantoSync.Nextcloud;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.GroupFolders;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 class GroupsToNextcloudGroupFolderSync(
@@ -26,18 +28,29 @@ class GroupsToNextcloudGroupFolderSync(
     public override string FallbackToKeySelector(GroupFolder i) => i.MountPoint;
 
     public override async Task<IEnumerable<Group>> GetFromAsync()
-        => (await elvanto.GroupsGetAllAsync(new GetAllRequest())).Groups.Group;
+        => (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"] })).Groups.Group
+        .Where(i => i.People?.Person.Any() ?? false);
 
     public override async Task<IEnumerable<GroupFolder>> GetToAsync()
         => await groupFolderClient.GetGroupFolders();
 
     protected override async Task<string> AddMissing(Group group)
     {
+        string nextcloudGroupId = dbContext.ElvantoToNextcloudGroupId(group.Id);
         var groupFolderId = await groupFolderClient.CreateGroupFolder(group.Name);
-        await groupFolderClient.AddGroup(groupFolderId, group.Name);
-        await groupFolderClient.SetPermission(groupFolderId, group.Name, Permissions.All);
-        await groupFolderClient.SetAcl(groupFolderId, true);
-        await groupFolderClient.AddAclManager(groupFolderId, group.Name + groupSettings.Value.GroupLeaderSuffix);
+        try
+        {
+            await groupFolderClient.AddGroup(groupFolderId, nextcloudGroupId);
+            await groupFolderClient.SetPermission(groupFolderId, nextcloudGroupId, Permissions.All);
+            await groupFolderClient.SetAcl(groupFolderId, true);
+            await groupFolderClient.AddGroup(groupFolderId, nextcloudGroupId + groupSettings.Value.GroupLeaderSuffix);
+            await groupFolderClient.AddAclManager(groupFolderId, nextcloudGroupId + groupSettings.Value.GroupLeaderSuffix);
+        }
+        catch
+        {
+            await groupFolderClient.DeleteGroupFolder(groupFolderId);
+            throw;
+        }
         return groupFolderId.ToString();
     }
 
@@ -53,9 +66,32 @@ class GroupsToNextcloudGroupFolderSync(
 
     protected override async Task UpdateMatch(Group group, GroupFolder groupFolder)
     {
+        string nextcloudGroupId = dbContext.ElvantoToNextcloudGroupId(group.Id);
+
         if (group.Name != groupFolder.MountPoint)
         {
             await groupFolderClient.SetMountpoint(groupFolder.Id, group.Name);
+        }
+
+        if (!groupFolder.Groups.Any(i => i.Key == nextcloudGroupId))
+        {
+            await groupFolderClient.AddGroup(groupFolder.Id, nextcloudGroupId);
+            await groupFolderClient.SetPermission(groupFolder.Id, nextcloudGroupId, Permissions.All);
+        }
+
+        if (!groupFolder.Groups.Any(i => i.Key == nextcloudGroupId + groupSettings.Value.GroupLeaderSuffix))
+        {
+            await groupFolderClient.AddGroup(groupFolder.Id, nextcloudGroupId + groupSettings.Value.GroupLeaderSuffix);
+        }
+
+        if (!groupFolder.Acl)
+        {
+            await groupFolderClient.SetAcl(groupFolder.Id, true);
+        }
+
+        if (!groupFolder.Manage.Any(i => i.Id == nextcloudGroupId + groupSettings.Value.GroupLeaderSuffix))
+        {
+            await groupFolderClient.AddAclManager(groupFolder.Id, nextcloudGroupId + groupSettings.Value.GroupLeaderSuffix);
         }
     }
 }
