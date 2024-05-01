@@ -197,7 +197,7 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
         // Filter out matched items
         additionals = additionals.Where(i => !matchedAdditionals.Contains(i)).ToList();
         missings = missings.Where(i => !matchedMissings.Contains(i)).ToList();
-        matches = matches.Concat(comparison.matches);
+        matches = matches.Concat(comparison.matches).ToList();
 
         // Save found mappings
         IEnumerable<IndexMapping> newMappings = comparison.matches.Select(i => new IndexMapping()

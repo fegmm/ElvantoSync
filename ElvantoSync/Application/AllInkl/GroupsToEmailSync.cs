@@ -40,10 +40,16 @@ internal class GroupsToEmailSync(
 
     protected override async Task UpdateMatch(Group group, MailForward mail)
     {
-        var compare = group.People.Person.CompareTo(mail.MailForwardTargets, i => i.Email, j => j);
-        var mails = group.People.Person.Select(i => i.Email).Distinct().Where(i => string.IsNullOrEmpty(i)).ToArray();
+        var compare = group.People.Person
+            .DistinctBy(i => i.Email)
+            .CompareTo(mail.MailForwardTargets, i => i.Email, j => j);
+
         if (compare.additional.Any() || compare.missing.Any())
         {
+            var mails = group.People.Person.Select(i => i.Email)
+                .Distinct()
+                .Where(i => !string.IsNullOrEmpty(i))
+                .ToArray();
             await kas.ExecuteRequestWithParams(new UpdateMailForward() { MailForward = mail.MailForwardAdress, Targets = mails });
         }
     }

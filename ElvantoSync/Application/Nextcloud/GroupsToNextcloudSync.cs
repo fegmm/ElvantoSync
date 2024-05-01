@@ -53,15 +53,13 @@ public class GroupsToNextcloudSync(
 
     protected override async Task RemoveAdditional(Group group)
     {
-        string nextcloudGroupId = dbContext.ElvantoToNextcloudGroupId(group.Id);
-
         try
         {
-            await provisioningClient.DeleteGroup(nextcloudGroupId);
+            await provisioningClient.DeleteGroup(group.Id);
         }
         finally
         {
-            await provisioningClient.DeleteGroup(nextcloudGroupId + settings.Value.GroupLeaderSuffix);
+            await provisioningClient.DeleteGroup(group.Id + settings.Value.GroupLeaderSuffix);
         }
     }
 
