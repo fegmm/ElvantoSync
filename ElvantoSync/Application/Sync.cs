@@ -71,7 +71,13 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
                 );
             }
         }
-        await dbContext.IndexMappings.AddRangeAsync(created);
+
+        // handle manual deleted entries failure case (duplicated entries)
+        var mappings = await dbContext.IndexMappings
+            .Where(i => i.Type == this.GetType().Name)
+            .ToListAsync();
+
+        await dbContext.IndexMappings.AddRangeAsync(created.Except(mappings));
         await dbContext.SaveChangesAsync();
     }
 
