@@ -1,3 +1,5 @@
+using Microsoft.VisualBasic;
+
 namespace ElvantoSync.GroupFinder.Model;
 
 public record Address
@@ -25,4 +27,22 @@ public record CreateGroupRequest
     public string MeetingTime { get; set; }
     public string MeetingFrequency { get; set; }
     public int MaxCapacity { get; set; }
+}
+
+public record GroupId{
+    
+    public string GeoCode { get; set; }
+    public SmallGroup[] smallGroups { get; set; }
+
+   
+}
+   public record SmallGroup
+{
+    
+       public required string id { get; set; }
+    }
+public record GroupResponse {
+
+    public GroupId[] response;
+
 }

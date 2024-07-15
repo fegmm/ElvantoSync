@@ -11,6 +11,7 @@ using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
+
 namespace ElvantoSync.GroupFinder;
 
 class GroupFinderSync(
@@ -19,19 +20,21 @@ class GroupFinderSync(
     ILogger<GroupFinderSync> logger,
     IGroupFinderService groupFinderService,
     IOptions<GroupFinderToNextCloudSync> settings
-) : Sync<Group, Group>(dbContext, settings, logger)
+) : Sync<Group, SmallGroup>(dbContext, settings, logger)
 {
     public override string FromKeySelector(Group i) => i.Id;
-    public override string ToKeySelector(Group i) => i.Id;
+    public override string ToKeySelector(SmallGroup i) => i.id;
     public override string FallbackFromKeySelector(Group i) => i.Name;
-    public override string FallbackToKeySelector(Group i) => i.Name;
+    public override string FallbackToKeySelector(SmallGroup i) => i.id;
 
     public override async Task<IEnumerable<Group>> GetFromAsync()
-        => (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"],Category_id = "1d8d2db3-8367-43d2-b263-11a0ae810a80" })).Groups.Group
-            .Where(i => i.People?.Person.Any() ?? false).Where(i => i.Meeting_postcode != "");
+        => (
+            
+            await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"],Category_id = "1d8d2db3-8367-43d2-b263-11a0ae810a80" })).Groups.Group
+            .Where(i => i.People?.Person.Any() ?? false).Where(i => i.Meeting_postcode != "") ;
 
-    public override async Task<IEnumerable<Group>> GetToAsync()
-        =>new List<Group>();
+    public override async Task<IEnumerable<SmallGroup>> GetToAsync()
+        => await groupFinderService.GetGroupAsync();
 
     protected override async Task<string> AddMissing(Group group)
     {
@@ -66,7 +69,9 @@ class GroupFinderSync(
         };
          logger.LogInformation("Creating group {request}", request);
         await groupFinderService.createGroupAsync(request);
-        return ToKeySelector(group);
+
+        //TODO: adjust structure
+        return ToKeySelector(new SmallGroup { id = group.Id });
     }
 
 }
