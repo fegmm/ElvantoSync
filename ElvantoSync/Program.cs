@@ -9,9 +9,6 @@ using Nextcloud.Extensions;
 using Quartz;
 
 var builder = Host.CreateApplicationBuilder();
-builder.Environment.EnvironmentName = System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
-builder.Configuration
-    .AddUserSecrets<Program>();
 
 var appSettings = builder.Configuration
     .GetRequiredSection(ApplicationSettings.ConfigSection)
@@ -25,7 +22,7 @@ var kas = new KasApi.Client(new KasApi.Requests.AuthorizeHeader(
 ));
 
 builder.Services
-    .AddDbContext<ElvantoSync.Persistence.DbContext>( options => options.UseSqlite("Data Source=GroupFinder.db"))
+    .AddDbContext<ElvantoSync.Persistence.DbContext>(options => options.UseSqlite(appSettings.ConnectionString))
     .AddOptions()
 
     .AddSingleton(elvanto)

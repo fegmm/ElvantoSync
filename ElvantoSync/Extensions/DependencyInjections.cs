@@ -19,19 +19,16 @@ public static class DependencyInjections
     public static IServiceCollection AddSyncs(this IServiceCollection services)
         => services
              .AddTransient<ISync, GroupFinderSync>()
-         /*   .AddTransient<ISync, PeopleToNextcloudSync>()
+            .AddTransient<ISync, PeopleToNextcloudSync>()
             .AddTransient<ISync, PeopleToNextcloudContactSync>()
             .AddTransient<ISync, GroupsToNextcloudSync>()
-            .AddTransient<ISync, GroupsToNextcloudGroupFolderSync>() */
-          
-            ;
+            .AddTransient<ISync, GroupsToNextcloudGroupFolderSync>() 
+            .AddTransient<ISync, DepartementsToGroupMemberSync>()
+           .AddTransient<ISync, GroupsToCollectivesSync>()
+           .AddTransient<ISync, GroupsToDeckSync>()
+           .AddTransient<ISync, GroupsToTalkSync>()
 
-            //  .AddTransient<ISync, DepartementsToGroupMemberSync>()
-     //       .AddTransient<ISync, GroupsToCollectivesSync>()
-     //       .AddTransient<ISync, GroupsToDeckSync>()
-       //     .AddTransient<ISync, GroupsToTalkSync>()
-
-        //    .AddTransient<ISync, GroupsToEmailSync>();
+           .AddTransient<ISync, GroupsToEmailSync>();
 
     public static IServiceCollection AddApplicationOptions(this IServiceCollection services, object username, object password)
     {
