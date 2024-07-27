@@ -20,7 +20,7 @@ public class GroupFinderService(HttpClient client) : IGroupFinderService
         var response = await client.PostAsJsonAsync($"http://nextcloud.local/index.php/apps/app_api/proxy/simpleapi/group", request, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
-public async Task<SmallGroup[]> GetGroupAsync( CancellationToken cancellationToken = default)
+public async Task<string[]> GetGroupAsync( CancellationToken cancellationToken = default)
     {   
         var options = new JsonSerializerOptions
         {
@@ -29,9 +29,14 @@ public async Task<SmallGroup[]> GetGroupAsync( CancellationToken cancellationTok
             ,
             WriteIndented = true
         };
-        var request = await client.GetAsync($"http://nextcloud.local/index.php/apps/app_api/proxy/simpleapi/group", cancellationToken);
-        try{var response = await request.EnsureSuccessStatusCode().Content.ReadFromJsonAsync<GroupId>(options, cancellationToken);
-          return response.smallGroups;
+        var request = await client.GetAsync($"http://nextcloud.local/index.php/apps/app_api/proxy/simpleapi/groupIds", cancellationToken);
+        var stringReq = request.EnsureSuccessStatusCode().Content.ReadAsStringAsync();
+      
+        
+        Console.WriteLine($"Response: {stringReq}");
+        try{var response = await request.EnsureSuccessStatusCode().Content.ReadFromJsonAsync<string[]>(options, cancellationToken);
+        
+             return response;
        }catch (JsonException ex)
         {
             Console.WriteLine($"JSON error: {ex.Message}");

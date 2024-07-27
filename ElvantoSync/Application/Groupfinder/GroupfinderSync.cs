@@ -20,12 +20,12 @@ class GroupFinderSync(
     ILogger<GroupFinderSync> logger,
     IGroupFinderService groupFinderService,
     IOptions<GroupFinderToNextCloudSync> settings
-) : Sync<Group, SmallGroup>(dbContext, settings, logger)
+) : Sync<Group, string>(dbContext, settings, logger)
 {
     public override string FromKeySelector(Group i) => i.Id;
-    public override string ToKeySelector(SmallGroup i) => i.id;
+    public override string ToKeySelector(string i) => i;
     public override string FallbackFromKeySelector(Group i) => i.Name;
-    public override string FallbackToKeySelector(SmallGroup i) => i.id;
+    public override string FallbackToKeySelector(string i) => i;
 
     public override async Task<IEnumerable<Group>> GetFromAsync()
         => (
@@ -33,7 +33,7 @@ class GroupFinderSync(
             await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"],Category_id = "1d8d2db3-8367-43d2-b263-11a0ae810a80" })).Groups.Group
             .Where(i => i.People?.Person.Any() ?? false).Where(i => i.Meeting_postcode != "") ;
 
-    public override async Task<IEnumerable<SmallGroup>> GetToAsync()
+    public override async Task<IEnumerable<string>> GetToAsync()
         => await groupFinderService.GetGroupAsync();
 
     protected override async Task<string> AddMissing(Group group)
@@ -71,7 +71,7 @@ class GroupFinderSync(
         await groupFinderService.createGroupAsync(request);
 
         //TODO: adjust structure
-        return ToKeySelector(new SmallGroup { id = group.Id });
+        return ToKeySelector(group.Id);
     }
 
 }
