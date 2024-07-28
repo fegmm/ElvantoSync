@@ -29,7 +29,7 @@ builder.Services
     .AddSingleton(kas)
     .AddSingleton<IElvantoClient, ExternalClientWrapper>()
 
-    .AddApplicationOptions()
+    .AddApplicationOptions(appSettings.NextcloudUser, appSettings.NextcloudPassword)
     .AddNextcloudClients(appSettings.NextcloudServer, appSettings.NextcloudUser, appSettings.NextcloudPassword, nameof(ElvantoSync))
     .AddSyncs();
 
@@ -40,7 +40,7 @@ if (builder.Environment.IsDevelopment())
     builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
     builder.Services.AddHostedService<Nextcloud.Tests.NextcloudHost>();
     builder.Services.AddHostedService<ElvantoSync.HostedElvantoSync>();
-    
+
     builder.Build().Run();
 }
 else

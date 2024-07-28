@@ -1,5 +1,4 @@
-﻿using Azure;
-using DotNet.Testcontainers.Builders;
+﻿using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using Microsoft.Extensions.Hosting;
 using System;
@@ -12,7 +11,7 @@ namespace Nextcloud.Tests;
 
 public class NextcloudHost : BackgroundService
 {
-    public string NextcloudUrl => $"http://localhost:{port}";
+    public string NextcloudUrl => $"http://nextcloud.local:{port}";
 
     private IContainer container;
     private MySqlContainer sql_container;
@@ -21,7 +20,7 @@ public class NextcloudHost : BackgroundService
 
     public NextcloudHost(HttpClient client)
     {
-        port = 8080;
+        port = 80;
         this.client = client;
     }
 

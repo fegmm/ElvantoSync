@@ -27,7 +27,11 @@ public static class DependencyInjection
             i.DefaultRequestHeaders.Add("OCS-ApiRequest", "true");
             i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         });
+
+
+        
         client.AddResilienceHandler("rate-limit", GetRateLimiter);
+
 
         client = services.AddHttpClient<INextcloudCollectivesClient, NextcloudCollectivesClient>(i =>
         {
