@@ -1,15 +1,13 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.GroupFinder.Model;
-using ElvantoSync.GroupFinder.service;
 using ElvantoSync.GroupFinder.Service;
 using ElvantoSync.Persistence;
-using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 
 namespace ElvantoSync.GroupFinder;
@@ -28,10 +26,8 @@ class GroupFinderSync(
     public override string FallbackToKeySelector(string i) => i;
 
     public override async Task<IEnumerable<Group>> GetFromAsync()
-        => (
-            
-            await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"],Category_id = "1d8d2db3-8367-43d2-b263-11a0ae810a80" })).Groups.Group
-            .Where(i => i.People?.Person.Any() ?? false).Where(i => i.Meeting_postcode != "") ;
+        => (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"], Category_id = "1d8d2db3-8367-43d2-b263-11a0ae810a80" })).Groups.Group
+            .Where(i => i.People?.Person.Any() ?? false).Where(i => i.Meeting_postcode != "");
 
     public override async Task<IEnumerable<string>> GetToAsync()
         => await groupFinderService.GetGroupAsync();
@@ -39,7 +35,7 @@ class GroupFinderSync(
     protected override async Task<string> AddMissing(Group group)
     {
         var leader = group.People.Person.FirstOrDefault(p => p.Position == "Leader");
-        if(group.Meeting_postcode == null)
+        if (group.Meeting_postcode == null)
         {
             logger.LogWarning("Group {group} has no postcode, skipping", group.Name);
             return null;
@@ -67,11 +63,10 @@ class GroupFinderSync(
             ///TODO: remove param from API
             MaxCapacity = 999
         };
-         logger.LogInformation("Creating group {request}", request);
-        await groupFinderService.createGroupAsync(request);
+        logger.LogInformation("Creating group {request}", request);
+        await groupFinderService.CreateGroupAsync(request);
 
         //TODO: adjust structure
         return ToKeySelector(group.Id);
     }
-
 }

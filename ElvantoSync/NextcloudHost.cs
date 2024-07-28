@@ -1,5 +1,4 @@
-﻿using Azure;
-using DotNet.Testcontainers.Builders;
+﻿using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using Microsoft.Extensions.Hosting;
 using System;

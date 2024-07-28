@@ -1,52 +1,44 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using ElvantoSync.GroupFinder.Model;
+using ElvantoSync.GroupFinder.Service;
+using Microsoft.Extensions.Logging;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using ElvantoSync.GroupFinder.Model;
-using ElvantoSync.GroupFinder.Service;
 
 namespace ElvantoSync.GroupFinder.service;
 
-public class GroupFinderService(HttpClient client) : IGroupFinderService
+public class GroupFinderService(HttpClient client, ILogger<GroupFinderService> logger) : IGroupFinderService
 {
-    public async Task createGroupAsync(CreateGroupRequest request, CancellationToken cancellationToken = default)
-    {   
-        
+    public async Task CreateGroupAsync(CreateGroupRequest request, CancellationToken cancellationToken = default)
+    {
         var response = await client.PostAsJsonAsync($"http://nextcloud.local/index.php/apps/app_api/proxy/simpleapi/group", request, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
-public async Task<string[]> GetGroupAsync( CancellationToken cancellationToken = default)
-    {   
+
+    public async Task<string[]> GetGroupAsync(CancellationToken cancellationToken = default)
+    {
         var options = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true, // Macht die Deserialisierung unempfindlich gegenüber Groß-/Kleinschreibung
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull // Ignoriert nicht gemappte Attribute
-            ,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, // Ignoriert nicht gemappte Attribute
+
             WriteIndented = true
         };
         var request = await client.GetAsync($"http://nextcloud.local/index.php/apps/app_api/proxy/simpleapi/groupIds", cancellationToken);
-        var stringReq = request.EnsureSuccessStatusCode().Content.ReadAsStringAsync();
-      
-        
-        Console.WriteLine($"Response: {stringReq}");
-        try{var response = await request.EnsureSuccessStatusCode().Content.ReadFromJsonAsync<string[]>(options, cancellationToken);
-        
-             return response;
-       }catch (JsonException ex)
+
+        try
         {
-            Console.WriteLine($"JSON error: {ex.Message}");
-            Console.WriteLine($"Path: {ex.Path}");
-            Console.WriteLine($"LineNumber: {ex.LineNumber}");
-            Console.WriteLine($"BytePositionInLine: {ex.BytePositionInLine}");
+            var response = await request.EnsureSuccessStatusCode().Content.ReadFromJsonAsync<string[]>(options, cancellationToken);
+
+            return response;
         }
-        return null;
-      
+        catch (JsonException ex)
+        {
+            logger.LogError(ex, "Error during group receival");
+            return null;
+        }
     }
-
-
 }

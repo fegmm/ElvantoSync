@@ -1,5 +1,3 @@
-using Microsoft.VisualBasic;
-
 namespace ElvantoSync.GroupFinder.Model;
 
 public record Address
