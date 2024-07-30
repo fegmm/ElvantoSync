@@ -32,9 +32,17 @@ class GroupFinderSync(
     public override async Task<IEnumerable<string>> GetToAsync()
         => await groupFinderService.GetGroupAsync();
 
+    public override async Task UpdateAsync(Group group){
+        insertGroup(group)
+    }
+
     protected override async Task<string> AddMissing(Group group)
     {
-        var leader = group.People.Person.FirstOrDefault(p => p.Position == "Leader");
+        insertGroup(group)
+    }
+
+    private async Task<string> insertGroup(Group group){
+          var leader = group.People.Person.FirstOrDefault(p => p.Position == "Leader");
         if (group.Meeting_postcode == null)
         {
             logger.LogWarning("Group {group} has no postcode, skipping", group.Name);
