@@ -32,13 +32,13 @@ class GroupFinderSync(
     public override async Task<IEnumerable<string>> GetToAsync()
         => await groupFinderService.GetGroupAsync();
 
-    public override async Task UpdateAsync(Group group){
-        insertGroup(group)
+    protected override async Task UpdateMatch(Group group, string _){
+       await insertGroup(group);
     }
 
     protected override async Task<string> AddMissing(Group group)
     {
-        insertGroup(group)
+       return await insertGroup(group);
     }
 
     private async Task<string> insertGroup(Group group){

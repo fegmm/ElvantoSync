@@ -1,3 +1,4 @@
+using System;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Settings;
 using Microsoft.EntityFrameworkCore;
@@ -6,10 +7,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nextcloud.Extensions;
+using Polly;
 using Quartz;
 
 var builder = Host.CreateApplicationBuilder();
-
+builder.Configuration.AddUserSecrets<Program>();
 var appSettings = builder.Configuration
     .GetRequiredSection(ApplicationSettings.ConfigSection)
     .Get<ApplicationSettings>();
@@ -33,6 +35,9 @@ builder.Services
     .AddNextcloudClients(appSettings.NextcloudServer, appSettings.NextcloudUser, appSettings.NextcloudPassword, nameof(ElvantoSync))
     .AddSyncs();
 
+    Console.WriteLine($"Environment: {System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}");
+builder.Environment.EnvironmentName = System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+     Console.WriteLine($"Is it reaally development: {builder.Environment.IsDevelopment()}");
 
 if (builder.Environment.IsDevelopment())
 {

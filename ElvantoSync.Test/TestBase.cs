@@ -93,7 +93,7 @@ public abstract class TestBase : IAsyncLifetime
         Settings = new ApplicationSettings();
 
         Services.AddSyncs();
-        Services.AddApplicationOptions();
+        Services.AddApplicationOptions("test", "test");
         Services.AddSingleton(new Mock<IKasClient>().Object);
         Services.AddSingleton(Settings);
         Services.AddNextcloudClients(nextcloud.NextcloudUrl, "admin", "StrongPassword123!", "elvatnosync/1.0");
