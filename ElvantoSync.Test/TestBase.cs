@@ -1,6 +1,7 @@
 ﻿using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.Settings;
 using KasApi;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Nextcloud.Extensions;
@@ -91,7 +92,7 @@ public abstract class TestBase : IAsyncLifetime
     protected virtual void ConfigureServices(NextcloudContainer nextcloud)
     {
         Settings = new ApplicationSettings();
-
+        Services.AddDbContext<ElvantoSync.Persistence.DbContext>(options => options.UseSqlite("Data Source=ElvantoSync.db"));
         Services.AddSyncs();
         Services.AddApplicationOptions("test", "test");
         Services.AddSingleton(new Mock<IKasClient>().Object);
