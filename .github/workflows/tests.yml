@@ -29,7 +29,7 @@ jobs:
       with:
         dotnet-version: '8.0.x' # Set this to your required .NET version
     - name: Build Docker image
-      run: docker build -t nextcloud-test:latest -f ../../ElvantoSync.Test/nextcloud.dockerfile .
+      run: docker build -t nextcloud-test:latest -f ElvantoSync.Test/nextcloud.dockerfile .
 
     - name: Restore dependencies
       run: dotnet restore
