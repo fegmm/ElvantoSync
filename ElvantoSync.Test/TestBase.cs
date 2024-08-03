@@ -39,7 +39,6 @@ public abstract class TestBase : IAsyncLifetime
 
     protected IServiceProvider BuildServiceProvider()
     {
-        ;
         return Services.BuildServiceProvider();
     }
 
@@ -109,14 +108,7 @@ public abstract class TestBase : IAsyncLifetime
     }
 
     protected ISync FetchSyncImplementation<T>(IServiceProvider serviceProvider)
-    {/*
-       var t = serviceProvider.GetServices<ISync>();
-        foreach(var i in t){
-            if(i is T) {
-                return i;
-            }
-           
-        }*/
+    {
         return serviceProvider.GetServices<ISync>()
                  .Where(service => service is T)
                  .Select(service => service).First();

@@ -1,6 +1,7 @@
 using System;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Settings;
+using KasApi;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,15 +28,11 @@ builder.Services
     .AddDbContext<ElvantoSync.Persistence.DbContext>(options => options.UseSqlite(appSettings.ConnectionString))
     .AddOptions()
     .AddSingleton(elvanto)
-    .AddSingleton(kas)
+    .AddSingleton<IKasClient>(kas)
     .AddSingleton<IElvantoClient, ExternalClientWrapper>()
     .AddApplicationOptions(appSettings.NextcloudUser, appSettings.NextcloudPassword)
     .AddNextcloudClients(appSettings.NextcloudServer, appSettings.NextcloudUser, appSettings.NextcloudPassword, nameof(ElvantoSync))
     .AddSyncs();
-
-    Console.WriteLine($"Environment: {System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}");
-builder.Environment.EnvironmentName = System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-     Console.WriteLine($"Is it reaally development: {builder.Environment.IsDevelopment()}");
 
 if (builder.Environment.IsDevelopment())
 {
