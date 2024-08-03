@@ -1,7 +1,6 @@
 name: Run Tests
 
 on:
-  on:
   push:
     branches:
       - 'feature/testWorkflow' 
