@@ -28,7 +28,7 @@ public abstract class TestBase : IAsyncLifetime
 
         Services = new ServiceCollection();
         var builder = Host.CreateApplicationBuilder();
-        builder.Configuration.AddUserSecrets<TestBase>();
+        builder.Configuration.AddJsonFile("application.json");
         Services = builder.Services;
         var nextcloud = new NextcloudContainer();
 
@@ -99,6 +99,9 @@ public abstract class TestBase : IAsyncLifetime
 
     protected virtual void ConfigureServices(NextcloudContainer nextcloud)
     {
+
+        
+
         Services.AddDbContext<ElvantoSync.Persistence.DbContext>(options => options.UseSqlite("Data Source=ElvantoSync.db"))
                .AddOptions()
                .AddSingleton(new Mock<IKasClient>().Object)
