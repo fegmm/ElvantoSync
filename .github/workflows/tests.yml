@@ -3,7 +3,7 @@ name: Run Tests
 on:
   push:
     branches:
-      - 'feature/testWorkflow' 
+      - '*feature/testWorkflow*' 
 
 
 #  pull_request:
