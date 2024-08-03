@@ -26,11 +26,9 @@ var kas = new KasApi.Client(new KasApi.Requests.AuthorizeHeader(
 builder.Services
     .AddDbContext<ElvantoSync.Persistence.DbContext>(options => options.UseSqlite(appSettings.ConnectionString))
     .AddOptions()
-
     .AddSingleton(elvanto)
     .AddSingleton(kas)
     .AddSingleton<IElvantoClient, ExternalClientWrapper>()
-
     .AddApplicationOptions(appSettings.NextcloudUser, appSettings.NextcloudPassword)
     .AddNextcloudClients(appSettings.NextcloudServer, appSettings.NextcloudUser, appSettings.NextcloudPassword, nameof(ElvantoSync))
     .AddSyncs();
