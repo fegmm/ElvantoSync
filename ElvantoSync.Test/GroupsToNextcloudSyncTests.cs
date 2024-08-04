@@ -1,4 +1,5 @@
-﻿using ElvantoSync.ElvantoService;
+﻿using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.ElvantoService;
 using ElvantoSync.Nextcloud;
 using ElvantoSync.Settings.Nextcloud;
 using FluentAssertions;
@@ -38,10 +39,8 @@ public class GroupsToNextcloudSyncTests : TestBase
     public override async Task Apply_ShouldAddNewElementFromElvanto()
     {
 
-        IEnumerable<ElvantoApi.Models.Group> groups = SetUpGroupMock(SetUpPeopleMock().ToArray());
-        _groupsToNextcloudSync = FetchSyncImplementation<GroupsToNextcloudSync>(_serviceProvider);
+        IEnumerable<ElvantoApi.Models.Group> groups =await setUpGroupsTests();
         await _groupsToNextcloudSync.Apply();
-
         var result = await client.GetGroups();
         
         groups.All(x => result.Any(y => x.Id.Equals(y.Id) && x.Name.Equals(y.DisplayName)))
@@ -55,8 +54,7 @@ public class GroupsToNextcloudSyncTests : TestBase
     public override async Task Apply_ShouldNotAddIfNoNewElement()
     {
 
-        IEnumerable<ElvantoApi.Models.Group> groups = SetUpGroupMock(SetUpPeopleMock().ToArray());
-        _groupsToNextcloudSync = FetchSyncImplementation<GroupsToNextcloudSync>(_serviceProvider);
+        IEnumerable<ElvantoApi.Models.Group> groups = await setUpGroupsTests();
         await _groupsToNextcloudSync.Apply();
         var initialApply = await client.GetGroups();
         // Act
@@ -71,15 +69,22 @@ public class GroupsToNextcloudSyncTests : TestBase
  [Fact, Priority(0)]
     public async Task Apply_ShouldAddLeaderGroup()
     {
-
-        IEnumerable<ElvantoApi.Models.Group> groups = SetUpGroupMock(SetUpPeopleMock().ToArray());
-        _groupsToNextcloudSync = FetchSyncImplementation<GroupsToNextcloudSync>(_serviceProvider);
-        await _groupsToNextcloudSync.Apply();
+        IEnumerable<Group> groups = await setUpGroupsTests();
         var groupSettings = _serviceProvider.GetRequiredService<IOptions<GroupsToNextcloudSyncSettings>>().Value;
-
+        await _groupsToNextcloudSync.Apply();
         var result = await client.GetGroups();
         var leaderResult = result.Where(x => x.DisplayName.Contains(groupSettings.GroupLeaderSuffix));
 
         leaderResult.Should().HaveCount(groups.Select(x => !x.Name.Equals("admin")).Count());
+    }
+
+    private async Task<IEnumerable<Group>> setUpGroupsTests()
+    {
+        IEnumerable<ElvantoApi.Models.Group> groups = SetUpGroupMock(SetUpPeopleMock().ToArray());
+        _groupsToNextcloudSync = FetchSyncImplementation<GroupsToNextcloudSync>(_serviceProvider);
+        _peopleToNextcloudSync = FetchSyncImplementation<PeopleToNextcloudSync>(_serviceProvider);
+        await _peopleToNextcloudSync.Apply();
+        
+        return groups;
     }
 }
