@@ -1,15 +1,18 @@
+using System;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Settings;
+using KasApi;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nextcloud.Extensions;
+using Polly;
 using Quartz;
 
 var builder = Host.CreateApplicationBuilder();
-
+builder.Configuration.AddUserSecrets<Program>();
 var appSettings = builder.Configuration
     .GetRequiredSection(ApplicationSettings.ConfigSection)
     .Get<ApplicationSettings>();
@@ -24,15 +27,12 @@ var kas = new KasApi.Client(new KasApi.Requests.AuthorizeHeader(
 builder.Services
     .AddDbContext<ElvantoSync.Persistence.DbContext>(options => options.UseSqlite(appSettings.ConnectionString))
     .AddOptions()
-
     .AddSingleton(elvanto)
-    .AddSingleton(kas)
+    .AddSingleton<IKasClient>(kas)
     .AddSingleton<IElvantoClient, ExternalClientWrapper>()
-
     .AddApplicationOptions(appSettings.NextcloudUser, appSettings.NextcloudPassword)
     .AddNextcloudClients(appSettings.NextcloudServer, appSettings.NextcloudUser, appSettings.NextcloudPassword, nameof(ElvantoSync))
     .AddSyncs();
-
 
 if (builder.Environment.IsDevelopment())
 {
