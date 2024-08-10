@@ -99,9 +99,6 @@ public abstract class TestBase : IAsyncLifetime
 
     protected virtual void ConfigureServices(NextcloudContainer nextcloud)
     {
-
-        
-
         Services.AddDbContext<ElvantoSync.Persistence.DbContext>(options => options.UseSqlite("Data Source=ElvantoSync.db"))
                .AddOptions()
                .AddSingleton(new Mock<IKasClient>().Object)

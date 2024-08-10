@@ -83,7 +83,7 @@ public class GroupsToNextcloudSyncTests : TestBase
         IEnumerable<ElvantoApi.Models.Group> groups = SetUpGroupMock(SetUpPeopleMock().ToArray());
         _groupsToNextcloudSync = FetchSyncImplementation<GroupsToNextcloudSync>(_serviceProvider);
         _peopleToNextcloudSync = FetchSyncImplementation<PeopleToNextcloudSync>(_serviceProvider);
-        await _peopleToNextcloudSync.Apply();
+        await _peopleToNextcloudSync.Apply();   
         
         return groups;
     }
