@@ -48,6 +48,9 @@ Offers a synchronisation from Elvanto to other applications
       },
       "PeopleToNextcloudSync": {
         "LogOnly": true
+      },
+      "GroupFinderSync": {
+       "LogOnly": false
       }
     }
   }

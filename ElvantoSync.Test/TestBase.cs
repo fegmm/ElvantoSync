@@ -28,7 +28,7 @@ public abstract class TestBase : IAsyncLifetime
 
         Services = new ServiceCollection();
         var builder = Host.CreateApplicationBuilder();
-        builder.Configuration.AddUserSecrets<TestBase>();
+        builder.Configuration.AddJsonFile("application.json");
         Services = builder.Services;
         var nextcloud = new NextcloudContainer();
 

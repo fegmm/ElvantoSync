@@ -1,0 +1,49 @@
+{
+    "Application": {
+      "ConnectionString": "Data Source=Test.db",
+      "ElvantoKey": "ThisIsFake",
+      "KASLogin": "",
+      "KASAuthData": "",
+      "NextcloudServer": "http://nextcloud.local:8080",
+      "NextcloudUser": "admin",
+      "NextcloudPassword": "admin"
+    },
+    "Sync": {
+      "AllInkl": {
+        "GroupsToEmailSync": {
+          "LogOnly": true,
+          "KASDomain": "sync.example.org",
+          "UploadGroupMailAddressesToNextcloudPath": "Documents/Gruppen-Mail-Adressen.pdf"
+        }
+      },
+      "Elvanto": {
+        "DepartementsToGroupMemberSync": {
+          "LogOnly": true
+        }
+      },
+      "Nextcloud": {
+        "GroupsToCollectiveSync": {
+          "LogOnly": true
+        },
+        "GroupsToDeckSync": {
+          "LogOnly": true
+        },
+        "GroupsToNextcloudGroupFolderSync": {
+          "LogOnly": true
+        },
+        "GroupsToNextcloudSync": {
+          "LogOnly": false,
+          "GroupLeaderSuffix": "- Leitung"
+        },
+        "GroupsToTalkSync": {
+          "LogOnly": true
+        },
+        "PeopleToContactSync": {
+          "LogOnly": true
+        },
+        "PeopleToNextcloudSync": {
+          "LogOnly": false
+        }
+      }
+    }
+  }
