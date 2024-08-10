@@ -20,7 +20,7 @@ namespace ElvantoSync.AllInkl;
 internal class GroupsToEmailSync(
     IElvantoClient elvanto,
     NextcloudApi.Api nextcloud,
-    KasApi.Client kas,
+    KasApi.IKasClient kas,
     DbContext dbContext,
     IOptions<GroupsToEmailSyncSettings> settings,
     ILogger<GroupsToEmailSync> logger
