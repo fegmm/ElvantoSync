@@ -16,7 +16,7 @@
 	<external-app>
 		<docker-install>
 			<registry>localhost:5000</registry>
-			<image>simple_api</image>
+			<image>simpleapi</image>
 			<image-tag>latest</image-tag>
 		</docker-install>
 		<scopes>
