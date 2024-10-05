@@ -1,6 +1,6 @@
 using ElvantoSync.Settings;
 
-internal record GroupFinderToNextCloudSync : SyncSettings
+internal record GroupFinderToNextcloudSyncSettings : SyncSettings
 {
     internal const string ConfigSection = "Sync:Nextcloud:GroupFinderSync";
 }

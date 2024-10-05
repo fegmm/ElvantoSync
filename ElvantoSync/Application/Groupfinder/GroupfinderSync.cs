@@ -17,7 +17,7 @@ class GroupFinderSync(
     DbContext dbContext,
     ILogger<GroupFinderSync> logger,
     IGroupFinderService groupFinderService,
-    IOptions<GroupFinderToNextCloudSync> settings
+    IOptions<GroupFinderToNextcloudSyncSettings> settings
 ) : Sync<Group, string>(dbContext, settings, logger)
 {
     public override string FromKeySelector(Group i) => i.Id;
