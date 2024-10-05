@@ -1,7 +1,12 @@
 ﻿using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.Settings;
+using ElvantoSync.Settings.Nextcloud;
 using KasApi;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Moq;
 using Nextcloud.Extensions;
 using Nextcloud.Tests;
@@ -16,11 +21,15 @@ public abstract class TestBase : IAsyncLifetime
     protected ApplicationSettings Settings;
     private readonly NextcloudContainer nextcloud;
     protected Mock<ElvantoService.IElvantoClient> _elvantoClientMock;
-    protected ServiceCollection Services { get; private set; }
+    protected IServiceCollection Services { get; private set; }
     private bool _disposed = false;
     public TestBase()
     {
+
         Services = new ServiceCollection();
+        var builder = Host.CreateApplicationBuilder();
+        builder.Configuration.AddJsonFile("application.json");
+        Services = builder.Services;
         var nextcloud = new NextcloudContainer();
 
         ConfigureServices(nextcloud);
@@ -33,7 +42,7 @@ public abstract class TestBase : IAsyncLifetime
         return Services.BuildServiceProvider();
     }
 
-    protected IEnumerable<Person> SetUpPeopleMock()
+    protected IEnumerable<Person> SetupPeopleMock()
     {
         IEnumerable<Person> people = [
             new Person { Id = "3", Firstname = "Alex", Lastname = "Johnson", Email = "alexj@example.com" },
@@ -56,7 +65,7 @@ public abstract class TestBase : IAsyncLifetime
         return people;
     }
 
-    protected IEnumerable<Group> SetUpGroupMock(Person[] person)
+    protected IEnumerable<Group> SetupGroupMock(Person[] person)
     {
         GroupMembers groupMembers = new GroupMembers
         {
@@ -90,20 +99,19 @@ public abstract class TestBase : IAsyncLifetime
 
     protected virtual void ConfigureServices(NextcloudContainer nextcloud)
     {
-        Settings = new ApplicationSettings();
-
-        Services.AddSyncs();
-        Services.AddApplicationOptions();
-        Services.AddSingleton(new Mock<IKasClient>().Object);
-        Services.AddSingleton(Settings);
-        Services.AddNextcloudClients(nextcloud.NextcloudUrl, "admin", "StrongPassword123!", "elvatnosync/1.0");
+        Services.AddDbContext<ElvantoSync.Persistence.DbContext>(options => options.UseSqlite("Data Source=ElvantoSync.db"))
+               .AddOptions()
+               .AddSingleton(new Mock<IKasClient>().Object)
+               .AddApplicationOptions("test", "test")
+               .AddNextcloudClients(nextcloud.NextcloudUrl, "admin", "StrongPassword123!", "elvatnosync/1.0")
+               .AddSyncs();
     }
 
     protected ISync FetchSyncImplementation<T>(IServiceProvider serviceProvider)
     {
         return serviceProvider.GetServices<ISync>()
-         .Where(service => service.GetType() is T)
-         .Select(service => service).First();
+                 .Where(service => service is T)
+                 .Select(service => service).First();
     }
 
 

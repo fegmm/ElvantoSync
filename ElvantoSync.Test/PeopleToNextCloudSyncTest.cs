@@ -38,7 +38,7 @@ public class PeopleToNextcloudSyncTests : TestBase
     public override async Task Apply_ShouldAddNewElementFromElvanto()
     {
 
-        IEnumerable<Person> people = SetUpPeopleMock();
+        IEnumerable<Person> people = SetupPeopleMock();
         _peopleToNextcloudSync = FetchSyncImplementation<PeopleToNextcloudSync>(_serviceProvider);
 
         await _peopleToNextcloudSync.Apply();
@@ -63,7 +63,7 @@ public class PeopleToNextcloudSyncTests : TestBase
     public override async Task Apply_ShouldNotAddIfNoNewElement()
     {
 
-        var people = SetUpPeopleMock();
+        var people = SetupPeopleMock();
         _peopleToNextcloudSync = FetchSyncImplementation<PeopleToNextcloudSync>(_serviceProvider);
         await _peopleToNextcloudSync.Apply();
         var initialApply = await client.GetUsers();
