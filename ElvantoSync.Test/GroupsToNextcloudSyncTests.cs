@@ -39,7 +39,7 @@ public class GroupsToNextcloudSyncTests : TestBase
     public override async Task Apply_ShouldAddNewElementFromElvanto()
     {
 
-        IEnumerable<ElvantoApi.Models.Group> groups =await setUpGroupsTests();
+        IEnumerable<ElvantoApi.Models.Group> groups =await SetupGroupsTests();
         await _groupsToNextcloudSync.Apply();
         var result = await client.GetGroups();
         
@@ -54,7 +54,7 @@ public class GroupsToNextcloudSyncTests : TestBase
     public override async Task Apply_ShouldNotAddIfNoNewElement()
     {
 
-        IEnumerable<ElvantoApi.Models.Group> groups = await setUpGroupsTests();
+        IEnumerable<ElvantoApi.Models.Group> groups = await SetupGroupsTests();
         await _groupsToNextcloudSync.Apply();
         var initialApply = await client.GetGroups();
         // Act
@@ -69,7 +69,7 @@ public class GroupsToNextcloudSyncTests : TestBase
  [Fact, Priority(0)]
     public async Task Apply_ShouldAddLeaderGroup()
     {
-        IEnumerable<Group> groups = await setUpGroupsTests();
+        IEnumerable<Group> groups = await SetupGroupsTests();
         var groupSettings = _serviceProvider.GetRequiredService<IOptions<GroupsToNextcloudSyncSettings>>().Value;
         await _groupsToNextcloudSync.Apply();
         var result = await client.GetGroups();
@@ -78,9 +78,9 @@ public class GroupsToNextcloudSyncTests : TestBase
         leaderResult.Should().HaveCount(groups.Select(x => !x.Name.Equals("admin")).Count());
     }
 
-    private async Task<IEnumerable<Group>> setUpGroupsTests()
+    private async Task<IEnumerable<Group>> SetupGroupsTests()
     {
-        IEnumerable<ElvantoApi.Models.Group> groups = SetUpGroupMock(SetUpPeopleMock().ToArray());
+        IEnumerable<ElvantoApi.Models.Group> groups = SetupGroupMock(SetupPeopleMock().ToArray());
         _groupsToNextcloudSync = FetchSyncImplementation<GroupsToNextcloudSync>(_serviceProvider);
         _peopleToNextcloudSync = FetchSyncImplementation<PeopleToNextcloudSync>(_serviceProvider);
         await _peopleToNextcloudSync.Apply();   

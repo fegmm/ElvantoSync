@@ -42,7 +42,7 @@ public abstract class TestBase : IAsyncLifetime
         return Services.BuildServiceProvider();
     }
 
-    protected IEnumerable<Person> SetUpPeopleMock()
+    protected IEnumerable<Person> SetupPeopleMock()
     {
         IEnumerable<Person> people = [
             new Person { Id = "3", Firstname = "Alex", Lastname = "Johnson", Email = "alexj@example.com" },
@@ -65,7 +65,7 @@ public abstract class TestBase : IAsyncLifetime
         return people;
     }
 
-    protected IEnumerable<Group> SetUpGroupMock(Person[] person)
+    protected IEnumerable<Group> SetupGroupMock(Person[] person)
     {
         GroupMembers groupMembers = new GroupMembers
         {
