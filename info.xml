@@ -15,7 +15,7 @@
 	</dependencies>
 	<external-app>
 		<docker-install>
-			<registry>localhost:5000</registry>
+			<registry>localhost:5050</registry>
 			<image>simpleapi</image>
 			<image-tag>latest</image-tag>
 		</docker-install>
