@@ -14,7 +14,7 @@ public class GroupFinderService(HttpClient client, ILogger<GroupFinderService> l
 {
     public async Task CreateGroupAsync(CreateGroupRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await client.PostAsJsonAsync($"http://nextcloud.local/index.php/apps/app_api/proxy/simpleapi/group", request, cancellationToken);
+        var response = await client.PostAsJsonAsync($"http://nextcloud.local/index.php/apps/app_api/proxy/simple_api/group", request, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
@@ -27,7 +27,7 @@ public class GroupFinderService(HttpClient client, ILogger<GroupFinderService> l
 
             WriteIndented = true
         };
-        var request = await client.GetAsync($"http://nextcloud.local/index.php/apps/app_api/proxy/simpleapi/groupIds", cancellationToken);
+        var request = await client.GetAsync($"http://nextcloud.local/index.php/apps/app_api/proxy/simple_api/groupIds", cancellationToken);
 
         try
         {
