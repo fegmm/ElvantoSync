@@ -20,7 +20,7 @@
 			<image-tag>latest</image-tag>
 		</docker-install>
 		<scopes>
-			<value>USER_INFO</value>
+			<value>ALL</value>
 		</scopes>
 		<system>0</system>
 		<routes>
