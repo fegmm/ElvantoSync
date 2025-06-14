@@ -11,7 +11,7 @@
 	<namespace>simpleApiExample</namespace>
 	<category>tools</category>
 	<dependencies>
-		<nextcloud min-version="27" max-version="29"/>
+		<nextcloud min-version="27" max-version="31"/>
 	</dependencies>
 	<external-app>
 		<docker-install>
