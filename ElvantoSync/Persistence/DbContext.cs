@@ -7,10 +7,14 @@ namespace ElvantoSync.Persistence;
 
 public class DbContext : Microsoft.EntityFrameworkCore.DbContext
 {
+    private static object DatabaseCreationLock = new object();
+    
     public virtual DbSet<IndexMapping> IndexMappings { get; set; }
 
     public DbContext(DbContextOptions<DbContext> options) : base(options) {
-        Database.EnsureCreated();
+        lock (DatabaseCreationLock) {
+            Database.EnsureCreated();
+        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

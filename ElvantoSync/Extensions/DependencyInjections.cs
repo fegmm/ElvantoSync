@@ -61,6 +61,10 @@ public static class DependencyInjections
         services.AddOptions<GroupsToEmailSyncSettings>()
             .BindConfiguration(GroupsToEmailSyncSettings.ConfigSection);
 
+        services.AddOptions<GroupFinderToNextcloudSyncSettings>()
+            .BindConfiguration(GroupFinderToNextcloudSyncSettings.ConfigSection);
+
+
         byte[] authToken = Encoding.UTF8.GetBytes($"{username}:{password}");
         var auth = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(authToken));
 

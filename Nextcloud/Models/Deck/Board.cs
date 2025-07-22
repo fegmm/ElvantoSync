@@ -30,7 +30,7 @@ public record Board
     public required object Users { get; init; }
     
     [JsonPropertyName("shared")]
-    [JsonConverter(typeof(IntToBooleanConverter))]
+    [JsonConverter(typeof(IntOrBooleanConverter))]
     public bool? Shared { get; init; }
     
     [JsonPropertyName("deletedAt")]

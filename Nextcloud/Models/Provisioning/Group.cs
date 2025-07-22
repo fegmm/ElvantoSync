@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using Nextcloud.Utils.Json;
+using System.Text.Json.Serialization;
 
 namespace Nextcloud.Models.Provisioning;
 
@@ -14,7 +15,8 @@ public record Group
     public required int UserCount { get; init; }
     
     [JsonPropertyName("disabled")]
-    public required int Disabled { get; init; }
+    [JsonConverter(typeof(IntOrBooleanConverter))]
+    public required bool Disabled { get; init; }
     
     [JsonPropertyName("canAdd")]
     public required bool CanAdd { get; init; }
