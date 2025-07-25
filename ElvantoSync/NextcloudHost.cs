@@ -11,7 +11,7 @@ namespace Nextcloud.Tests;
 
 public class NextcloudHost : BackgroundService
 {
-    public string NextcloudUrl => $"http://nextcloud.local:{port}";
+    public string NextcloudUrl => $"http://stable31.local:{port}";
 
     private IContainer container;
     private MySqlContainer sql_container;

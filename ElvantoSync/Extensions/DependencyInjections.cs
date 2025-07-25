@@ -29,7 +29,7 @@ public static class DependencyInjections
         .AddTransient<ISync, GroupsToTalkSync>()
         .AddTransient<ISync, GroupsToEmailSync>();
 
-    public static IServiceCollection AddApplicationOptions(this IServiceCollection services, string username, string password)
+    public static IServiceCollection AddApplicationOptions(this IServiceCollection services, string username, string password, string nextcloudUrl)
     {
         services.AddOptions<ApplicationSettings>()
             .BindConfiguration(ApplicationSettings.ConfigSection);
@@ -61,8 +61,8 @@ public static class DependencyInjections
         services.AddOptions<GroupsToEmailSyncSettings>()
             .BindConfiguration(GroupsToEmailSyncSettings.ConfigSection);
 
-        services.AddOptions<GroupFinderToNextcloudSyncSettings>()
-            .BindConfiguration(GroupFinderToNextcloudSyncSettings.ConfigSection);
+        services.AddOptions<GroupFinderToNextCloudSyncSettings>()
+            .BindConfiguration(GroupFinderToNextCloudSyncSettings.ConfigSection);
 
 
         byte[] authToken = Encoding.UTF8.GetBytes($"{username}:{password}");
@@ -70,6 +70,7 @@ public static class DependencyInjections
 
         services.AddHttpClient<IGroupFinderService, GroupFinderService>(i =>
         {
+            i.BaseAddress = new Uri(nextcloudUrl);
             i.Timeout = TimeSpan.FromMinutes(5);
             i.DefaultRequestHeaders.Authorization = auth;
             i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));

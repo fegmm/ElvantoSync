@@ -102,7 +102,7 @@ public abstract class TestBase : IAsyncLifetime
         Services.AddDbContext<ElvantoSync.Persistence.DbContext>(options => options.UseSqlite("Data Source=ElvantoSync.db"))
                .AddOptions()
                .AddSingleton(new Mock<IKasClient>().Object)
-               .AddApplicationOptions("test", "test")
+               .AddApplicationOptions("test", "test","http://group-finder:8080")
                .AddNextcloudClients(nextcloud.NextcloudUrl, "admin", "StrongPassword123!", "elvatnosync/1.0")
                .AddSyncs();
     }
