@@ -30,7 +30,7 @@ builder.Services
     .AddSingleton(elvanto)
     .AddSingleton<IKasClient>(kas)
     .AddSingleton<IElvantoClient, ExternalClientWrapper>()
-    .AddApplicationOptions(appSettings.NextcloudUser, appSettings.NextcloudPassword)
+    .AddApplicationOptions(appSettings.NextcloudUser, appSettings.NextcloudPassword, appSettings.NextcloudServer)
     .AddNextcloudClients(appSettings.NextcloudServer, appSettings.NextcloudUser, appSettings.NextcloudPassword, nameof(ElvantoSync))
     .AddSyncs();
 

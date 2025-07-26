@@ -1,6 +1,7 @@
 using ElvantoSync.GroupFinder.Model;
 using ElvantoSync.GroupFinder.Service;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -10,11 +11,13 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync.GroupFinder.service;
 
-public class GroupFinderService(HttpClient client, ILogger<GroupFinderService> logger) : IGroupFinderService
+class GroupFinderService(HttpClient client, ILogger<GroupFinderService> logger) : IGroupFinderService
 {
+
+    //TODO: configure base part in client and create setting 
     public async Task CreateGroupAsync(CreateGroupRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await client.PostAsJsonAsync($"http://nextcloud.local/index.php/apps/app_api/proxy/simpleapi/group", request, cancellationToken);
+        var response = await client.PostAsJsonAsync($"/index.php/apps/app_api/proxy/group-finder/group", request, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
@@ -27,7 +30,7 @@ public class GroupFinderService(HttpClient client, ILogger<GroupFinderService> l
 
             WriteIndented = true
         };
-        var request = await client.GetAsync($"http://nextcloud.local/index.php/apps/app_api/proxy/simpleapi/groupIds", cancellationToken);
+        var request = await client.GetAsync($"/index.php/apps/app_api/proxy/group-finder/groupIds", cancellationToken);
 
         try
         {

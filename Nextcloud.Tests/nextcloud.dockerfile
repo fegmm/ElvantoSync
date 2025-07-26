@@ -15,6 +15,7 @@ RUN cd /var/www/html && \
     php occ app:install spreed && \
     php occ app:install contacts && \
     php occ app:install collectives && \
-    php occ app:install groupfolders
+    php occ app:install groupfolders && \
+    php occ app:install app_api 
 
 USER root
