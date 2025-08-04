@@ -30,4 +30,9 @@ public class DbContext : Microsoft.EntityFrameworkCore.DbContext
         => IndexMappings
             .FirstOrDefault(i => i.FromId == elvantoId && i.Type == nameof(GroupsToNextcloudSync))
             ?.ToId;
+
+    public string ElvantoToNextcloudPeopleId(string elvantoId)
+        => IndexMappings
+            .FirstOrDefault(i => i.FromId == elvantoId && i.Type == nameof(PeopleToNextcloudSync))
+            ?.ToId;
 }
