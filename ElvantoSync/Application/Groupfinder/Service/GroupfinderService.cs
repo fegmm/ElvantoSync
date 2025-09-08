@@ -9,11 +9,10 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ElvantoSync.GroupFinder.service;
+namespace ElvantoSync.GroupFinder.Service;
 
 class GroupFinderService(HttpClient client, ILogger<GroupFinderService> logger) : IGroupFinderService
 {
-
     //TODO: configure base part in client and create setting 
     public async Task CreateGroupAsync(CreateGroupRequest request, CancellationToken cancellationToken = default)
     {

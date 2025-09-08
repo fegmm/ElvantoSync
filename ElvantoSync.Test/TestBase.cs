@@ -1,4 +1,5 @@
 ﻿using ElvantoSync.ElvantoApi.Models;
+using ElvantoSync.Extensions;
 using ElvantoSync.Settings;
 using ElvantoSync.Settings.Nextcloud;
 using KasApi;
@@ -94,8 +95,6 @@ public abstract class TestBase : IAsyncLifetime
 
         return groups;
     }
-
-
 
     protected virtual void ConfigureServices(NextcloudContainer nextcloud)
     {

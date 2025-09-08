@@ -3,11 +3,11 @@ using ElvantoSync.ElvantoApi;
 using ElvantoSync.ElvantoApi.Models;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.Deck;
+
 namespace ElvantoSync.ElvantoService;
+
 public class ExternalClientWrapper(ElvantoApi.Client client) : IElvantoClient
 {
-    
-
     public Task<GroupsGetAllResponse> GroupsGetAllAsync(GetAllRequest request)
     {
         return client.GroupsGetAllAsync(request);

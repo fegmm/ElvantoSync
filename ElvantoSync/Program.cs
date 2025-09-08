@@ -1,4 +1,6 @@
-using System;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Metrics;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Settings;
 using KasApi;
@@ -8,10 +10,30 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nextcloud.Extensions;
-using Polly;
 using Quartz;
+using ElvantoSync.Extensions;
+using OpenTelemetry;
 
 var builder = Host.CreateApplicationBuilder();
+builder.Logging.AddOpenTelemetry(options =>
+{
+    options.IncludeScopes = true;
+    options.IncludeFormattedMessage = true;
+});
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .ConfigureResource(resource => resource.AddService("ElvantoSync"))
+        .AddHttpClientInstrumentation()
+        .AddEntityFrameworkCoreInstrumentation()
+        .AddQuartzInstrumentation()
+    )
+    .WithMetrics(metrics => metrics
+        .ConfigureResource(resource => resource.AddService("ElvantoSync"))
+        .AddHttpClientInstrumentation()
+    )
+    .UseOtlpExporter();
+
 builder.Configuration.AddUserSecrets<Program>();
 var appSettings = builder.Configuration
     .GetRequiredSection(ApplicationSettings.ConfigSection)

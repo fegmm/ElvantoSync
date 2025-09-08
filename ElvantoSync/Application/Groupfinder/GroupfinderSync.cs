@@ -3,6 +3,7 @@ using ElvantoSync.ElvantoService;
 using ElvantoSync.GroupFinder.Model;
 using ElvantoSync.GroupFinder.Service;
 using ElvantoSync.Persistence;
+using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Collections.Generic;

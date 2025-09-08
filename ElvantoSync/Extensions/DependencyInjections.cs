@@ -2,7 +2,7 @@ using ElvantoSync;
 using ElvantoSync.AllInkl;
 using ElvantoSync.Application.Elvanto;
 using ElvantoSync.GroupFinder;
-using ElvantoSync.GroupFinder.service;
+using ElvantoSync.GroupFinder.Service;
 using ElvantoSync.GroupFinder.Service;
 using ElvantoSync.Nextcloud;
 using ElvantoSync.Settings;
@@ -13,6 +13,8 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Net.Http.Headers;
 using System.Text;
+
+namespace ElvantoSync.Extensions;
 
 public static class DependencyInjections
 {

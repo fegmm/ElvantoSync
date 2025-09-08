@@ -1,4 +1,4 @@
-using ElvantoSync.Settings;
+namespace ElvantoSync.Settings.Nextcloud;
 
 internal record GroupFinderToNextCloudSyncSettings : SyncSettings
 {
