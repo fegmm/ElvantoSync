@@ -42,15 +42,18 @@ class GroupFinderSync(
     }
 
     private async Task<string> insertGroup(Group group){
-          var leader = group.People.Person.FirstOrDefault(p => p.Position == "Leader");
+        var leader = group.People.Person.FirstOrDefault(p => p.Position == "Leader");
+        string ncLeaderId =  dbContext.ElvantoToNextcloudPeopleId(leader.Id) ?? leader.Id;
+        string nextcloudGroupId =  dbContext.ElvantoToNextcloudGroupId(group.Id) ?? group.Id;
         if (group.Meeting_postcode == null)
         {
             logger.LogWarning("Group {group} has no postcode, skipping", group.Name);
             return null;
         }
+
         var request = new CreateGroupRequest
         {
-            Id = group.Id,
+            Id = nextcloudGroupId,
             ModifiedAt = group.Date_modified,
             Name = group.Name,
             Address = new Address
@@ -61,7 +64,7 @@ class GroupFinderSync(
             },
             Leader = new Leader
             {
-                ElvantoId = leader.Id,
+                ElvantoId = ncLeaderId,
                 Name = leader.Firstname + " " + leader.Lastname,
                 Email = leader.Email
             },
@@ -75,6 +78,6 @@ class GroupFinderSync(
         await groupFinderService.CreateGroupAsync(request);
 
         //TODO: adjust structure
-        return ToKeySelector(group.Id);
+        return ToKeySelector(nextcloudGroupId);
     }
 }
