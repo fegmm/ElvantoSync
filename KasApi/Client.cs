@@ -1,7 +1,7 @@
-﻿using KasApi.Requests;
+﻿using AsyncKeyedLock;
+using KasApi.Requests;
 using KasApi.Response;
 using ServiceReference1;
-using System.Collections.Concurrent;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -19,14 +19,13 @@ namespace KasApi
         private readonly AuthorizeHeader authorization;
 
         private Dictionary<string, DateTime> nextCallPossible;
-        private ConcurrentDictionary<string, SemaphoreSlim> semaphores;
+        private readonly AsyncKeyedLocker<string> semaphores = new();
 
         public Client(AuthorizeHeader authorization)
         {
             this.client = new ServiceReference1.KasApiPortTypeClient(KasApiPortTypeClient.EndpointConfiguration.KasApiPort);
             this.authorization = authorization;
             this.nextCallPossible = new Dictionary<string, DateTime>();
-            this.semaphores = new ConcurrentDictionary<string, SemaphoreSlim>();
         }
 
         private async Task<object?> ExecuteRequestAsync(IBaseRequest request)
@@ -35,9 +34,7 @@ namespace KasApi
 
             request.UpdateAuthorizationData(this.authorization);
 
-            await this.semaphores.GetOrAdd(request.kas_action, new SemaphoreSlim(1,1)).WaitAsync();
-
-            try
+            using (await this.semaphores.LockAsync(request.kas_action))
             {
                 var wait_time = this.nextCallPossible.GetValueOrDefault(request.kas_action, DateTime.Now) - DateTime.Now;
                 if (wait_time.TotalMilliseconds > 0)
@@ -73,13 +70,6 @@ namespace KasApi
                 if (result == null) return null;
                 this.nextCallPossible[request.kas_action] = DateTime.Now.AddSeconds(int.Parse((string)result.GetValueOrDefault("KasFloodDelay", "0")));
                 return result["ReturnInfo"];
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            finally {
-                this.semaphores[request.kas_action].Release();
             }
         }
 
