@@ -41,10 +41,16 @@ class GroupFinderSync(
        return await insertGroup(group);
     }
 
-    private async Task<string> insertGroup(Group group){
+    protected override async Task RemoveAdditional(string toId) {
+         await groupFinderService.DeleteGroupAsync(toId);
+    }
+    
+
+    private async Task<string> insertGroup(Group group)
+    {
         var leader = group.People.Person.FirstOrDefault(p => p.Position == "Leader");
-        string ncLeaderId =  dbContext.ElvantoToNextcloudPeopleId(leader.Id) ?? leader.Id;
-        string nextcloudGroupId =  dbContext.ElvantoToNextcloudGroupId(group.Id) ?? group.Id;
+        string ncLeaderId = dbContext.ElvantoToNextcloudPeopleId(leader.Id) ?? leader.Id;
+        string nextcloudGroupId = dbContext.ElvantoToNextcloudGroupId(group.Id) ?? group.Id;
         if (group.Meeting_postcode == null)
         {
             logger.LogWarning("Group {group} has no postcode, skipping", group.Name);

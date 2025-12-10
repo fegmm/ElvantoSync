@@ -21,6 +21,13 @@ class GroupFinderService(HttpClient client, ILogger<GroupFinderService> logger) 
         response.EnsureSuccessStatusCode();
     }
 
+
+    public async Task DeleteGroupAsync(string GroupId, CancellationToken cancellationToken = default)
+    {
+        var response = await client.DeleteAsync($"/index.php/apps/app_api/proxy/group-finder/group/" + GroupId);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<string[]> GetGroupAsync(CancellationToken cancellationToken = default)
     {
         var options = new JsonSerializerOptions
