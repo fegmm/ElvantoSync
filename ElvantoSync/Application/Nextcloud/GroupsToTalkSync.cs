@@ -17,6 +17,7 @@ class GroupsToTalkSync(
     INextcloudTalkClient talkClient,
     DbContext dbContext,
     IOptions<GroupsToTalkSyncSettings> settings,
+    IOptions<GroupsToNextcloudSyncSettings> groupSettings,
     ILogger<GroupsToTalkSync> logger
 ) : Sync<Group, Conversation>(dbContext, settings, logger)
 {
@@ -55,8 +56,32 @@ class GroupsToTalkSync(
         {
             await talkClient.SetRoomName(to.Token, from.Name);
         }
+
+        var participants = await talkClient.GetListOfParticipants(to.Token);
+        
+        var leaderIds = from.People.Person.Where(GroupsToNextcloudSync.IsLeader)
+            .Select(i => dbContext.ElvantoToNextcloudGroupId(i.Id))
+            .ToHashSet();
+        var leaderAttendeeIds = participants.Where(i => leaderIds.Contains(i.ActorId))
+            .Select(i => i.AttendeeId);
+
+        var moderatorsAttendeeIds = participants.Where(IsModerator)
+            .Select(i => i.AttendeeId)
+            .ToHashSet();
+        
+        foreach (var attendeeId in leaderAttendeeIds.Except(moderatorsAttendeeIds))
+        {
+            await talkClient.PromoteToModerator(to.Token, attendeeId);
+        }
+
+        foreach (var attendeeId in moderatorsAttendeeIds.Except(leaderAttendeeIds))
+        {
+            await talkClient.DemoteFromModerator(to.Token, attendeeId);
+        }
     }
 
     protected override async Task RemoveAdditional(Conversation conversation)
         => await talkClient.DeleteConversation(conversation.Token);
+
+    private static bool IsModerator(Participant participant) => participant.ParticipantType == 2;
 }
