@@ -117,6 +117,6 @@ public class GroupsToNextcloudSync(
         }
     }
 
-    private static bool IsLeader(ElvantoApi.Models.GroupMember member)
+    public static bool IsLeader(ElvantoApi.Models.GroupMember member)
         => member.Position == "Leader" || member.Position == "Assistant Leader";
 }
