@@ -88,10 +88,6 @@ public class ProvisioningTests : TestBase
             DisplayName = "test2",
             Email = "test2@example.org",
             Quota = "2 GB",
-            Phone = "123456789",
-            Address = "test street 1",
-            Website = "https://example.org",
-            Twitter = "@test"
         });
 
         var users = await client.GetUsers();
@@ -100,10 +96,6 @@ public class ProvisioningTests : TestBase
         var user = users.First(u => u.Id == testUserProps.UserId);
         user.DisplayName.Should().Be("test2");
         user.Email.Should().Be("test2@example.org");
-        //user.Phone.Should().Be("123456789");
-        //user.Address.Should().Be("test street 1");
-        //user.Website.Should().Be("https://example.org");
-        //user.Twitter.Should().Be("@test");
         user.Quota.Quota.Should().Be(2147483648);
     }
 
