@@ -73,11 +73,6 @@ class GroupsToTalkSync(
         {
             await talkClient.PromoteToModerator(to.Token, attendeeId);
         }
-
-        foreach (var attendeeId in moderatorsAttendeeIds.Except(leaderAttendeeIds))
-        {
-            await talkClient.DemoteFromModerator(to.Token, attendeeId);
-        }
     }
 
     protected override async Task RemoveAdditional(Conversation conversation)
