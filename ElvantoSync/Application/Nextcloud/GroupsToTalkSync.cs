@@ -60,7 +60,7 @@ class GroupsToTalkSync(
         var participants = await talkClient.GetListOfParticipants(to.Token);
         
         var leaderIds = from.People.Person.Where(GroupsToNextcloudSync.IsLeader)
-            .Select(i => dbContext.ElvantoToNextcloudGroupId(i.Id))
+            .Select(i => dbContext.ElvantoToNextcloudPeopleId(i.Id))
             .ToHashSet();
         var leaderAttendeeIds = participants.Where(i => leaderIds.Contains(i.ActorId))
             .Select(i => i.AttendeeId);
