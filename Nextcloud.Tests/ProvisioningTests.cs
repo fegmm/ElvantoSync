@@ -34,7 +34,7 @@ public class ProvisioningTests : TestBase
     }
 
     [Fact, Priority(0)]
-    public async void GetUsersReturnsAdmin()
+    public async Task GetUsersReturnsAdmin()
     {
         var users = await client.GetUsers();
 
@@ -42,7 +42,7 @@ public class ProvisioningTests : TestBase
     }
 
     [Fact, Priority(0)]
-    public async void GetGroupsReturnsAdmin()
+    public async Task GetGroupsReturnsAdmin()
     {
         var groups = await client.GetGroups();
 
@@ -50,7 +50,7 @@ public class ProvisioningTests : TestBase
     }
 
     [Fact, Priority(1)]
-    public async void CreateGroupReturnsCorrectGroupId()
+    public async Task CreateGroupReturnsCorrectGroupId()
     {
         await client.CreateGroup(testGroup, testGroup);
         var groups = await client.GetGroups();
@@ -59,7 +59,7 @@ public class ProvisioningTests : TestBase
     }
 
     [Fact, Priority(2)]
-    public async void CreateUserReturnsCorrectUserId()
+    public async Task CreateUserReturnsCorrectUserId()
     {
         var userId = await client.CreateUser(testUserProps);
 
@@ -81,7 +81,7 @@ public class ProvisioningTests : TestBase
     }
 
     [Fact, Priority(3)]
-    public async void EditUserChangesValues()
+    public async Task EditUserChangesValues()
     {
         await client.EditUser(testUserProps.UserId, new EditUserRequest()
         {
@@ -100,7 +100,7 @@ public class ProvisioningTests : TestBase
     }
 
     [Fact, Priority(3)]
-    public async void EditGroupChangesValues()
+    public async Task EditGroupChangesValues()
     {
         await client.EditGroup(testGroup, "testGroup2");
 
@@ -113,7 +113,7 @@ public class ProvisioningTests : TestBase
     }
 
     [Fact, Priority(4)]
-    public async void AddUserToGroupAddsUser()
+    public async Task AddUserToGroupAddsUser()
     {
         await client.AddUserToGroup(testUserProps.UserId, testGroup);
 
@@ -123,7 +123,7 @@ public class ProvisioningTests : TestBase
     }
 
     [Fact, Priority(5)]
-    public async void RemoveUserFromGroupRemovesUser()
+    public async Task RemoveUserFromGroupRemovesUser()
     {
         await client.RemoveUserFromGroup(testUserProps.UserId, testGroup);
 
@@ -133,7 +133,7 @@ public class ProvisioningTests : TestBase
     }
 
     [Fact, Priority(6)]
-    public async void DeleteUserRemovesUser()
+    public async Task DeleteUserRemovesUser()
     {
         await client.DeleteUser(testUserProps.UserId);
 
@@ -143,7 +143,7 @@ public class ProvisioningTests : TestBase
     }
 
     [Fact, Priority(6)]
-    public async void DeleteGroupRemovesGroup()
+    public async Task DeleteGroupRemovesGroup()
     {
         await client.DeleteGroup(testGroup);
 

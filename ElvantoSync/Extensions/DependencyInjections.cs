@@ -1,12 +1,14 @@
 using ElvantoSync;
 using ElvantoSync.AllInkl;
 using ElvantoSync.Application.Elvanto;
+using ElvantoSync.ChurchTools;
 using ElvantoSync.GroupFinder;
 using ElvantoSync.GroupFinder.service;
 using ElvantoSync.GroupFinder.Service;
 using ElvantoSync.Nextcloud;
 using ElvantoSync.Settings;
 using ElvantoSync.Settings.AllInkl;
+using ElvantoSync.Settings.ChurchTools;
 using ElvantoSync.Settings.Elvanto;
 using ElvantoSync.Settings.Nextcloud;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +20,8 @@ public static class DependencyInjections
 {
     public static IServiceCollection AddSyncs(this IServiceCollection services)
         => services
+        .AddTransient<ISync, GroupsToEmailSync>()
+        .AddTransient<ISync, PeopleToChurchToolsSync>()
         .AddTransient<ISync, GroupFinderSync>()
         .AddTransient<ISync, PeopleToNextcloudSync>()
         .AddTransient<ISync, PeopleToNextcloudContactSync>()
@@ -26,8 +30,7 @@ public static class DependencyInjections
         .AddTransient<ISync, DepartementsToGroupMemberSync>()
         .AddTransient<ISync, GroupsToCollectivesSync>()
         .AddTransient<ISync, GroupsToDeckSync>()
-        .AddTransient<ISync, GroupsToTalkSync>()
-        .AddTransient<ISync, GroupsToEmailSync>();
+        .AddTransient<ISync, GroupsToTalkSync>();
 
     public static IServiceCollection AddApplicationOptions(this IServiceCollection services, string username, string password, string nextcloudUrl)
     {
@@ -64,6 +67,8 @@ public static class DependencyInjections
         services.AddOptions<GroupFinderToNextCloudSyncSettings>()
             .BindConfiguration(GroupFinderToNextCloudSyncSettings.ConfigSection);
 
+        services.AddOptions<PeopleToChurchToolsSyncSettings>()
+            .BindConfiguration(PeopleToChurchToolsSyncSettings.ConfigSection);
 
         byte[] authToken = Encoding.UTF8.GetBytes($"{username}:{password}");
         var auth = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(authToken));
