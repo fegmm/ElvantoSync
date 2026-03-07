@@ -1,6 +1,4 @@
-﻿using Docker.DotNet.Models;
-using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Configurations;
+﻿using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using Microsoft.Extensions.Logging;
 using Testcontainers.MySql;
@@ -54,7 +52,7 @@ public class NextcloudContainer : IAsyncDisposable
             .WithName(Guid.NewGuid().ToString("D"))
             .Build();
 
-        sql_container = new MySqlBuilder()
+        sql_container = new MySqlBuilder("mysql:8.0")
             .WithDatabase("nextcloud")
             .WithNetwork(network)
             .WithNetworkAliases("db")
@@ -62,11 +60,10 @@ public class NextcloudContainer : IAsyncDisposable
 
         await sql_container.StartAsync();
 
-        container = new ContainerBuilder()
-            .WithImage("nextcloud-test:latest")
+        container = new ContainerBuilder("nextcloud-test:latest")
             .WithPortBinding(port, 80)
             .WithNetwork(network)
-            .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(80))
+            .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(80))
             .Build();
 
         await container.StartAsync();

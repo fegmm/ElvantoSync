@@ -20,7 +20,7 @@ public class GroupFolderTests : TestBase
     }
 
     [Fact, Priority(0)]
-    public async void GetGroupFoldersReturnsEmpty()
+    public async Task GetGroupFoldersReturnsEmpty()
     {
         var groupFolders = await client.GetGroupFolders();
 
@@ -28,7 +28,7 @@ public class GroupFolderTests : TestBase
     }
 
     [Fact, Priority(1)]
-    public async void CreateGroupFolderReturnsCorrectId()
+    public async Task CreateGroupFolderReturnsCorrectId()
     {
         var id = await client.CreateGroupFolder(testGroupFolder);
 
@@ -36,7 +36,7 @@ public class GroupFolderTests : TestBase
     }
 
     [Fact, Priority(2)]
-    public async void GetGroupFoldersReturnsGroupFolder()
+    public async Task GetGroupFoldersReturnsGroupFolder()
     {
         var groupFolders = await client.GetGroupFolders();
 
@@ -44,7 +44,7 @@ public class GroupFolderTests : TestBase
     }
 
     [Fact, Priority(3)]
-    public async void SetMountpointSetsMountpoint()
+    public async Task SetMountpointSetsMountpoint()
     {
         var groupFolders = await client.GetGroupFolders();
         var groupFolderId = groupFolders.First(gf => gf.MountPoint == testGroupFolder).Id;
@@ -56,7 +56,7 @@ public class GroupFolderTests : TestBase
     }
 
     [Fact, Priority(4)]
-    public async void AddGroupAddsGroup()
+    public async Task AddGroupAddsGroup()
     {
         var groupFolders = await client.GetGroupFolders();
         var groupFolderId = groupFolders.First(gf => gf.MountPoint == testGroupFolderRenamed).Id;
@@ -69,7 +69,7 @@ public class GroupFolderTests : TestBase
     }
 
     [Fact, Priority(5)]
-    public async void SetAclSetsAcl()
+    public async Task SetAclSetsAcl()
     {
         var groupFolders = await client.GetGroupFolders();
         var groupFolderId = groupFolders.First(gf => gf.MountPoint == testGroupFolderRenamed).Id;
@@ -82,7 +82,7 @@ public class GroupFolderTests : TestBase
     }
 
     [Fact, Priority(6)]
-    public async void AddAclManagerAddsAclManager()
+    public async Task AddAclManagerAddsAclManager()
     {
         var groupFolders = await client.GetGroupFolders();
         var groupFolderId = groupFolders.First(gf => gf.MountPoint == testGroupFolderRenamed).Id;
@@ -94,7 +94,7 @@ public class GroupFolderTests : TestBase
     }
 
     [Fact, Priority(7)]
-    public async void RemoveAclManagerRemovesAclManager()
+    public async Task RemoveAclManagerRemovesAclManager()
     {
         var groupFolders = await client.GetGroupFolders();
         var groupFolderId = groupFolders.First(gf => gf.MountPoint == testGroupFolderRenamed).Id;
@@ -106,7 +106,7 @@ public class GroupFolderTests : TestBase
     }
 
     [Fact, Priority(8)]
-    public async void DeleteGroupFolderDeletesGroupFolder()
+    public async Task DeleteGroupFolderDeletesGroupFolder()
     {
         var groupFolders = await client.GetGroupFolders();
         var groupFolderId = groupFolders.First(gf => gf.MountPoint == testGroupFolderRenamed).Id;

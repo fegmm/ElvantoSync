@@ -7,8 +7,9 @@ using KasApi.Requests;
 using KasApi.Response;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MigraDoc.DocumentObjectModel;
-using MigraDoc.Rendering;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -70,26 +71,38 @@ internal class GroupsToEmailSync(
 
 
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-        Document document = new Document();
-        Section section = document.AddSection();
-        var table = section.AddTable();
-        table.AddColumn("8cm");
-        table.AddColumn("10cm");
-        foreach (var item in matches.OrderBy(i => i.Group.Name))
+        var document = Document.Create(container =>
         {
-            var row = table.AddRow();
-            row.Cells[0].AddParagraph(item.Group.Name);
-            var mail_link = row.Cells[1].AddParagraph().AddHyperlink($"mailto:{item.MailForward.MailForwardAdress}", HyperlinkType.Url);
-            mail_link.AddFormattedText(item.MailForward.MailForwardAdress);
-        }
+            container.Page(page =>
+            {
+                page.Content().Element(container =>
+                {
+                    container.Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.ConstantColumn(8, Unit.Centimetre);
+                            columns.ConstantColumn(10, Unit.Centimetre);
+                        });
 
-        PdfDocumentRenderer pdfRenderer = new PdfDocumentRenderer(false);
-        pdfRenderer.Document = document;
-        pdfRenderer.RenderDocument();
+                        table.Header(header =>
+                        {
+                            header.Cell().Text("Gruppe").Bold().Underline().AlignCenter();
+                            header.Cell().Text("Mail").Bold().Underline().AlignCenter();
+                        });
+
+                        foreach (var item in matches.OrderBy(i => i.Group.Name))
+                        {
+                            table.Cell().Text(item.Group.Name).AlignLeft();
+                            table.Cell().Hyperlink($"mailto:{item.MailForward.MailForwardAdress}").Text(item.MailForward.MailForwardAdress).Italic().AlignRight();
+                        }
+                    });
+                });
+            });
+        });
 
         using var stream = new MemoryStream();
-        pdfRenderer.Save(stream, false);
-
+        document.GeneratePdf(stream);
         await NextcloudApi.CloudFile.Upload(nextcloud, $"{nextcloud.Settings.Username}/{path}", stream);
     }
 
