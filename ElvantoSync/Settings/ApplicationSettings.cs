@@ -12,4 +12,6 @@ public record ApplicationSettings
     public string NextcloudServer { get; init; }
     public string NextcloudUser { get; init; }
     public string NextcloudPassword { get; init; }
+    public string ChurchToolsUrl { get; init; }
+    public string ChurchToolsToken { get; init; }
 }

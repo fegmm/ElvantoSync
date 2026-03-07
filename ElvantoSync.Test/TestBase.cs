@@ -104,6 +104,11 @@ public abstract class TestBase : IAsyncLifetime
                .AddSingleton(new Mock<IKasClient>().Object)
                .AddApplicationOptions("test", "test","http://group-finder:8080")
                .AddNextcloudClients(nextcloud.NextcloudUrl, "admin", "StrongPassword123!", "elvatnosync/1.0")
+               .AddChurchToolsClient((config, _) =>
+                {
+                    config.BaseUrl = "https://demo.church.tools/api";
+                    config.ApiToken = "Login InvalidToken";
+                })
                .AddSyncs();
     }
 

@@ -17,7 +17,6 @@ class GroupsToTalkSync(
     INextcloudTalkClient talkClient,
     DbContext dbContext,
     IOptions<GroupsToTalkSyncSettings> settings,
-    IOptions<GroupsToNextcloudSyncSettings> groupSettings,
     ILogger<GroupsToTalkSync> logger
 ) : Sync<Group, Conversation>(dbContext, settings, logger)
 {
