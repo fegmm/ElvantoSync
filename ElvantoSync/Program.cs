@@ -10,6 +10,9 @@ using Microsoft.Extensions.Logging;
 using Nextcloud.Extensions;
 using Polly;
 using Quartz;
+using QuestPDF.Infrastructure;
+
+QuestPDF.Settings.License = LicenseType.Community; 
 
 var builder = Host.CreateApplicationBuilder();
 builder.Configuration.AddUserSecrets<Program>();
@@ -32,13 +35,18 @@ builder.Services
     .AddSingleton<IElvantoClient, ExternalClientWrapper>()
     .AddApplicationOptions(appSettings.NextcloudUser, appSettings.NextcloudPassword, appSettings.NextcloudServer)
     .AddNextcloudClients(appSettings.NextcloudServer, appSettings.NextcloudUser, appSettings.NextcloudPassword, nameof(ElvantoSync))
+    .AddChurchToolsClient((config, _) =>
+    {
+        config.BaseUrl = appSettings.ChurchToolsUrl;
+        config.ApiToken = appSettings.ChurchToolsToken;
+    })
     .AddSyncs();
 
 if (builder.Environment.IsDevelopment())
 {
     builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Debug);
     builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
-    builder.Services.AddHostedService<Nextcloud.Tests.NextcloudHost>();
+    // builder.Services.AddHostedService<Nextcloud.Tests.NextcloudHost>();
     builder.Services.AddHostedService<ElvantoSync.HostedElvantoSync>();
 
     builder.Build().Run();
@@ -49,7 +57,7 @@ else
     {
         var jobKey = new JobKey(nameof(ElvantoSync.ElvantoSync));
         configure
-            .AddJob<ElvantoSync.ElvantoSync>(jobKey)
+            .AddJob<ElvantoSync.ElvantoSync>(jobKey, job => { })
             .AddTrigger(trigger => trigger
                 .ForJob(jobKey)
                 .WithCronSchedule(appSettings.CronSchedule)

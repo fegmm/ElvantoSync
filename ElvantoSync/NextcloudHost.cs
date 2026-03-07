@@ -44,7 +44,7 @@ public class NextcloudHost : BackgroundService
             .WithName(Guid.NewGuid().ToString("D"))
             .Build();
 
-        sql_container = new MySqlBuilder()
+        sql_container = new MySqlBuilder("mysql:8.0")
             .WithDatabase("nextcloud")
             .WithNetwork(network)
             .WithNetworkAliases("db")
@@ -57,11 +57,10 @@ public class NextcloudHost : BackgroundService
         await sql_container.ExecAsync(["mysql", "-p", "mysql", "-e", "ALTER DATABASE nextcloud CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"]);
 
 
-        container = new ContainerBuilder()
-            .WithImage("nextcloud-test:latest")
+        container = new ContainerBuilder("nextcloud-test:latest")
             .WithPortBinding(port, 80)
             .WithNetwork(network)
-            .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(80))
+            .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(80))
             .WithAutoRemove(false)
             .WithReuse(true)
             .Build();
