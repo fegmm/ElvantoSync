@@ -1,5 +1,5 @@
 using ElvantoSync.ElvantoService;
-using ElvantoSync.ElvantoApi.Models;
+using Fegmm.Elvanto.Models;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Elvanto;
 using Microsoft.Extensions.Logging;
@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
+using Fegmm.Elvanto.Groups.GetAllJson;
 
 namespace ElvantoSync.Application.Elvanto;
 
@@ -24,39 +25,39 @@ class DepartementsToGroupMemberSync(
 
     public override async Task<IEnumerable<(Person, Group)>> GetFromAsync()
     {
-        var response = await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest() { Fields = ["departments"] });
-        var groups = await elvanto.GroupsGetAllAsync(new GetAllRequest());
-        var groupNameToGroup = groups.Groups.Group.ToDictionary(i => i.Name);
+        var people = await elvanto.PeopleGetAllAsync(new() { Fields = [PersonAdditionalFields.Departments] });
+        var groups = await elvanto.GroupsGetAllAsync(new());
+        var groupNameToGroup = groups.ToDictionary(i => i.Name);
 
-        return response.People.Person
+        return people
             .Where(i => i.Departments != null)
             .SelectMany(person => person.Departments.Department
-                .SelectMany(department => department.Sub_departments.Sub_department
+                .SelectMany(department => department.SubDepartments.SubDepartment
                     .SelectMany(sub => sub.Positions.Position.Select(pos => (person, pos.Name)))
-                    .Concat(department.Sub_departments.Sub_department.Select(sub => (person, sub.Name)))
+                    .Concat(department.SubDepartments.SubDepartment.Select(sub => (person, sub.Name)))
                 )
                 .Concat(person.Departments.Department.Select(department => (person, department.Name)))
             )
             .Distinct()
-            .Where(i => groups.Groups.Group.Any(j => j.Name == i.Name))
+            .Where(i => groups.Any(j => j.Name == i.Name))
             .Select(i => (i.person, groupNameToGroup[i.Name]));
     }
 
     public override async Task<IEnumerable<(GroupMember member, Group group)>> GetToAsync()
     {
-        var departments = new HashSet<string>((await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest() { Fields = ["departments"] })).People.Person
+        var departments = new HashSet<string>((await elvanto.PeopleGetAllAsync(new() { Fields = [PersonAdditionalFields.Departments] }))
             .Where(i => i.Departments != null)
             .SelectMany(person => person.Departments.Department
-                .SelectMany(department => department.Sub_departments.Sub_department
+                .SelectMany(department => department.SubDepartments.SubDepartment
                     .SelectMany(sub => sub.Positions.Position.Select(pos => pos.Name))
-                    .Concat(department.Sub_departments.Sub_department.Select(sub => sub.Name))
+                    .Concat(department.SubDepartments.SubDepartment.Select(sub => sub.Name))
                 )
                 .Concat(person.Departments.Department.Select(department => department.Name))
             )
             .Distinct());
 
-        var response = await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"] });
-        return response.Groups.Group
+        var response = await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People] });
+        return response
             .Where(i => i.People != null && i.People.Person != null)
             .Where(i => departments.Contains(i.Name))
             .SelectMany(group => group.People.Person

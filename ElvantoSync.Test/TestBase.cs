@@ -1,12 +1,11 @@
-﻿using ElvantoSync.ElvantoApi.Models;
+﻿using Fegmm.Elvanto.Models;
+using Fegmm.Elvanto.Groups.GetAllJson;
 using ElvantoSync.Settings;
-using ElvantoSync.Settings.Nextcloud;
 using KasApi;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 using Moq;
 using Nextcloud.Extensions;
 using Nextcloud.Tests;
@@ -53,14 +52,8 @@ public abstract class TestBase : IAsyncLifetime
         ];
 
         _elvantoClientMock
-            .Setup(x => x.PeopleGetAllAsync(It.IsAny<GetAllPeopleRequest>()))
-            .ReturnsAsync(new PeopleGetAllResponse
-            {
-                People = new People
-                {
-                    Person = people.ToArray()
-                }
-            });
+            .Setup(x => x.PeopleGetAllAsync(It.IsAny<Fegmm.Elvanto.People.GetAllJson.GetAllPostRequestBody>()))
+            .ReturnsAsync(people);
 
         return people;
     }
@@ -71,10 +64,11 @@ public abstract class TestBase : IAsyncLifetime
         {
             Person = person.Select(x => new GroupMember { Id = x.Id, Firstname = x.Firstname, Lastname = x.Lastname, Email = x.Email })
             .Take(2)
-            .Select(x => { x.Position = "Assistant"; return x; }).ToArray()
+            .Select(x => { x.Position = GroupMemberPositions.AssistantLeader; return x; })
+            .ToList()
         };
 
-        groupMembers.Person.Take(2).Select(x => x.Position = "Leader");
+        groupMembers.Person.Take(2).Select(x => x.Position = GroupMemberPositions.Leader);
 
         IEnumerable<Group> groups = new List<Group>
         {
@@ -83,14 +77,8 @@ public abstract class TestBase : IAsyncLifetime
         };
 
         _elvantoClientMock
-            .Setup(x => x.GroupsGetAllAsync(It.IsAny<GetAllRequest>()))
-            .ReturnsAsync(new GroupsGetAllResponse
-            {
-                Groups = new Groups
-                {
-                    Group = groups.ToArray()
-                }
-            });
+            .Setup(x => x.GroupsGetAllAsync(It.IsAny<GetAllPostRequestBody>()))
+            .ReturnsAsync(groups);
 
         return groups;
     }
@@ -117,40 +105,6 @@ public abstract class TestBase : IAsyncLifetime
         return serviceProvider.GetServices<ISync>()
                  .Where(service => service is T)
                  .Select(service => service).First();
-    }
-
-
-    public void Dispose()
-    {
-        // Dispose of unmanaged resources
-        nextcloud.DisposeAsync();
-        Dispose(true);
-
-        // Suppress finalization
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!_disposed)
-        {
-            if (disposing)
-            {
-                // Dispose managed state (managed objects)
-                if (Services is IDisposable serviceProviderDisposable)
-                {
-                    serviceProviderDisposable.Dispose();
-                }
-
-                // If any other IDisposable fields, dispose them here
-                // e.g., _mockExternalDependency.Dispose();
-            }
-
-            // Free unmanaged resources (unmanaged objects) and override a finalizer below
-            // Set large fields to null
-
-            _disposed = true;
-        }
     }
 
     public string? NextcloudUrl => nextcloud.NextcloudUrl;

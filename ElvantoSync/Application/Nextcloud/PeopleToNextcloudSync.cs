@@ -1,8 +1,8 @@
-using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Exceptions;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
+using Fegmm.Elvanto.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
@@ -28,7 +28,7 @@ public class PeopleToNextcloudSync(
     public override string FallbackToKeySelector(User i) => i.Id.ToString();
 
     public override async Task<IEnumerable<Person>> GetFromAsync() =>
-        (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest())).People.Person;
+        await elvanto.PeopleGetAllAsync(new());
 
     public override async Task<IEnumerable<User>> GetToAsync()
     {

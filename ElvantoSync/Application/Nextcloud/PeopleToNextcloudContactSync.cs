@@ -1,8 +1,8 @@
-﻿using ElvantoSync.ElvantoApi.Models;
-using ElvantoSync.ElvantoService;
+﻿using ElvantoSync.ElvantoService;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings;
 using ElvantoSync.Settings.Nextcloud;
+using Fegmm.Elvanto.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MixERP.Net.VCards;
@@ -34,7 +34,7 @@ class PeopleToNextcloudContactSync(
     public override string FallbackToKeySelector(WebDavResource i) => i.Uri.Split("/")[^1];
 
     public override async Task<IEnumerable<Person>> GetFromAsync()
-        => (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest())).People.Person;
+        => (await elvanto.PeopleGetAllAsync(new()));
 
     public override async Task<IEnumerable<WebDavResource>> GetToAsync()
     {
@@ -72,7 +72,7 @@ class PeopleToNextcloudContactSync(
 
     protected override async Task UpdateMatch(Person person, WebDavResource vCard)
     {
-        if (DateTime.Parse(person.Date_modified) <= vCard.LastModifiedDate)
+        if (person.DateModified <= vCard.LastModifiedDate)
         {
             return;
         }
@@ -97,7 +97,7 @@ class PeopleToNextcloudContactSync(
             Version = MixERP.Net.VCards.Types.VCardVersion.V4,
             FirstName = person.Firstname,
             LastName = person.Lastname,
-            MiddleName = person.Middle_name,
+            MiddleName = person.MiddleName,
             FormattedName = $"{person.Lastname}, {person.Firstname}",
             Emails = new[] { new Email() { EmailAddress = person.Email, Type = MixERP.Net.VCards.Types.EmailType.Smtp } },
             Telephones = (new[] {
@@ -105,7 +105,7 @@ class PeopleToNextcloudContactSync(
                             new Telephone() { Number= person.Mobile, Type = MixERP.Net.VCards.Types.TelephoneType.Cell}
                     }).Where(i => !string.IsNullOrWhiteSpace(i.Number)),
             Photo = photo.Extension != "svg" ? photo : null,
-            BirthDay = DateTime.TryParse(person.Birthday, out var bday) ? bday : null
+            BirthDay = person.Birthday?.DateTime
         };
     }
 }

@@ -1,4 +1,3 @@
-using System;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Settings;
 using KasApi;
@@ -20,7 +19,6 @@ var appSettings = builder.Configuration
     .GetRequiredSection(ApplicationSettings.ConfigSection)
     .Get<ApplicationSettings>();
 
-var elvanto = new ElvantoSync.ElvantoApi.Client(appSettings.ElvantoKey);
 var kas = new KasApi.Client(new KasApi.Requests.AuthorizeHeader(
     kas_login: appSettings.KASLogin,
     kas_auth_data: appSettings.KASAuthData,
@@ -30,11 +28,13 @@ var kas = new KasApi.Client(new KasApi.Requests.AuthorizeHeader(
 builder.Services
     .AddDbContext<ElvantoSync.Persistence.DbContext>(options => options.UseSqlite(appSettings.ConnectionString))
     .AddOptions()
-    .AddSingleton(elvanto)
     .AddSingleton<IKasClient>(kas)
     .AddSingleton<IElvantoClient, ExternalClientWrapper>()
     .AddApplicationOptions(appSettings.NextcloudUser, appSettings.NextcloudPassword, appSettings.NextcloudServer)
     .AddNextcloudClients(appSettings.NextcloudServer, appSettings.NextcloudUser, appSettings.NextcloudPassword, nameof(ElvantoSync))
+    .AddElvantoClient((config, _) => {
+        config.ApiToken = appSettings.ElvantoKey;
+    })
     .AddChurchToolsClient((config, _) =>
     {
         config.BaseUrl = appSettings.ChurchToolsUrl;

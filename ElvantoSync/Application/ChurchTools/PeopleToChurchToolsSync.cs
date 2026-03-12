@@ -5,13 +5,13 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.ChurchTools;
 using Fegmm.ChurchTools;
 using Fegmm.ChurchTools.Persons;
 using Fegmm.ChurchTools.Persons.Item;
+using Fegmm.Elvanto.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Kiota.Abstractions;
@@ -39,12 +39,21 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
     public override string FallbackToKeySelector(ChurchToolPerson i) => $"{i.FirstName}-{i.LastName}-{i.Email}".Trim();
 
     public override async Task<IEnumerable<Person>> GetFromAsync()
-        => (await elvanto.PeopleGetAllAsync(new GetAllPeopleRequest()
+        => (await elvanto.PeopleGetAllAsync(new()
         {
-            Category_id = settings.Value.CategoryToSync,
-            Fields = ["birthday", "marital_status", "gender", "giving_number", "home_address", "home_address2", "home_city", "home_country", "home_postcode"]
+            CategoryId = [settings.Value.CategoryToSync],
+            Fields = [
+                PersonAdditionalFields.Marital_status,
+                PersonAdditionalFields.Birthday,
+                PersonAdditionalFields.Gender,
+                PersonAdditionalFields.Giving_number,
+                PersonAdditionalFields.Home_address,
+                PersonAdditionalFields.Home_address2,
+                PersonAdditionalFields.Home_city,
+                PersonAdditionalFields.Home_country,
+                PersonAdditionalFields.Home_postcode
+            ]
         }))
-            .People.Person
             .Where(p => !settings.Value.ExceptFromSync.Contains(p.Id)); // Special exceptions
 
     public override async Task<IEnumerable<ChurchToolPerson>> GetToAsync()
@@ -84,29 +93,29 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             Mobile = missing.Mobile,
             // TODO: Additional phones
             Email = missing.Email,
-            Street = missing.Home_address,
-            AddressAddition = missing.Home_address2,
-            Zip = missing.Home_postcode,
-            City = missing.Home_city,
-            Country = missing.Home_country,
-            Birthday = DateOnly.Parse(missing.Birthday),
+            Street = missing.HomeAddress,
+            AddressAddition = missing.HomeAddress2,
+            Zip = missing.HomePostcode,
+            City = missing.HomeCity,
+            Country = missing.HomeCountry,
+            Birthday = missing.Birthday,
             // TODO: Job
             // TODO: Gemeindeaufnahmedatum
             // TODO: Taufdatum
-            FamilyStatusId = missing.Marital_status switch
+            FamilyStatusId = missing.MaritalStatus switch
             {
-                "Single" => 1,
-                "Married" => 2,
-                "Separated" => 3,
-                "Divorced" => 4,
-                "Widowed" => 5,
-                "Engaged" => 6,
+                MaritalStatus.Single => 1,
+                MaritalStatus.Married => 2,
+                MaritalStatus.Separated => 3,
+                MaritalStatus.Divorced => 4,
+                MaritalStatus.Widowed => 5,
+                MaritalStatus.Engaged => 6,
                 _ => 0
             },
             SexId = missing.Gender switch
             {
-                "Male" => 1,
-                "Female" => 2,
+                Gender.Male => 1,
+                Gender.Female => 2,
                 _ => 0
             },
             // TODO: Schlüsselbesitz
@@ -120,7 +129,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             // TODO: Datenschutzverordnung - Datum der Genehmigung
             // TODO: Datenschutzverordnung - Genehmigungen
             // TODO: Verpflichtung zur Wahrung der Vertraulichkeit
-            OptigemId = missing.Giving_number,
+            OptigemId = missing.GivingNumber,
             // TODO: Datum der Archivierung
             // TODO: Sterbedatum
             // TODO: Gottesdienst-Kategorien 
@@ -182,29 +191,29 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             Mobile = from.Mobile,
             // TODO: Additional phones
             Email = from.Email,
-            Street = from.Home_address,
-            AddressAddition = from.Home_address2,
-            Zip = from.Home_postcode,
-            City = from.Home_city,
-            Country = from.Home_country,
-            Birthday = DateOnly.Parse(from.Birthday),
+            Street = from.HomeAddress,
+            AddressAddition = from.HomeAddress2,
+            Zip = from.HomePostcode,
+            City = from.HomeCity,
+            Country = from.HomeCountry,
+            Birthday = from.Birthday,
             // TODO: Job
             // TODO: Gemeindeaufnahmedatum
             // TODO: Taufdatum
-            FamilyStatusId = from.Marital_status switch
+            FamilyStatusId = from.MaritalStatus switch
             {
-                "Single" => 1,
-                "Married" => 2,
-                "Separated" => 3,
-                "Divorced" => 4,
-                "Widowed" => 5,
-                "Engaged" => 6,
+                MaritalStatus.Single => 1,
+                MaritalStatus.Married => 2,
+                MaritalStatus.Separated => 3,
+                MaritalStatus.Divorced => 4,
+                MaritalStatus.Widowed => 5,
+                MaritalStatus.Engaged => 6,
                 _ => 0
             },
             SexId = from.Gender switch
             {
-                "Male" => 1,
-                "Female" => 2,
+                Gender.Male => 1,
+                Gender.Female => 2,
                 _ => 0
             },
             // TODO: Schlüsselbesitz
@@ -218,7 +227,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             // TODO: Datenschutzverordnung - Datum der Genehmigung
             // TODO: Datenschutzverordnung - Genehmigungen
             // TODO: Verpflichtung zur Wahrung der Vertraulichkeit
-            OptigemId = from.Giving_number,
+            OptigemId = from.GivingNumber,
             // TODO: Datum der Archivierung
             // TODO: Sterbedatum
             // TODO: Gottesdienst-Kategorien 

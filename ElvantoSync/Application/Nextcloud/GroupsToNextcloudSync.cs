@@ -2,6 +2,8 @@ using ElvantoSync.ElvantoService;
 using ElvantoSync.Extensions;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
+using Fegmm.Elvanto.Groups.GetAllJson;
+using Fegmm.Elvanto.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
@@ -10,6 +12,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ElvantoGroup = Fegmm.Elvanto.Models.Group;
+using NextcloudGroup = Nextcloud.Models.Provisioning.Group;
 
 namespace ElvantoSync.Nextcloud;
 
@@ -20,23 +24,23 @@ public class GroupsToNextcloudSync(
     IOptions<PeopleToNextcloudSyncSettings> peopleSettings,
     IOptions<GroupsToNextcloudSyncSettings> settings,
     ILogger<GroupsToNextcloudSync> logger
-) : Sync<ElvantoApi.Models.Group, Group>(dbContext, settings, logger)
+) : Sync<ElvantoGroup, NextcloudGroup>(dbContext, settings, logger)
 {
-    public override string FromKeySelector(ElvantoApi.Models.Group i) => i.Id;
-    public override string ToKeySelector(Group i) => i.Id;
-    public override string FallbackFromKeySelector(ElvantoApi.Models.Group i) => i.Name;
-    public override string FallbackToKeySelector(Group i) => i.Id;
+    public override string FromKeySelector(ElvantoGroup i) => i.Id;
+    public override string ToKeySelector(NextcloudGroup i) => i.Id;
+    public override string FallbackFromKeySelector(ElvantoGroup i) => i.Name;
+    public override string FallbackToKeySelector(NextcloudGroup i) => i.Id;
 
-    public override async Task<IEnumerable<ElvantoApi.Models.Group>> GetFromAsync()
-        => (await elvanto.GroupsGetAllAsync(new ElvantoApi.Models.GetAllRequest() { Fields = ["people"] })).Groups.Group
+    public override async Task<IEnumerable<ElvantoGroup>> GetFromAsync()
+        => (await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People] }))
             .Where(i => i.People?.Person.Any() ?? false);
 
-    public override async Task<IEnumerable<Group>> GetToAsync()
+    public override async Task<IEnumerable<NextcloudGroup>> GetToAsync()
         => (await provisioningClient.GetGroups())
         .Where(i => !i.Id.EndsWith(settings.Value.GroupLeaderSuffix))
         .Where(i => i.Id != "admin");
 
-    protected override async Task<string> AddMissing(ElvantoApi.Models.Group group)
+    protected override async Task<string> AddMissing(ElvantoGroup group)
     {
         await provisioningClient.CreateGroup(group.Id, group.Name);
 
@@ -51,7 +55,7 @@ public class GroupsToNextcloudSync(
         return group.Id;
     }
 
-    protected override async Task RemoveAdditional(Group group)
+    protected override async Task RemoveAdditional(NextcloudGroup group)
     {
         try
         {
@@ -63,7 +67,7 @@ public class GroupsToNextcloudSync(
         }
     }
 
-    protected override async Task UpdateMatch(ElvantoApi.Models.Group elvantoGroup, Group nextcloudGroup)
+    protected override async Task UpdateMatch(ElvantoGroup elvantoGroup, NextcloudGroup nextcloudGroup)
     {
         if (elvantoGroup.Name != nextcloudGroup.DisplayName)
         {
@@ -87,7 +91,7 @@ public class GroupsToNextcloudSync(
         }
     }
 
-    private async Task UpdateMembersOfGroup(IEnumerable<ElvantoApi.Models.GroupMember> members, string nextcloudGroupId)
+    private async Task UpdateMembersOfGroup(IEnumerable<GroupMember> members, string nextcloudGroupId)
     {
         var nextcloudMembers = await provisioningClient.GetMembers(nextcloudGroupId);
         var compare = members.CompareTo(nextcloudMembers, i => peopleSettings.Value.IdPrefix + i.Id, id => id);
@@ -117,6 +121,6 @@ public class GroupsToNextcloudSync(
         }
     }
 
-    public static bool IsLeader(ElvantoApi.Models.GroupMember member)
-        => member.Position == "Leader" || member.Position == "Assistant Leader";
+    public static bool IsLeader(GroupMember member)
+        => member.Position == GroupMemberPositions.Leader || member.Position == GroupMemberPositions.AssistantLeader;
 }
