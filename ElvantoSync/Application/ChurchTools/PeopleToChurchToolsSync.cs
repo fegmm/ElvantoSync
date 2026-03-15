@@ -11,6 +11,7 @@ using ElvantoSync.Settings.ChurchTools;
 using Fegmm.ChurchTools;
 using Fegmm.ChurchTools.Persons;
 using Fegmm.ChurchTools.Persons.Item;
+using Fegmm.Elvanto;
 using Fegmm.Elvanto.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -26,6 +27,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
     ILogger<PeopleToChurchToolsSync> logger
 ) : Sync<Person, ChurchToolPerson>(dbContext, settings, logger)
 {
+    private ElvantoCustomFields fields => settings.Value.ElvantoCustomFields; 
     private string csrfToken;
     public override string FromKeySelector(Person i) => i.Id;
     public override string ToKeySelector(ChurchToolPerson i) => i.Id.ToString();
@@ -42,7 +44,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
         => (await elvanto.PeopleGetAllAsync(new()
         {
             CategoryId = [settings.Value.CategoryToSync],
-            Fields = [
+            Fields = [.. new[] {
                 PersonAdditionalFields.Marital_status,
                 PersonAdditionalFields.Birthday,
                 PersonAdditionalFields.Gender,
@@ -51,8 +53,25 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
                 PersonAdditionalFields.Home_address2,
                 PersonAdditionalFields.Home_city,
                 PersonAdditionalFields.Home_country,
-                PersonAdditionalFields.Home_postcode
-            ]
+                PersonAdditionalFields.Home_postcode,
+                settings.Value.ElvantoCustomFields.Title,
+                settings.Value.ElvantoCustomFields.AdditionalPhoneNumbers,
+                settings.Value.ElvantoCustomFields.Job,
+                settings.Value.ElvantoCustomFields.DateOfEntry,
+                settings.Value.ElvantoCustomFields.DateOfBaptism,
+                settings.Value.ElvantoCustomFields.Keyholder,
+                settings.Value.ElvantoCustomFields.InterestToVolunteerIn,
+                settings.Value.ElvantoCustomFields.NoteOnVolunteering,
+                settings.Value.ElvantoCustomFields.CodeOfConduct,
+                settings.Value.ElvantoCustomFields.CertificateOfConduct,
+                settings.Value.ElvantoCustomFields.SelfCommitment,
+                settings.Value.ElvantoCustomFields.MetroCard,
+                settings.Value.ElvantoCustomFields.DateOfApprovalOfPrivacyPolicy,
+                settings.Value.ElvantoCustomFields.ApprovalOfPrivacyPolicy,
+                settings.Value.ElvantoCustomFields.DateOfNonDisclosureAgreement,
+                settings.Value.ElvantoCustomFields.DateOfArchiving,
+                settings.Value.ElvantoCustomFields.DateOfDeath,
+            }.Where(i => i != null)]
         }))
             .Where(p => !settings.Value.ExceptFromSync.Contains(p.Id)); // Special exceptions
 
@@ -84,14 +103,12 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
 
         var requestBody = new PersonsPostRequestBody()
         {
-            // TODO: Image
-            // TODO: Title
+            Title = missing.GetStringCustomField(fields.Title),
             FirstName = firstName,
             Nickname = nickName,
             LastName = missing.Lastname,
             PhonePrivate = missing.Phone,
             Mobile = missing.Mobile,
-            // TODO: Additional phones
             Email = missing.Email,
             Street = missing.HomeAddress,
             AddressAddition = missing.HomeAddress2,
@@ -99,9 +116,9 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             City = missing.HomeCity,
             Country = missing.HomeCountry,
             Birthday = missing.Birthday,
-            // TODO: Job
-            // TODO: Gemeindeaufnahmedatum
-            // TODO: Taufdatum
+            Job = missing.GetStringCustomField(fields.Job),
+            DateOfEntry = missing.GetDateCustomField(fields.DateOfEntry)?.ToDateTime(TimeOnly.MinValue),
+            DateOfBaptism = missing.GetDateCustomField(fields.DateOfBaptism),
             FamilyStatusId = missing.MaritalStatus switch
             {
                 MaritalStatus.Single => 1,
@@ -118,30 +135,18 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
                 Gender.Female => 2,
                 _ => 0
             },
-            // TODO: Schlüsselbesitz
-            // TODO: Zugehörigkeit Gottesdienst
-            // TODO: In diesem Bereich könnte ich mir vorstellen mizuarbeiten
-            // TODO: Bemerkung zur Mitarbeit
-            // TODO: Verhaltenskodex
-            // TODO: Führungszeugnis
-            // TODO: Selbstverpflichtung
-            // TODO: Metro-Karte
-            // TODO: Datenschutzverordnung - Datum der Genehmigung
-            // TODO: Datenschutzverordnung - Genehmigungen
-            // TODO: Verpflichtung zur Wahrung der Vertraulichkeit
             OptigemId = missing.GivingNumber,
-            // TODO: Datum der Archivierung
-            // TODO: Sterbedatum
-            // TODO: Gottesdienst-Kategorien 
+            DateOfDeath = missing.GetDateCustomField(fields.DateOfDeath),
             StatusId = 3,
             DepartmentIds = [1],
             CampusId = 0,
             PrivacyPolicyAgreement = new()
             {
-                Date = DateOnly.FromDateTime(DateTime.UtcNow),
+                Date = missing.GetDateCustomField(fields.ApprovalOfPrivacyPolicy) ?? DateOnly.FromDateTime(DateTime.UtcNow),
                 TypeId = 3,
                 WhoId = 1
             },
+            AdditionalData = await SetCustomFields(missing)
         };
         PersonsPostResponse response = await churchTools.Persons.PostAsPersonsPostResponseAsync(requestBody);
 
@@ -172,6 +177,29 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
         return churchToolsId.ToString();
     }
 
+    private async Task<Dictionary<string, object>> SetCustomFields(Person missing)
+    {
+        var churchFields = settings.Value.ChurchToolsCustomFields;
+        return new Dictionary<string, object>()
+        {
+            [churchFields.AdditionalPhoneNumbers] = missing.GetStringCustomField(fields.AdditionalPhoneNumbers),
+            [churchFields.ApprovalOfPrivacyPolicy] = (await missing.GetMultiOptionCustomField(fields.ApprovalOfPrivacyPolicy))?
+                            .CustomField?
+                            .Select(i => settings.Value.PrivacyApprovals.IndexOf(i.Id) + 1),
+            [churchFields.CertificateOfConduct] = missing.GetDateCustomField(fields.CertificateOfConduct),
+            [churchFields.CodeOfConduct] = (await missing.GetSingleOptionCustomField(fields.CodeOfConduct))?.Id == settings.Value.HasCodeOfConductId,
+            [churchFields.DateOfArchiving] = missing.GetDateCustomField(fields.DateOfArchiving),
+            [churchFields.DateOfNonDisclosureAgreement] = missing.GetDateCustomField(fields.DateOfNonDisclosureAgreement),
+            [churchFields.InterestToVolunteerIn] = (await missing.GetMultiOptionCustomField(fields.InterestToVolunteerIn))?
+                            .CustomField?
+                            .Select(i => settings.Value.InterestToVolunteerInOptions.IndexOf(i.Id) + 1),
+            [churchFields.Keyholder] = missing.GetStringCustomField(fields.Keyholder),
+            [churchFields.MetroCard] = (await missing.GetSingleOptionCustomField(fields.MetroCard))?.Id == settings.Value.HasMetroCardId,
+            [churchFields.NoteOnVolunteering] = missing.GetStringCustomField(fields.NoteOnVolunteering),
+            [churchFields.SelfCommitment] = (await missing.GetSingleOptionCustomField(fields.SelfCommitment))?.Id == settings.Value.HasSelfCommitmentId,
+        };
+    }
+
     protected override async Task UpdateMatch(Person from, ChurchToolPerson to)
     {
         var churchToolsId = to.Id.Value;
@@ -182,14 +210,12 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
 
         WithPersonPatchResponse response = await churchTools.Persons[churchToolsId].PatchAsWithPersonPatchResponseAsync(new()
         {
-            // TODO: Image
-            // TODO: Title
+            Title = from.GetStringCustomField(fields.Title),
             FirstName = firstName,
             Nickname = nickName,
             LastName = from.Lastname,
             PhonePrivate = from.Phone,
             Mobile = from.Mobile,
-            // TODO: Additional phones
             Email = from.Email,
             Street = from.HomeAddress,
             AddressAddition = from.HomeAddress2,
@@ -197,9 +223,9 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             City = from.HomeCity,
             Country = from.HomeCountry,
             Birthday = from.Birthday,
-            // TODO: Job
-            // TODO: Gemeindeaufnahmedatum
-            // TODO: Taufdatum
+            Job = from.GetStringCustomField(fields.Job),
+            DateOfEntry = from.GetDateCustomField(fields.DateOfEntry)?.ToDateTime(TimeOnly.MinValue),
+            DateOfBaptism = from.GetDateCustomField(fields.DateOfBaptism),
             FamilyStatusId = from.MaritalStatus switch
             {
                 MaritalStatus.Single => 1,
@@ -216,30 +242,18 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
                 Gender.Female => 2,
                 _ => 0
             },
-            // TODO: Schlüsselbesitz
-            // TODO: Zugehörigkeit Gottesdienst
-            // TODO: In diesem Bereich könnte ich mir vorstellen mizuarbeiten
-            // TODO: Bemerkung zur Mitarbeit
-            // TODO: Verhaltenskodex
-            // TODO: Führungszeugnis
-            // TODO: Selbstverpflichtung
-            // TODO: Metro-Karte
-            // TODO: Datenschutzverordnung - Datum der Genehmigung
-            // TODO: Datenschutzverordnung - Genehmigungen
-            // TODO: Verpflichtung zur Wahrung der Vertraulichkeit
             OptigemId = from.GivingNumber,
-            // TODO: Datum der Archivierung
-            // TODO: Sterbedatum
-            // TODO: Gottesdienst-Kategorien 
+            DateOfDeath = from.GetDateCustomField(fields.DateOfDeath),
             StatusId = 3,
             DepartmentIds = [1],
             CampusId = 0,
             PrivacyPolicyAgreement = new()
             {
-                Date = DateOnly.FromDateTime(DateTime.UtcNow),
+                Date = from.GetDateCustomField(fields.ApprovalOfPrivacyPolicy) ?? DateOnly.FromDateTime(DateTime.UtcNow),
                 TypeId = 3,
                 WhoId = 1
             },
+            AdditionalData = await SetCustomFields(from)
         });
 
         try
