@@ -27,7 +27,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
     ILogger<PeopleToChurchToolsSync> logger
 ) : Sync<Person, ChurchToolPerson>(dbContext, settings, logger)
 {
-    private ElvantoCustomFields fields => settings.Value.ElvantoCustomFields; 
+    private ElvantoCustomFields fields => settings.Value.ElvantoCustomFields;
     private string csrfToken;
     public override string FromKeySelector(Person i) => i.Id;
     public override string ToKeySelector(ChurchToolPerson i) => i.Id.ToString();
@@ -44,6 +44,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
         => (await elvanto.PeopleGetAllAsync(new()
         {
             CategoryId = [settings.Value.CategoryToSync],
+            Archived = FilterEnum.No,
             Fields = [.. new[] {
                 PersonAdditionalFields.Marital_status,
                 PersonAdditionalFields.Birthday,
@@ -86,6 +87,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             {
                 conf.QueryParameters.Limit = 200;
                 conf.QueryParameters.Page = i;
+                conf.QueryParameters.IsArchived = false;
             });
             pages = listResponse.Meta.Pagination.LastPage.Value;
             allPersons.AddRange(listResponse.Data);
@@ -180,33 +182,47 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
     private async Task<Dictionary<string, object>> SetCustomFields(Person missing)
     {
         var churchFields = settings.Value.ChurchToolsCustomFields;
-        return new Dictionary<string, object>()
+        try
         {
-            [churchFields.AdditionalPhoneNumbers] = missing.GetStringCustomField(fields.AdditionalPhoneNumbers),
-            [churchFields.ApprovalOfPrivacyPolicy] = (await missing.GetMultiOptionCustomField(fields.ApprovalOfPrivacyPolicy))?
+            return new Dictionary<string, object>()
+            {
+                [churchFields.AdditionalPhoneNumbers] = missing.GetStringCustomField(fields.AdditionalPhoneNumbers),
+                [churchFields.ApprovalOfPrivacyPolicy] = (await missing.GetMultiOptionCustomField(fields.ApprovalOfPrivacyPolicy))?
                             .CustomField?
-                            .Select(i => settings.Value.PrivacyApprovals.IndexOf(i.Id) + 1),
-            [churchFields.CertificateOfConduct] = missing.GetDateCustomField(fields.CertificateOfConduct),
-            [churchFields.CodeOfConduct] = (await missing.GetSingleOptionCustomField(fields.CodeOfConduct))?.Id == settings.Value.HasCodeOfConductId,
-            [churchFields.DateOfArchiving] = missing.GetDateCustomField(fields.DateOfArchiving),
-            [churchFields.DateOfNonDisclosureAgreement] = missing.GetDateCustomField(fields.DateOfNonDisclosureAgreement),
-            [churchFields.InterestToVolunteerIn] = (await missing.GetMultiOptionCustomField(fields.InterestToVolunteerIn))?
+                            .Select(i => settings.Value.PrivacyApprovals[i.Id]),
+                [churchFields.CertificateOfConduct] = missing.GetDateCustomField(fields.CertificateOfConduct),
+                [churchFields.CodeOfConduct] = (await missing.GetSingleOptionCustomField(fields.CodeOfConduct))?.Id == settings.Value.HasCodeOfConductId,
+                [churchFields.DateOfArchiving] = missing.GetDateCustomField(fields.DateOfArchiving),
+                [churchFields.DateOfNonDisclosureAgreement] = missing.GetDateCustomField(fields.DateOfNonDisclosureAgreement),
+                [churchFields.InterestToVolunteerIn] = (await missing.GetMultiOptionCustomField(fields.InterestToVolunteerIn))?
                             .CustomField?
-                            .Select(i => settings.Value.InterestToVolunteerInOptions.IndexOf(i.Id) + 1),
-            [churchFields.Keyholder] = missing.GetStringCustomField(fields.Keyholder),
-            [churchFields.MetroCard] = (await missing.GetSingleOptionCustomField(fields.MetroCard))?.Id == settings.Value.HasMetroCardId,
-            [churchFields.NoteOnVolunteering] = missing.GetStringCustomField(fields.NoteOnVolunteering),
-            [churchFields.SelfCommitment] = (await missing.GetSingleOptionCustomField(fields.SelfCommitment))?.Id == settings.Value.HasSelfCommitmentId,
-        };
+                            .Where(i => i.Id is not null) // Elvanto sometimes returns "" as option 🤦‍♂️
+                            .Select(i => settings.Value.InterestToVolunteerInOptions[i.Id]),
+                [churchFields.Keyholder] = missing.GetStringCustomField(fields.Keyholder),
+                [churchFields.MetroCard] = (await missing.GetSingleOptionCustomField(fields.MetroCard))?.Id == settings.Value.HasMetroCardId,
+                [churchFields.NoteOnVolunteering] = missing.GetStringCustomField(fields.NoteOnVolunteering),
+                [churchFields.SelfCommitment] = (await missing.GetSingleOptionCustomField(fields.SelfCommitment))?.Id == settings.Value.HasSelfCommitmentId,
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to retrieve custom fields from ChurchTools. Please check the configuration and ensure that the custom field IDs are correct.");
+            throw;
+        }
     }
 
     protected override async Task UpdateMatch(Person from, ChurchToolPerson to)
     {
+        if (from.DateModified <= to.Meta.ModifiedDate)
+        {
+            logger.LogInformation("Skipping update for person with ID {PersonId} because source is not newer than target", to.Id);
+            return;
+        }
+
         var churchToolsId = to.Id.Value;
         var syncNote = await GetSyncNote(churchToolsId);
         string firstName, nickName;
         ParseFirstName(from, out firstName, out nickName);
-
 
         WithPersonPatchResponse response = await churchTools.Persons[churchToolsId].PatchAsWithPersonPatchResponseAsync(new()
         {
