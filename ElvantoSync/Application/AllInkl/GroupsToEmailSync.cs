@@ -1,14 +1,14 @@
-﻿using ElvantoSync.ElvantoApi.Models;
-using ElvantoSync.ElvantoService;
+﻿using ElvantoSync.ElvantoService;
 using ElvantoSync.Extensions;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.AllInkl;
+using Fegmm.Elvanto.Groups.GetAllJson;
+using Fegmm.Elvanto.Models;
 using KasApi.Requests;
 using KasApi.Response;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using QuestPDF.Fluent;
-using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using System.Collections.Generic;
 using System.IO;
@@ -33,7 +33,7 @@ internal class GroupsToEmailSync(
     public override string FallbackToKeySelector(MailForward i) => i.MailForwardAdress.Split('@')[0];
 
     public override async Task<IEnumerable<Group>> GetFromAsync() =>
-        (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"] })).Groups.Group
+        (await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People] }))
             .Where(i => i.People?.Person.Any() ?? false);
 
     public override async Task<IEnumerable<MailForward>> GetToAsync()

@@ -1,7 +1,8 @@
-using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
+using Fegmm.Elvanto.Groups.GetAllJson;
+using Fegmm.Elvanto.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
@@ -28,8 +29,8 @@ class GroupsToDeckSync(
     public override string FallbackToKeySelector(Board i) => i.Title;
 
     public override async Task<IEnumerable<Group>> GetFromAsync()
-        => (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"] })).Groups.Group
-        .Where(i => i.People?.Person.Any() ?? false);
+        => (await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People] }))
+            .Where(i => i.People?.Person.Any() ?? false);
 
     public override async Task<IEnumerable<Board>> GetToAsync()
         => await deckClient.GetBoards();

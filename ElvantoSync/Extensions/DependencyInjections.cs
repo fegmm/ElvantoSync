@@ -22,6 +22,7 @@ public static class DependencyInjections
         => services
         .AddTransient<ISync, GroupsToEmailSync>()
         .AddTransient<ISync, PeopleToChurchToolsSync>()
+        .AddTransient<ISync, SongsToChurchToolsSync>()
         .AddTransient<ISync, GroupFinderSync>()
         .AddTransient<ISync, PeopleToNextcloudSync>()
         .AddTransient<ISync, PeopleToNextcloudContactSync>()
@@ -69,6 +70,9 @@ public static class DependencyInjections
 
         services.AddOptions<PeopleToChurchToolsSyncSettings>()
             .BindConfiguration(PeopleToChurchToolsSyncSettings.ConfigSection);
+
+        services.AddOptions<SongsToChurchToolsSyncSettings>()
+            .BindConfiguration(SongsToChurchToolsSyncSettings.ConfigSection);
 
         byte[] authToken = Encoding.UTF8.GetBytes($"{username}:{password}");
         var auth = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(authToken));

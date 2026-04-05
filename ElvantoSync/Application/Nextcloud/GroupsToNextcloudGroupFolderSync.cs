@@ -1,10 +1,10 @@
 using ElvantoSync;
-using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Exceptions;
-using ElvantoSync.Nextcloud;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
+using Fegmm.Elvanto.Groups.GetAllJson;
+using Fegmm.Elvanto.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
@@ -28,8 +28,8 @@ class GroupsToNextcloudGroupFolderSync(
     public override string FallbackToKeySelector(GroupFolder i) => i.MountPoint;
 
     public override async Task<IEnumerable<Group>> GetFromAsync()
-        => (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"] })).Groups.Group
-        .Where(i => i.People?.Person.Any() ?? false);
+        => (await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People] }))
+            .Where(i => i.People?.Person.Any() ?? false);
 
     public override async Task<IEnumerable<GroupFolder>> GetToAsync()
         => await groupFolderClient.GetGroupFolders();

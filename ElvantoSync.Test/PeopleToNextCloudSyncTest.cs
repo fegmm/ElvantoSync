@@ -1,6 +1,6 @@
-﻿using ElvantoSync.ElvantoApi.Models;
-using ElvantoSync.ElvantoService;
+﻿using ElvantoSync.ElvantoService;
 using ElvantoSync.Nextcloud;
+using Fegmm.Elvanto.Models;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;

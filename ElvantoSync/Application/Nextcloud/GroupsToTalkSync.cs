@@ -1,8 +1,9 @@
-using ElvantoSync.ElvantoApi.Models;
 using ElvantoSync.ElvantoService;
 using ElvantoSync.Infrastructure.Nextcloud;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
+using Fegmm.Elvanto.Groups.GetAllJson;
+using Fegmm.Elvanto.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nextcloud.Models.Talk;
@@ -26,7 +27,7 @@ class GroupsToTalkSync(
     public override string FallbackToKeySelector(Conversation i) => i.Name;
 
     public override async Task<IEnumerable<Group>> GetFromAsync() =>
-        (await elvanto.GroupsGetAllAsync(new GetAllRequest() { Fields = ["people"] })).Groups.Group
+        (await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People] }))
            .Where(i => i.People?.Person.Any() ?? false);
 
     public override async Task<IEnumerable<Conversation>> GetToAsync() =>
