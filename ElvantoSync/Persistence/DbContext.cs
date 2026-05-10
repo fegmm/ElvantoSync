@@ -2,6 +2,7 @@ using ElvantoSync.Nextcloud;
 using ElvantoSync.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
+using ElvantoSync.ChurchTools;
 
 namespace ElvantoSync.Persistence;
 
@@ -34,5 +35,10 @@ public class DbContext : Microsoft.EntityFrameworkCore.DbContext
     public string ElvantoToNextcloudPeopleId(string elvantoId)
         => IndexMappings
             .FirstOrDefault(i => i.FromId == elvantoId && i.Type == nameof(PeopleToNextcloudSync))
+            ?.ToId;
+
+    public string ElvantoToChurchToolsPeopleId(string elvantoId)
+        => IndexMappings
+            .FirstOrDefault(i => i.FromId == elvantoId && i.Type == nameof(PeopleToChurchToolsSync))
             ?.ToId;
 }
