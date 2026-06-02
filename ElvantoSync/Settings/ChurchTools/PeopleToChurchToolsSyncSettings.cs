@@ -6,7 +6,7 @@ internal record PeopleToChurchToolsSyncSettings : SyncSettings
 {
     internal const string ConfigSection = "Sync:ChurchTools:PeopleToChurchToolsSync";
 
-    public string CategoryToSync { get; set; }
+    public Dictionary<string, int[]> CategoryToSync { get; set; } = new();
     public HashSet<string> ExceptFromSync { get; set; } = [];
 
     public ChurchToolsCustomFields ChurchToolsCustomFields { get; set; } = new();
