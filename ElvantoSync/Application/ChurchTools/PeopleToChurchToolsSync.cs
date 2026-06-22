@@ -29,7 +29,6 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
 {
     private ElvantoCustomFields fields => settings.Value.ElvantoCustomFields;
     private string csrfToken;
-    private readonly Dictionary<string, int[]> personDepartmentIds = new();
     public override string FromKeySelector(Person i) => i.Id;
     public override string ToKeySelector(ChurchToolPerson i) => i.Id.ToString();
 
@@ -42,59 +41,40 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
     public override string FallbackToKeySelector(ChurchToolPerson i) => $"{i.FirstName}-{i.LastName}-{i.Email}".Trim();
 
     public override async Task<IEnumerable<Person>> GetFromAsync()
-    {
-        personDepartmentIds.Clear();
-        var allPersons = new List<Person>();
-
-        foreach (var (categoryId, departmentIds) in settings.Value.CategoryToSync)
+        => (await elvanto.PeopleGetAllAsync(new()
         {
-            var persons = await elvanto.PeopleGetAllAsync(new()
-            {
-                CategoryId = [categoryId],
-                Archived = FilterEnum.No,
-                Fields = [.. new[] {
-                    PersonAdditionalFields.Marital_status,
-                    PersonAdditionalFields.Birthday,
-                    PersonAdditionalFields.Gender,
-                    PersonAdditionalFields.Giving_number,
-                    PersonAdditionalFields.Home_address,
-                    PersonAdditionalFields.Home_address2,
-                    PersonAdditionalFields.Home_city,
-                    PersonAdditionalFields.Home_country,
-                    PersonAdditionalFields.Home_postcode,
-                    settings.Value.ElvantoCustomFields.Title,
-                    settings.Value.ElvantoCustomFields.AdditionalPhoneNumbers,
-                    settings.Value.ElvantoCustomFields.Job,
-                    settings.Value.ElvantoCustomFields.DateOfEntry,
-                    settings.Value.ElvantoCustomFields.DateOfBaptism,
-                    settings.Value.ElvantoCustomFields.Keyholder,
-                    settings.Value.ElvantoCustomFields.InterestToVolunteerIn,
-                    settings.Value.ElvantoCustomFields.NoteOnVolunteering,
-                    settings.Value.ElvantoCustomFields.CodeOfConduct,
-                    settings.Value.ElvantoCustomFields.CertificateOfConduct,
-                    settings.Value.ElvantoCustomFields.SelfCommitment,
-                    settings.Value.ElvantoCustomFields.MetroCard,
-                    settings.Value.ElvantoCustomFields.DateOfApprovalOfPrivacyPolicy,
-                    settings.Value.ElvantoCustomFields.ApprovalOfPrivacyPolicy,
-                    settings.Value.ElvantoCustomFields.DateOfNonDisclosureAgreement,
-                    settings.Value.ElvantoCustomFields.DateOfArchiving,
-                    settings.Value.ElvantoCustomFields.DateOfDeath,
-                }.Where(i => i != null)]
-            });
-
-            foreach (var person in persons)
-            {
-                if (settings.Value.ExceptFromSync.Contains(person.Id))
-                    continue;
-                if (personDepartmentIds.ContainsKey(person.Id))
-                    continue;
-                personDepartmentIds[person.Id] = departmentIds;
-                allPersons.Add(person);
-            }
-        }
-
-        return allPersons;
-    }
+            CategoryId = [.. settings.Value.CategoryToSync.Keys],
+            Archived = FilterEnum.No,
+            Fields = [.. new[] {
+                PersonAdditionalFields.Marital_status,
+                PersonAdditionalFields.Birthday,
+                PersonAdditionalFields.Gender,
+                PersonAdditionalFields.Giving_number,
+                PersonAdditionalFields.Home_address,
+                PersonAdditionalFields.Home_address2,
+                PersonAdditionalFields.Home_city,
+                PersonAdditionalFields.Home_country,
+                PersonAdditionalFields.Home_postcode,
+                settings.Value.ElvantoCustomFields.Title,
+                settings.Value.ElvantoCustomFields.AdditionalPhoneNumbers,
+                settings.Value.ElvantoCustomFields.Job,
+                settings.Value.ElvantoCustomFields.DateOfEntry,
+                settings.Value.ElvantoCustomFields.DateOfBaptism,
+                settings.Value.ElvantoCustomFields.Keyholder,
+                settings.Value.ElvantoCustomFields.InterestToVolunteerIn,
+                settings.Value.ElvantoCustomFields.NoteOnVolunteering,
+                settings.Value.ElvantoCustomFields.CodeOfConduct,
+                settings.Value.ElvantoCustomFields.CertificateOfConduct,
+                settings.Value.ElvantoCustomFields.SelfCommitment,
+                settings.Value.ElvantoCustomFields.MetroCard,
+                settings.Value.ElvantoCustomFields.DateOfApprovalOfPrivacyPolicy,
+                settings.Value.ElvantoCustomFields.ApprovalOfPrivacyPolicy,
+                settings.Value.ElvantoCustomFields.DateOfNonDisclosureAgreement,
+                settings.Value.ElvantoCustomFields.DateOfArchiving,
+                settings.Value.ElvantoCustomFields.DateOfDeath,
+            }.Where(i => i != null)]
+        }))
+            .Where(p => !settings.Value.ExceptFromSync.Contains(p.Id)); // Special exceptions
 
     public override async Task<IEnumerable<ChurchToolPerson>> GetToAsync()
     {
@@ -160,7 +140,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             OptigemId = missing.GivingNumber,
             DateOfDeath = missing.GetDateCustomField(fields.DateOfDeath),
             StatusId = 3,
-            DepartmentIds = personDepartmentIds.TryGetValue(missing.Id, out var addDeptIds) ? [.. addDeptIds] : [1],
+            DepartmentIds = [settings.Value.CategoryToSync.GetValueOrDefault(missing.CategoryId, 1)],
             CampusId = 0,
             PrivacyPolicyAgreement = new()
             {
@@ -281,7 +261,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             OptigemId = from.GivingNumber,
             DateOfDeath = from.GetDateCustomField(fields.DateOfDeath),
             StatusId = 3,
-            DepartmentIds = personDepartmentIds.TryGetValue(from.Id, out var updateDeptIds) ? [.. updateDeptIds] : [1],
+            DepartmentIds = [settings.Value.CategoryToSync.GetValueOrDefault(from.CategoryId, 1)],
             CampusId = 0,
             PrivacyPolicyAgreement = new()
             {

@@ -6,7 +6,11 @@ internal record PeopleToChurchToolsSyncSettings : SyncSettings
 {
     internal const string ConfigSection = "Sync:ChurchTools:PeopleToChurchToolsSync";
 
-    public Dictionary<string, int[]> CategoryToSync { get; set; } = new();
+    public Dictionary<string, int> CategoryToSync { get; set; } = new()
+    {
+        // Aufnahmeprozess → Bereich 1 (Standard; per Server-Konfiguration überschreibbar)
+        ["0fed29fd-093c-49ee-8f48-e1a91c77fe1f"] = 1,
+    };
     public HashSet<string> ExceptFromSync { get; set; } = [];
 
     public ChurchToolsCustomFields ChurchToolsCustomFields { get; set; } = new();
