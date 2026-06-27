@@ -175,7 +175,7 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
 
     private async Task<CompareResult<TFrom, TTo>> RunComparison(List<TFrom> from, List<TTo> to)
     {
-        if (dbContext.IndexMappings.Where(i => i.Type == this.GetType().Name).Any())
+        if (!settings.Value.UseFallbackSync && dbContext.IndexMappings.Where(i => i.Type == this.GetType().Name).Any())
         {
             return await RunComparisonWithMappings(from, to);
         }
