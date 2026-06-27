@@ -43,7 +43,6 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
     public override async Task<IEnumerable<Person>> GetFromAsync()
         => (await elvanto.PeopleGetAllAsync(new()
         {
-            CategoryId = [.. settings.Value.CategoryToSync.Keys],
             Archived = FilterEnum.No,
             Fields = [.. new[] {
                 PersonAdditionalFields.Marital_status,
@@ -139,8 +138,8 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             },
             OptigemId = missing.GivingNumber,
             DateOfDeath = missing.GetDateCustomField(fields.DateOfDeath),
-            StatusId = 3,
-            DepartmentIds = [settings.Value.CategoryToSync.GetValueOrDefault(missing.CategoryId, 1)],
+            StatusId = settings.Value.Status.GetValueOrDefault(missing.CategoryId, settings.Value.DefaultStatusId),
+            DepartmentIds = [settings.Value.Departments.GetValueOrDefault(missing.CategoryId, settings.Value.DefaultDepartment)],
             CampusId = 0,
             PrivacyPolicyAgreement = new()
             {
@@ -260,8 +259,8 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             },
             OptigemId = from.GivingNumber,
             DateOfDeath = from.GetDateCustomField(fields.DateOfDeath),
-            StatusId = 3,
-            DepartmentIds = [settings.Value.CategoryToSync.GetValueOrDefault(from.CategoryId, 1)],
+            StatusId = settings.Value.Status.GetValueOrDefault(from.CategoryId, settings.Value.DefaultStatusId),
+            DepartmentIds = [settings.Value.Departments.GetValueOrDefault(from.CategoryId, settings.Value.DefaultDepartment)],
             CampusId = 0,
             PrivacyPolicyAgreement = new()
             {
@@ -319,11 +318,11 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
         var syncNote = await GetSyncNote(additional.Id.Value);
         if (syncNote == null)
         {
-            // Only archive if synced using this tool, otherwise we might delete manually created entries
+            // Only delete if synced using this tool, otherwise we might delete manually created entries
             return;
         }
 
-        await churchTools.Persons[additional.Id.Value].Archive.PostAsync(new() { Archived = true });
+        await churchTools.Persons[additional.Id.Value].DeleteAsync();
     }
 
     private static string GetSyncNoteText(Person from)
