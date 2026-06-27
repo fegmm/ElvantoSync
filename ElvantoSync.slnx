@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="ElvantoSync.Test/ElvantoSync.Test.csproj" />
+  <Project Path="ElvantoSync/ElvantoSync.csproj" />
+  <Project Path="KasApi/KasApi.csproj" />
+  <Project Path="Nextcloud.Tests/Nextcloud.Tests.csproj" />
+  <Project Path="Nextcloud/Nextcloud.csproj" />
+</Solution>
