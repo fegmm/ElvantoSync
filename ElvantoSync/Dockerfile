@@ -5,7 +5,7 @@ WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY ["ElvantoSync/ElvantoSync.csproj", "ElvantoSync/"]
+COPY ["ElvantoSync/ElvantoSync.csproj", "ElvantoSync/", "Directory.Build.props", "Directory.Packages.targets"]
 RUN dotnet restore "ElvantoSync/ElvantoSync.csproj"
 COPY . .
 WORKDIR "/src/ElvantoSync"
