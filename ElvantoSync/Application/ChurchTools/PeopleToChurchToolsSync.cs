@@ -35,10 +35,10 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
     public override string FallbackFromKeySelector(Person i)
     {
         ParseFirstName(i, out var firstName, out var _);
-        return $"{firstName}-{i.Lastname}-{i.Email}".Trim();
+        return $"{firstName}-{i.Lastname}-{i.Email}".Trim().ToLower();
     }
 
-    public override string FallbackToKeySelector(ChurchToolPerson i) => $"{i.FirstName}-{i.LastName}-{i.Email}".Trim();
+    public override string FallbackToKeySelector(ChurchToolPerson i) => $"{i.FirstName}-{i.LastName}-{i.Email}".Trim().ToLower();
 
     public override async Task<IEnumerable<Person>> GetFromAsync()
         => (await elvanto.PeopleGetAllAsync(new()
@@ -146,8 +146,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
                 Date = missing.GetDateCustomField(fields.ApprovalOfPrivacyPolicy) ?? DateOnly.FromDateTime(DateTime.UtcNow),
                 TypeId = 3,
                 WhoId = 1
-            },
-            AdditionalData = await SetCustomFields(missing)
+            }
         };
         PersonsPostResponse response = await churchTools.Persons.PostAsPersonsPostResponseAsync(requestBody);
 
@@ -334,7 +333,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
     {
         var regex = new Regex(@"^(?<firstName>[^\(]+)(\((?<nickName>[^\)]+)\))?$");
         var match = regex.Match(missing.Firstname);
-        firstName = match.Success ? match.Groups["firstName"].Value : missing.Firstname;
+        firstName = match.Success ? match.Groups["firstName"].Value.Trim() : missing.Firstname.Trim();
         nickName = match.Success ? match.Groups["nickName"].Value : null;
     }
 
