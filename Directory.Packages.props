@@ -1,0 +1,66 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Azure -->
+    <PackageVersion Include="Azure.Identity" Version="1.21.0" />
+    <!-- Coverlet -->
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
+    <!-- Ductus -->
+    <PackageVersion Include="Ductus.FluentDocker.XUnit" Version="2.85.0" />
+    <!-- Fegmm -->
+    <PackageVersion Include="Fegmm.ChurchTools" Version="1.0.7" />
+    <PackageVersion Include="Fegmm.Elvanto" Version="1.0.5" />
+    <!-- FluentAssertions -->
+    <PackageVersion Include="FluentAssertions" Version="8.10.0" />
+    <!-- Microsoft -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Polly" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.7.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
+    <!-- MixERP -->
+    <PackageVersion Include="MixERP.Net.VCards" Version="1.0.7" />
+    <!-- Moq -->
+    <PackageVersion Include="Moq" Version="4.20.72" />
+    <!-- Newtonsoft -->
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
+    <!-- OpenTelemetry -->
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.16.0-beta.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.16.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Quartz" Version="1.15.1-beta.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
+    <!-- Quartz -->
+    <PackageVersion Include="Quartz.Extensions.Hosting" Version="3.18.2" />
+    <!-- QuestPDF -->
+    <PackageVersion Include="QuestPDF" Version="2026.6.1" />
+    <!-- System -->
+    <PackageVersion Include="System.Interactive.Async" Version="7.0.1" />
+    <PackageVersion Include="System.ServiceModel.Duplex" Version="6.0.0" />
+    <PackageVersion Include="System.ServiceModel.Federation" Version="10.0.652802" />
+    <PackageVersion Include="System.ServiceModel.Http" Version="10.0.652802" />
+    <PackageVersion Include="System.ServiceModel.NetTcp" Version="10.0.652802" />
+    <PackageVersion Include="System.ServiceModel.Security" Version="6.0.0" />
+    <!-- Testcontainers -->
+    <PackageVersion Include="Testcontainers" Version="4.12.0" />
+    <PackageVersion Include="Testcontainers.MySql" Version="4.12.0" />
+    <!-- xUnit -->
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageVersion Include="Xunit.Priority" Version="1.1.6" />
+    <!-- WebDav -->
+    <PackageVersion Include="WebDav.Client" Version="2.9.0" />
+    <!-- NextcloudApi -->
+    <PackageVersion Include="NextcloudApi" Version="1.0.18" />
+  </ItemGroup>
+</Project>

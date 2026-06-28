@@ -15,6 +15,7 @@ QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = Host.CreateApplicationBuilder();
 builder.Configuration.AddUserSecrets<Program>();
+builder.ConfigureOpenTelemetry();
 var appSettings = builder.Configuration
     .GetRequiredSection(ApplicationSettings.ConfigSection)
     .Get<ApplicationSettings>();

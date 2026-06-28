@@ -8,4 +8,5 @@ public record SyncSettings
     public bool AddMissing { get; set; } = true;
     public bool UpdateExisting { get; set; } = true;
     public bool DeleteAdditionals { get; set; } = false;
+    public bool UseFallbackSync { get; set; } = false;
 }

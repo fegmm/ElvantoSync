@@ -35,15 +35,14 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
     public override string FallbackFromKeySelector(Person i)
     {
         ParseFirstName(i, out var firstName, out var _);
-        return $"{firstName}-{i.Lastname}-{i.Email}".Trim();
+        return $"{firstName}-{i.Lastname}-{i.Email}".Trim().ToLower();
     }
 
-    public override string FallbackToKeySelector(ChurchToolPerson i) => $"{i.FirstName}-{i.LastName}-{i.Email}".Trim();
+    public override string FallbackToKeySelector(ChurchToolPerson i) => $"{i.FirstName}-{i.LastName}-{i.Email}".Trim().ToLower();
 
     public override async Task<IEnumerable<Person>> GetFromAsync()
         => (await elvanto.PeopleGetAllAsync(new()
         {
-            CategoryId = [settings.Value.CategoryToSync],
             Archived = FilterEnum.No,
             Fields = [.. new[] {
                 PersonAdditionalFields.Marital_status,
@@ -139,16 +138,15 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             },
             OptigemId = missing.GivingNumber,
             DateOfDeath = missing.GetDateCustomField(fields.DateOfDeath),
-            StatusId = 3,
-            DepartmentIds = [1],
+            StatusId = settings.Value.Status.GetValueOrDefault(missing.CategoryId, settings.Value.DefaultStatusId),
+            DepartmentIds = [settings.Value.Departments.GetValueOrDefault(missing.CategoryId, settings.Value.DefaultDepartment)],
             CampusId = 0,
             PrivacyPolicyAgreement = new()
             {
                 Date = missing.GetDateCustomField(fields.ApprovalOfPrivacyPolicy) ?? DateOnly.FromDateTime(DateTime.UtcNow),
                 TypeId = 3,
                 WhoId = 1
-            },
-            AdditionalData = await SetCustomFields(missing)
+            }
         };
         PersonsPostResponse response = await churchTools.Persons.PostAsPersonsPostResponseAsync(requestBody);
 
@@ -260,8 +258,8 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             },
             OptigemId = from.GivingNumber,
             DateOfDeath = from.GetDateCustomField(fields.DateOfDeath),
-            StatusId = 3,
-            DepartmentIds = [1],
+            StatusId = settings.Value.Status.GetValueOrDefault(from.CategoryId, settings.Value.DefaultStatusId),
+            DepartmentIds = [settings.Value.Departments.GetValueOrDefault(from.CategoryId, settings.Value.DefaultDepartment)],
             CampusId = 0,
             PrivacyPolicyAgreement = new()
             {
@@ -319,11 +317,11 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
         var syncNote = await GetSyncNote(additional.Id.Value);
         if (syncNote == null)
         {
-            // Only archive if synced using this tool, otherwise we might delete manually created entries
+            // Only delete if synced using this tool, otherwise we might delete manually created entries
             return;
         }
 
-        await churchTools.Persons[additional.Id.Value].Archive.PostAsync(new() { Archived = true });
+        await churchTools.Persons[additional.Id.Value].DeleteAsync();
     }
 
     private static string GetSyncNoteText(Person from)
@@ -335,7 +333,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
     {
         var regex = new Regex(@"^(?<firstName>[^\(]+)(\((?<nickName>[^\)]+)\))?$");
         var match = regex.Match(missing.Firstname);
-        firstName = match.Success ? match.Groups["firstName"].Value : missing.Firstname;
+        firstName = match.Success ? match.Groups["firstName"].Value.Trim() : missing.Firstname.Trim();
         nickName = match.Success ? match.Groups["nickName"].Value : null;
     }
 

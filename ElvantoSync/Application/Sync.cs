@@ -43,7 +43,7 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
         var creationTaskBatched = missings
             .Chunk(1)
             .Select(batch => batch.ToDictionary(FromKeySelector, AddMissing));
-        
+
 
         foreach (var tasks in creationTaskBatched)
         {
@@ -175,7 +175,7 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
 
     private async Task<CompareResult<TFrom, TTo>> RunComparison(List<TFrom> from, List<TTo> to)
     {
-        if (dbContext.IndexMappings.Where(i => i.Type == this.GetType().Name).Any())
+        if (!settings.Value.UseFallbackSync && dbContext.IndexMappings.Where(i => i.Type == this.GetType().Name).Any())
         {
             return await RunComparisonWithMappings(from, to);
         }
@@ -211,7 +211,8 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
             FromId = FromKeySelector(i.Item1),
             ToId = ToKeySelector(i.Item2),
             Type = this.GetType().Name
-        });
+        })
+        .Where(i => !dbContext.IndexMappings.Any(m => m.FromId == i.FromId && m.ToId == i.ToId && m.Type == i.Type));
         await dbContext.IndexMappings.AddRangeAsync(newMappings);
         await dbContext.SaveChangesAsync();
 
