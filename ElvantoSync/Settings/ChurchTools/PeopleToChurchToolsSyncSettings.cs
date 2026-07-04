@@ -6,6 +6,7 @@ internal record PeopleToChurchToolsSyncSettings : SyncSettings
 {
     internal const string ConfigSection = "Sync:ChurchTools:PeopleToChurchToolsSync";
 
+    public bool ForceUpdate { get; set; } = false;
     public int DefaultDepartment { get; set; } = 4;
     public Dictionary<string, int> Departments { get; set; } = new()
     {

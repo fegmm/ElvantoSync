@@ -10,7 +10,7 @@ internal record ChurchToolsGroupSyncSettings : SyncSettings
     internal const byte DblPosition = 255;
     internal const string ConfigSection = "Sync:ChurchTools:GroupsToChurchToolsSync";
 
-    public bool IncludeDblsAsMembers { get; set; } = true;
+    public bool IncludeDblsAsMembers { get; set; } = false;
     public int DefaultGroupTypeId { get; set; } = 2;
     public int DefaultGroupStatusId { get; set; } = 1;
 
@@ -40,7 +40,7 @@ internal record ChurchToolsGroupSyncSettings : SyncSettings
         [(1, GroupMemberPositions.AssistantLeader)] = 10,
         [(1, GroupMemberPositions.Leader)] = 9,
         [(2, null)] = 15,
-        [(2, GroupMemberPositions.AssistantLeader)] = 16,
+        [(2, GroupMemberPositions.AssistantLeader)] = 79,
         [(2, GroupMemberPositions.Leader)] = 16,
         [(2, (GroupMemberPositions)DblPosition)] = 15,
         [(13, null)] = 64,
