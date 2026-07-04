@@ -145,7 +145,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             {
                 Date = missing.GetDateCustomField(fields.ApprovalOfPrivacyPolicy) ?? DateOnly.FromDateTime(DateTime.UtcNow),
                 TypeId = 3,
-                WhoId = 1
+                WhoId = settings.Value.ElvantoChildCategory != missing.CategoryId ? 1 : 2
             }
         };
         PersonsPostResponse response = await churchTools.Persons.PostAsPersonsPostResponseAsync(requestBody);
@@ -200,6 +200,9 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
                 [churchFields.MetroCard] = (await missing.GetSingleOptionCustomField(fields.MetroCard))?.Id == settings.Value.HasMetroCardId,
                 [churchFields.NoteOnVolunteering] = missing.GetStringCustomField(fields.NoteOnVolunteering),
                 [churchFields.SelfCommitment] = (await missing.GetSingleOptionCustomField(fields.SelfCommitment))?.Id == settings.Value.HasSelfCommitmentId,
+                [churchFields.MainService] = missing.Demographics?.Demographic?
+                            .Select(i => settings.Value.DemographicsToMainService.GetValueOrDefault(i.Id))
+                            .FirstOrDefault(i => i is not null),
             };
         }
         catch (Exception ex)
@@ -265,7 +268,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             {
                 Date = from.GetDateCustomField(fields.ApprovalOfPrivacyPolicy) ?? DateOnly.FromDateTime(DateTime.UtcNow),
                 TypeId = 3,
-                WhoId = 1
+                WhoId = settings.Value.ElvantoChildCategory != from.CategoryId ? 1 : 2
             },
             AdditionalData = await SetCustomFields(from)
         });
