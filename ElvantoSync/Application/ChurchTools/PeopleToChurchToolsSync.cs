@@ -54,6 +54,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
                 PersonAdditionalFields.Home_city,
                 PersonAdditionalFields.Home_country,
                 PersonAdditionalFields.Home_postcode,
+                PersonAdditionalFields.Demographics,
                 settings.Value.ElvantoCustomFields.Title,
                 settings.Value.ElvantoCustomFields.AdditionalPhoneNumbers,
                 settings.Value.ElvantoCustomFields.Job,
@@ -128,6 +129,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
                 MaritalStatus.Divorced => 4,
                 MaritalStatus.Widowed => 5,
                 MaritalStatus.Engaged => 6,
+                MaritalStatus.Defacto => 8,
                 _ => 0
             },
             SexId = missing.Gender switch
@@ -214,7 +216,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
 
     protected override async Task UpdateMatch(Person from, ChurchToolPerson to)
     {
-        if (from.DateModified <= to.Meta.ModifiedDate)
+        if (from.DateModified <= to.Meta.ModifiedDate && !settings.Value.ForceUpdate)
         {
             logger.LogInformation("Skipping update for person with ID {PersonId} because source is not newer than target", to.Id);
             return;
