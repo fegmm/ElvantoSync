@@ -10,9 +10,9 @@ internal record PeopleToChurchToolsSyncSettings : SyncSettings
     public Dictionary<string, int> Departments { get; set; } = new()
     {
         ["d5f23ea9-dae5-4720-ae10-7cfa8e413ed9"] = 1, // Gemeindemitglied
-        ["0fed29fd-093c-49ee-8f48-e1a91c77fe1f"] = 5, // Im Aufnahmeprozess
+        ["0fed29fd-093c-49ee-8f48-e1a91c77fe1f"] = 4, // Im Aufnahmeprozess
         ["02ffab28-6ecc-4131-a72b-6bca7b10f65c"] = 1, // Außendienstler
-        ["d9d5f5ce-439d-4141-bc22-ab3869da6842"] = 5, // Pausierte Mitgliedschaft
+        ["d9d5f5ce-439d-4141-bc22-ab3869da6842"] = 4, // Pausierte Mitgliedschaft
         ["00b91199-bbf7-4b14-a5bf-0ee407a90691"] = 5, // Nichtmitglied (Mitarbeiter oder Hauskreisbesucher)
         ["7e8d2b76-3883-418a-aa8a-06e4f9e50bda"] = 7, // Kinder
         ["0a6f2a16-0d7d-4549-a4d9-6bb954932da9"] = 6, // Externe Raumnutzer
