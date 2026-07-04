@@ -11,7 +11,7 @@
     <PackageVersion Include="Ductus.FluentDocker.XUnit" Version="2.85.0" />
     <!-- Fegmm -->
     <PackageVersion Include="Fegmm.ChurchTools" Version="1.0.7" />
-    <PackageVersion Include="Fegmm.Elvanto" Version="1.0.5" />
+    <PackageVersion Include="Fegmm.Elvanto" Version="1.0.6" />
     <!-- FluentAssertions -->
     <PackageVersion Include="FluentAssertions" Version="8.10.0" />
     <!-- Microsoft -->

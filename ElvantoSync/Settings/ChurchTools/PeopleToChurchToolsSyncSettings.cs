@@ -18,6 +18,8 @@ internal record PeopleToChurchToolsSyncSettings : SyncSettings
         ["0a6f2a16-0d7d-4549-a4d9-6bb954932da9"] = 6, // Externe Raumnutzer
     };
 
+    public string ElvantoChildCategory { get; set; } = "7e8d2b76-3883-418a-aa8a-06e4f9e50bda";
+
     public int DefaultStatusId { get; set; } = 0;
     public Dictionary<string, int> Status { get; set; } = new()
     {
@@ -39,7 +41,8 @@ internal record PeopleToChurchToolsSyncSettings : SyncSettings
     public string HasMetroCardId { get; set; } = "edb08d0c-ac17-450e-9ed1-dcc95e0745bd";
     public string HasSelfCommitmentId { get; set; } = "595291aa-14aa-4da3-affe-a349d360ba4b";
 
-    public Dictionary<string, int> PrivacyApprovals { get; set; } = new() {
+    public Dictionary<string, int> PrivacyApprovals { get; set; } = new()
+    {
         ["8542a4b1-9cce-46d8-9793-f97caf3908a1"] = 1,
         ["2525485c-51c8-40b8-9ad3-04f488e1549d"] = 2,
         ["3c2c476d-ce16-4982-a7b5-a64347251580"] = 3,
@@ -78,6 +81,13 @@ internal record PeopleToChurchToolsSyncSettings : SyncSettings
         ["dbeeb5ba-4b1f-43db-ad0f-bcb20f799557"] = 26,
         ["fbbed1e9-5ca4-48a8-82e3-349aaf7374fd"] = 27
     };
+
+    public Dictionary<string, int?> DemographicsToMainService { get; set; } = new()
+    {
+        ["6a99cd3d-84e5-4582-8089-8ba8765ca20a"] = 1, // 9 Uhr
+        ["b0d4496d-45c7-4432-a116-2b43aa12609f"] = 2, // 11 Uhr
+        ["0c65b2e1-f0e3-49cf-a803-73f27fe01757"] = 3 // 12 Uhr
+    };
 }
 
 public record ElvantoCustomFields
@@ -114,4 +124,5 @@ public record ChurchToolsCustomFields
     public string MetroCard { get; set; } = "metro_karte";
     public string NoteOnVolunteering { get; set; } = "bemerkung_zur_mitarbeit";
     public string SelfCommitment { get; set; } = "selbstverpflichtung_unterschri";
+    public string MainService { get; set; } = "gottedienst";
 }
