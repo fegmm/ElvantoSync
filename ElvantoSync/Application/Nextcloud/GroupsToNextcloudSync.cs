@@ -33,7 +33,7 @@ public class GroupsToNextcloudSync(
 
     public override async Task<IEnumerable<ElvantoGroup>> GetFromAsync()
         => (await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People] }))
-            .Where(i => i.People?.Person.Any() ?? false);
+            .Where(i => i.People?.Person?.Any() ?? false);
 
     public override async Task<IEnumerable<NextcloudGroup>> GetToAsync()
         => (await provisioningClient.GetGroups())

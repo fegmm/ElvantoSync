@@ -162,7 +162,7 @@ internal class ChurchToolsGroupSync(
                 await churchToolsClient.Groups[to.Id.Value].Members[ctPersonId].PutAsMemberPutResponseAsync(new()
                 {
                     IgnoreGroupFull = true,
-                    GroupMemberStatus = MemberPutRequestBody_groupMemberStatus.Active,
+                    GroupMemberStatus = new() { String = "active" },
                     InformLeader = false,
                     OnlyAdd = true,
                     GroupTypeRoleId = GetMemberRoleId(missingMember.Id, to.Information.GroupTypeId.Value, missingMember.Position),

@@ -119,7 +119,6 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             Country = missing.HomeCountry,
             Birthday = missing.Birthday,
             Job = missing.GetStringCustomField(fields.Job),
-            DateOfEntry = missing.GetDateCustomField(fields.DateOfEntry)?.ToDateTime(TimeOnly.MinValue),
             DateOfBaptism = missing.GetDateCustomField(fields.DateOfBaptism),
             FamilyStatusId = missing.MaritalStatus switch
             {
@@ -190,10 +189,10 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
                 [churchFields.ApprovalOfPrivacyPolicy] = (await missing.GetMultiOptionCustomField(fields.ApprovalOfPrivacyPolicy))?
                             .CustomField?
                             .Select(i => settings.Value.PrivacyApprovals[i.Id]),
-                [churchFields.CertificateOfConduct] = missing.GetDateCustomField(fields.CertificateOfConduct),
+                [churchFields.CertificateOfConduct] = missing.GetDateCustomField(fields.CertificateOfConduct)?.ToString("o"),
                 [churchFields.CodeOfConduct] = (await missing.GetSingleOptionCustomField(fields.CodeOfConduct))?.Id == settings.Value.HasCodeOfConductId,
-                [churchFields.DateOfArchiving] = missing.GetDateCustomField(fields.DateOfArchiving),
-                [churchFields.DateOfNonDisclosureAgreement] = missing.GetDateCustomField(fields.DateOfNonDisclosureAgreement),
+                [churchFields.DateOfArchiving] = missing.GetDateCustomField(fields.DateOfArchiving)?.ToString("o"),
+                [churchFields.DateOfNonDisclosureAgreement] = missing.GetDateCustomField(fields.DateOfNonDisclosureAgreement)?.ToString("o"),
                 [churchFields.InterestToVolunteerIn] = (await missing.GetMultiOptionCustomField(fields.InterestToVolunteerIn))?
                             .CustomField?
                             .Where(i => i.Id is not null) // Elvanto sometimes returns "" as option 🤦‍♂️
@@ -205,6 +204,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
                 [churchFields.MainService] = missing.Demographics?.Demographic?
                             .Select(i => settings.Value.DemographicsToMainService.GetValueOrDefault(i.Id))
                             .FirstOrDefault(i => i is not null),
+                ["dateOfEntry"] = missing.GetDateCustomField(fields.DateOfEntry)?.ToString("o"),
             };
         }
         catch (Exception ex)
@@ -226,8 +226,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
         var syncNote = await GetSyncNote(churchToolsId);
         string firstName, nickName;
         ParseFirstName(from, out firstName, out nickName);
-
-        WithPersonPatchResponse response = await churchTools.Persons[churchToolsId].PatchAsWithPersonPatchResponseAsync(new()
+        var requestBody = new WithPersonPatchRequestBody()
         {
             Title = from.GetStringCustomField(fields.Title),
             FirstName = firstName,
@@ -243,7 +242,6 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             Country = from.HomeCountry,
             Birthday = from.Birthday,
             Job = from.GetStringCustomField(fields.Job),
-            DateOfEntry = from.GetDateCustomField(fields.DateOfEntry)?.ToDateTime(TimeOnly.MinValue),
             DateOfBaptism = from.GetDateCustomField(fields.DateOfBaptism),
             FamilyStatusId = from.MaritalStatus switch
             {
@@ -273,7 +271,9 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
                 WhoId = settings.Value.ElvantoChildCategory != from.CategoryId ? 1 : 2
             },
             AdditionalData = await SetCustomFields(from)
-        });
+        };
+
+        WithPersonPatchResponse response = await churchTools.Persons[churchToolsId].PatchAsWithPersonPatchResponseAsync(requestBody);
 
         try
         {

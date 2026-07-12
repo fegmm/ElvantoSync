@@ -28,7 +28,7 @@ class GroupFinderSync(
 
     public override async Task<IEnumerable<Group>> GetFromAsync()
         => (await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People], CategoryId = ["1d8d2db3-8367-43d2-b263-11a0ae810a80"] }))
-            .Where(i => i.People?.Person.Any() ?? false).Where(i => i.MeetingPostcode is not null);
+            .Where(i => i.People?.Person?.Any() ?? false).Where(i => i.MeetingPostcode is not null);
 
     public override async Task<IEnumerable<string>> GetToAsync()
         => await groupFinderService.GetGroupAsync();
@@ -50,6 +50,11 @@ class GroupFinderSync(
     private async Task<string> insertGroup(Group group)
     {
         var leader = group.People.Person.FirstOrDefault(p => p.Position == GroupMemberPositions.Leader);
+        if (leader == null)
+        {
+            logger.LogWarning("Group {group} has no leader, skipping", group.Name);
+            return null;
+        }
         string ncLeaderId = dbContext.ElvantoToNextcloudPeopleId(leader.Id) ?? leader.Id;
         string nextcloudGroupId = dbContext.ElvantoToNextcloudGroupId(group.Id) ?? group.Id;
         if (group.MeetingPostcode == null)
