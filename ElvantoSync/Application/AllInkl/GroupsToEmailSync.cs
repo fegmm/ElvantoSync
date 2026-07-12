@@ -34,7 +34,7 @@ internal class GroupsToEmailSync(
 
     public override async Task<IEnumerable<Group>> GetFromAsync() =>
         (await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People] }))
-            .Where(i => i.People?.Person.Any() ?? false);
+            .Where(i => i.People?.Person?.Any() ?? false);
 
     public override async Task<IEnumerable<MailForward>> GetToAsync()
         => (await kas.GetMailforwardsAsync()).Where(i => i.MailForwardAdress.Split("@")[1] == settings.Value.KASDomain);
@@ -43,6 +43,7 @@ internal class GroupsToEmailSync(
     {
         var compare = group.People.Person
             .DistinctBy(i => i.Email)
+            .Where(i => !string.IsNullOrEmpty(i.Email))
             .CompareTo(mail.MailForwardTargets, i => i.Email, j => j);
 
         if (compare.additional.Any() || compare.missing.Any())

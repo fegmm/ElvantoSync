@@ -34,7 +34,7 @@ class GroupsToCollectivesSync(
 
     public override async Task<IEnumerable<Group>> GetFromAsync()
         => (await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People] }))
-            .Where(i => i.People?.Person.Any() ?? false);
+            .Where(i => i.People?.Person?.Any() ?? false);
 
     public override async Task<IEnumerable<Collective>> GetToAsync()
         => await collectivesRepo.GetCollectives();
