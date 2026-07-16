@@ -1,4 +1,6 @@
-﻿namespace ElvantoSync.Settings;
+﻿using System.Collections.Generic;
+
+namespace ElvantoSync.Settings;
 
 public record SyncSettings
 {
@@ -9,4 +11,6 @@ public record SyncSettings
     public bool UpdateExisting { get; set; } = true;
     public bool DeleteAdditionals { get; set; } = false;
     public bool UseFallbackSync { get; set; } = false;
+    public ICollection<string> ExcludedFromIds { get; set; } = [];
+    public ICollection<string> ExcludedToIds { get; set; } = [];
 }
