@@ -41,6 +41,7 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
 
         List<IndexMapping> created = [];
         var creationTaskBatched = missings
+            .Where(i => !settings.Value.ExcludedFromIds.Contains(FromKeySelector(i)))
             .Chunk(1)
             .Select(batch => batch.ToDictionary(FromKeySelector, AddMissing));
 
@@ -91,6 +92,7 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
 
         List<string> removed = [];
         var deletionTaskBatched = additionals
+            .Where(i => !settings.Value.ExcludedToIds.Contains(ToKeySelector(i)))
             .Chunk(1)
             .Select(batch => batch.ToDictionary(ToKeySelector, RemoveAdditional));
 
@@ -129,6 +131,7 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
         }
 
         var updateTaskBatched = matches
+            .Where(i => !settings.Value.ExcludedFromIds.Contains(FromKeySelector(i.Item1)) && !settings.Value.ExcludedToIds.Contains(ToKeySelector(i.Item2)))
             .Chunk(1)
             .Select(batch => batch.ToDictionary(i => (FromKeySelector(i.Item1), ToKeySelector(i.Item2)), i => UpdateMatch(i.Item1, i.Item2)));
 
