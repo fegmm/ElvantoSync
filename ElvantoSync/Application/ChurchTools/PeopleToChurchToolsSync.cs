@@ -74,6 +74,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
                 settings.Value.ElvantoCustomFields.DateOfDeath,
             }.Where(i => i != null)]
         }))
+            .Where(p => p.Deceased == 0)
             .Where(p => !settings.Value.ExceptFromSync.Contains(p.Id)); // Special exceptions
 
     public override async Task<IEnumerable<ChurchToolPerson>> GetToAsync()
@@ -144,7 +145,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             CampusId = 0,
             PrivacyPolicyAgreement = new()
             {
-                Date = missing.GetDateCustomField(fields.ApprovalOfPrivacyPolicy) ?? DateOnly.FromDateTime(DateTime.UtcNow),
+                Date = missing.GetDateCustomField(fields.DateOfApprovalOfPrivacyPolicy) ?? DateOnly.FromDateTime(DateTime.UtcNow),
                 TypeId = 3,
                 WhoId = settings.Value.ElvantoChildCategory != missing.CategoryId ? 1 : 2
             }
@@ -251,6 +252,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
                 MaritalStatus.Divorced => 4,
                 MaritalStatus.Widowed => 5,
                 MaritalStatus.Engaged => 6,
+                MaritalStatus.Defacto => 8,
                 _ => 0
             },
             SexId = from.Gender switch
@@ -266,7 +268,7 @@ internal class PeopleToChurchToolsSync(IElvantoClient elvanto,
             CampusId = 0,
             PrivacyPolicyAgreement = new()
             {
-                Date = from.GetDateCustomField(fields.ApprovalOfPrivacyPolicy) ?? DateOnly.FromDateTime(DateTime.UtcNow),
+                Date = from.GetDateCustomField(fields.DateOfApprovalOfPrivacyPolicy) ?? DateOnly.FromDateTime(DateTime.UtcNow),
                 TypeId = 3,
                 WhoId = settings.Value.ElvantoChildCategory != from.CategoryId ? 1 : 2
             },
