@@ -9,6 +9,7 @@ public record SyncSettings
     public bool IsEnabled { get; init; } = true;
     public bool AddMissing { get; set; } = true;
     public bool UpdateExisting { get; set; } = true;
+    public bool ForceUpdate { get; set; } = false;
     public bool DeleteAdditionals { get; set; } = false;
     public bool UseFallbackSync { get; set; } = false;
     public ICollection<string> ExcludedFromIds { get; set; } = [];

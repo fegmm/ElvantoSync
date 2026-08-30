@@ -16,4 +16,5 @@ public record SongsToChurchToolsSyncSettings : SyncSettings
     public bool DeleteAdditionalArrangements { get; set; } = true;
     public bool DeleteAdditionalFiles { get; set; } = true;
     public bool DeleteAdditionalTags { get; set; } = true;
+    public string SequencePrefix { get; set; } = "Ablauf: ";
 }

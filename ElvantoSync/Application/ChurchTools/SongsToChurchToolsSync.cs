@@ -120,7 +120,7 @@ public class SongsToChurchToolsSync(
 
     protected override async Task UpdateMatch(ElvantoSongTuple from, CtSong to)
     {
-        if (to.Meta.ModifiedDate < from.song.DateModified)
+        if (to.Meta.ModifiedDate < from.song.DateModified || settings.Value.ForceUpdate)
         {
             await churchTools.Songs[to.Id.Value].PutAsWithSongPutResponseAsync(new()
             {
@@ -132,18 +132,6 @@ public class SongsToChurchToolsSync(
                     .Select(i => settings.Value.CategoryMap.GetValueOrDefault(i.Id))
                     .FirstOrDefault(i => i is not null) ?? settings.Value.DefaultCategoryId,
 
-                Copyright = to.Copyright
-            });
-        }
-        else if (to.Meta.ModifiedDate < from.arrangements.First().arrangement.DateModified)
-        {
-            await churchTools.Songs[to.Id.Value].PutAsWithSongPutResponseAsync(new()
-            {
-                Author = to.Author,
-                ShouldPractice = to.ShouldPractice,
-                Ccli = to.Ccli,
-                Name = to.Name,
-                CategoryId = to.Category.Id,
                 Copyright = to.Copyright
             });
         }
@@ -268,15 +256,19 @@ public class SongsToChurchToolsSync(
             {
                 String = eArrangement.ChordChartKey ?? eArrangement.KeyMale ?? eArrangement.KeyFemale,
             },
+            Description = GetArrangementSequenceStringRepresentation(eArrangement),
         });
         var convertedArrangement = await ctArrangement.Data.ConvertTo<Fegmm.ChurchTools.Songs.SongsGetResponse_data_arrangements>();
 
         await HandleFiles(eArrangement, convertedArrangement);
     }
 
+    private string GetArrangementSequenceStringRepresentation(Arrangement eArrangement)
+        => settings.Value.SequencePrefix + string.Join(", ", eArrangement.Sequence.Select(s => s.ToString()));
+
     private async Task UpdateArrangement(ElvantoSongTuple eSong, CtSong ctSong, Arrangement eArrangement, Fegmm.ChurchTools.Songs.SongsGetResponse_data_arrangements ctArrangement)
     {
-        if (eArrangement.DateModified < ctArrangement.Meta.ModifiedDate)
+        if (eArrangement.DateModified < ctArrangement.Meta.ModifiedDate && !settings.Value.ForceUpdate)
         {
             return;
         }
@@ -294,7 +286,7 @@ public class SongsToChurchToolsSync(
             {
                 String = eArrangement.ChordChartKey ?? eArrangement.KeyMale ?? eArrangement.KeyFemale
             },
-            Description = ctArrangement.Description,
+            Description = GetArrangementSequenceStringRepresentation(eArrangement),
             SourceId = ctArrangement.SourceId,
             SourceReference = ctArrangement.SourceReference,
         });
