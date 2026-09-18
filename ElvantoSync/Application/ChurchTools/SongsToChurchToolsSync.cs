@@ -194,6 +194,7 @@ public class SongsToChurchToolsSync(
                     Bpm = i.arrangement.Bpm,
                     Minutes = i.arrangement.Minutes,
                     Seconds = i.arrangement.Seconds,
+                    Sequence = i.arrangement.Sequence,
                     KeyMale = i.arrangement.KeyMale,
                     KeyFemale = i.arrangement.KeyFemale,
                     DateModified = i.arrangement.DateModified,
@@ -264,7 +265,7 @@ public class SongsToChurchToolsSync(
     }
 
     private string GetArrangementSequenceStringRepresentation(Arrangement eArrangement)
-        => settings.Value.SequencePrefix + string.Join(", ", eArrangement.Sequence.Select(s => s.ToString()));
+        => eArrangement.Sequence?.Any() == true ? settings.Value.SequencePrefix + string.Join(", ", eArrangement.Sequence) : null;
 
     private async Task UpdateArrangement(ElvantoSongTuple eSong, CtSong ctSong, Arrangement eArrangement, Fegmm.ChurchTools.Songs.SongsGetResponse_data_arrangements ctArrangement)
     {

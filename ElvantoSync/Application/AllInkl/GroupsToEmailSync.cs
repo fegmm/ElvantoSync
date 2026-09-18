@@ -104,6 +104,7 @@ internal class GroupsToEmailSync(
 
         using var stream = new MemoryStream();
         document.GeneratePdf(stream);
+        stream.Position = 0;
         await NextcloudApi.CloudFile.Upload(nextcloud, $"{nextcloud.Settings.Username}/{path}", stream);
     }
 

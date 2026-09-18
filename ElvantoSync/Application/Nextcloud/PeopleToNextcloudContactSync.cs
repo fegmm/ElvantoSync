@@ -10,8 +10,9 @@ using MixERP.Net.VCards.Models;
 using MixERP.Net.VCards.Serializer;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Net.Http;
+using System.Linq;
 using System.Threading.Tasks;
 using WebDav;
 
@@ -88,9 +89,23 @@ class PeopleToNextcloudContactSync(
 
     private async Task<VCard> PersonToVCard(Person person)
     {
-        byte[] personPhoto = await img_client.GetByteArrayAsync(person.Picture);
-        string photoExtension = person.Picture.Split('.')[^1];
-        var photo = new Photo(true, photoExtension, Convert.ToBase64String(personPhoto));
+        Photo photo = null;
+        if (!string.IsNullOrWhiteSpace(person.Picture))
+        {
+            try
+            {
+                byte[] personPhoto = await img_client.GetByteArrayAsync(person.Picture);
+                var photoExtension = Path.GetExtension(new Uri(person.Picture).AbsolutePath).TrimStart('.');
+                if (personPhoto.Length > 0 && !string.IsNullOrWhiteSpace(photoExtension))
+                {
+                    photo = new Photo(true, photoExtension, Convert.ToBase64String(personPhoto));
+                }
+            }
+            catch (Exception ex) when (ex is HttpRequestException or UriFormatException)
+            {
+                logger.LogWarning(ex, "Could not download picture for person {PersonId}; creating contact without a photo", person.Id);
+            }
+        }
 
         return new VCard()
         {
@@ -104,7 +119,7 @@ class PeopleToNextcloudContactSync(
                             new Telephone() { Number = person.Phone, Type = MixERP.Net.VCards.Types.TelephoneType.Home},
                             new Telephone() { Number= person.Mobile, Type = MixERP.Net.VCards.Types.TelephoneType.Cell}
                     }).Where(i => !string.IsNullOrWhiteSpace(i.Number)),
-            Photo = photo.Extension != "svg" ? photo : null,
+            Photo = photo?.Extension != "svg" ? photo : null,
             BirthDay = person.Birthday?.DateTime
         };
     }

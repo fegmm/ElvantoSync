@@ -34,12 +34,12 @@ class GroupFinderSync(
         => await groupFinderService.GetGroupAsync();
 
     protected override async Task UpdateMatch(Group group, string _){
-       await insertGroup(group);
+       await InsertGroup(group);
     }
 
     protected override async Task<string> AddMissing(Group group)
     {
-       return await insertGroup(group);
+       return await InsertGroup(group);
     }
 
     protected override async Task RemoveAdditional(string toId) {
@@ -47,7 +47,7 @@ class GroupFinderSync(
     }
     
 
-    private async Task<string> insertGroup(Group group)
+    private async Task<string> InsertGroup(Group group)
     {
         var leader = group.People.Person.FirstOrDefault(p => p.Position == GroupMemberPositions.Leader);
         if (leader == null)

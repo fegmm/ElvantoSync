@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.GroupFolders;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -36,7 +37,7 @@ class GroupsToNextcloudGroupFolderSync(
 
     protected override async Task<string> AddMissing(Group group)
     {
-        string nextcloudGroupId = dbContext.ElvantoToNextcloudGroupId(group.Id);
+        string nextcloudGroupId = GetNextcloudGroupId(group);
         var groupFolderId = await groupFolderClient.CreateGroupFolder(group.Name);
         try
         {
@@ -66,7 +67,7 @@ class GroupsToNextcloudGroupFolderSync(
 
     protected override async Task UpdateMatch(Group group, GroupFolder groupFolder)
     {
-        string nextcloudGroupId = dbContext.ElvantoToNextcloudGroupId(group.Id);
+        string nextcloudGroupId = GetNextcloudGroupId(group);
 
         if (group.Name != groupFolder.MountPoint)
         {
@@ -93,5 +94,17 @@ class GroupsToNextcloudGroupFolderSync(
         {
             await groupFolderClient.AddAclManager(groupFolder.Id, nextcloudGroupId + groupSettings.Value.GroupLeaderSuffix);
         }
+    }
+
+    private string GetNextcloudGroupId(Group group)
+    {
+        var nextcloudGroupId = dbContext.ElvantoToNextcloudGroupId(group.Id);
+        if (string.IsNullOrWhiteSpace(nextcloudGroupId))
+        {
+            throw new InvalidOperationException(
+                $"Cannot synchronize group folder '{group.Name}' ({group.Id}) because its Nextcloud group mapping does not exist.");
+        }
+
+        return nextcloudGroupId;
     }
 }

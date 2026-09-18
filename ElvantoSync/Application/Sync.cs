@@ -63,6 +63,7 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
             {
                 created.AddRange(tasks
                     .Where(i => i.Value.IsCompletedSuccessfully)
+                    .Where(i => i.Value.Result is not null)
                     .Select(i => new IndexMapping()
                     {
                         FromId = i.Key,
@@ -75,10 +76,21 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
 
         // handle manual deleted entries failure case (duplicated entries)
         var mappings = await dbContext.IndexMappings
+            .AsNoTracking()
             .Where(i => i.Type == this.GetType().Name)
             .ToListAsync();
 
-        await dbContext.IndexMappings.AddRangeAsync(created.Except(mappings));
+        var existingKeys = mappings
+            .Select(i => (i.FromId, i.ToId, i.Type))
+            .ToHashSet();
+        var newMappings = created
+            .Where(i => !existingKeys.Contains((i.FromId, i.ToId, i.Type)))
+            .ToList();
+
+        // A failed SaveChanges can leave tracked entries behind. Each sync owns
+        // only its mapping writes, so clear stale tracking before the next batch.
+        dbContext.ChangeTracker.Clear();
+        await dbContext.IndexMappings.AddRangeAsync(newMappings);
         await dbContext.SaveChangesAsync();
     }
 

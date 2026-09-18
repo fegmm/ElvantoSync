@@ -30,31 +30,18 @@ class DepartementsToGroupMemberSync(
         var groupNameToGroup = groups.ToDictionary(i => i.Name);
 
         return people
-            .Where(i => i.Departments != null)
-            .SelectMany(person => person.Departments.Department
-                .SelectMany(department => department.SubDepartments.SubDepartment
-                    .SelectMany(sub => sub.Positions.Position.Select(pos => (person, pos.Name)))
-                    .Concat(department.SubDepartments.SubDepartment.Select(sub => (person, sub.Name)))
-                )
-                .Concat(person.Departments.Department.Select(department => (person, department.Name)))
-            )
+            .SelectMany(person => GetDepartmentNames(person).Select(name => (person, name)))
             .Distinct()
-            .Where(i => groups.Any(j => j.Name == i.Name))
-            .Select(i => (i.person, groupNameToGroup[i.Name]));
+            .Where(i => groups.Any(j => j.Name == i.name))
+            .Select(i => (i.person, groupNameToGroup[i.name]));
     }
 
     public override async Task<IEnumerable<(GroupMember member, Group group)>> GetToAsync()
     {
-        var departments = new HashSet<string>((await elvanto.PeopleGetAllAsync(new() { Fields = [PersonAdditionalFields.Departments] }))
-            .Where(i => i.Departments != null)
-            .SelectMany(person => person.Departments.Department
-                .SelectMany(department => department.SubDepartments.SubDepartment
-                    .SelectMany(sub => sub.Positions.Position.Select(pos => pos.Name))
-                    .Concat(department.SubDepartments.SubDepartment.Select(sub => sub.Name))
-                )
-                .Concat(person.Departments.Department.Select(department => department.Name))
-            )
-            .Distinct());
+        var departments = new HashSet<string>(
+            (await elvanto.PeopleGetAllAsync(new() { Fields = [PersonAdditionalFields.Departments] }))
+                .SelectMany(GetDepartmentNames)
+                .Distinct());
 
         var response = await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People] });
         return response
@@ -73,4 +60,46 @@ class DepartementsToGroupMemberSync(
 
     protected override async Task RemoveAdditional((GroupMember member, Group group) additional) 
         => await elvanto.GroupsRemovePersonAsync(additional.group.Id, additional.member.Id);
+
+    private static IEnumerable<string> GetDepartmentNames(Person person)
+    {
+        foreach (var department in person.Departments?.Department ?? [])
+        {
+            if (department == null)
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(department.Name))
+            {
+                yield return department.Name;
+            }
+
+            foreach (var subDepartment in department.SubDepartments?.SubDepartment ?? [])
+            {
+                if (subDepartment == null)
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(subDepartment.Name))
+                {
+                    yield return subDepartment.Name;
+                }
+
+                foreach (var position in subDepartment.Positions?.Position ?? [])
+                {
+                    if (position == null)
+                    {
+                        continue;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(position.Name))
+                    {
+                        yield return position.Name;
+                    }
+                }
+            }
+        }
+    }
 }
