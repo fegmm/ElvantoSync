@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
 using Nextcloud.Models.Circles;
 using Nextcloud.Models.Collectives;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -42,6 +43,11 @@ class GroupsToCollectivesSync(
     protected override async Task<string> AddMissing(Group group)
     {
         string nextcloudGroupId = dbContext.ElvantoToNextcloudGroupId(group.Id);
+        if (string.IsNullOrWhiteSpace(nextcloudGroupId))
+        {
+            throw new InvalidOperationException(
+                $"Cannot synchronize collective '{group.Name}' ({group.Id}) because its Nextcloud group mapping does not exist.");
+        }
 
         var createdCollective = await collectivesRepo.CreateCollective(SanitizeName(group.Name));
         try
