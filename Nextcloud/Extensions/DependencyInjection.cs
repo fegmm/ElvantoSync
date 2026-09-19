@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Nextcloud.Clients;
 using Nextcloud.Interfaces;
 using NextcloudApi;
+using Microsoft.Extensions.Http.Resilience;
 using Polly;
 using System.Net;
 using System.Net.Http.Headers;
@@ -46,11 +47,15 @@ public static class DependencyInjection
         {
             UseCookies = true,
         });
-        client.AddResilienceHandler("rate-limit-1", i => i.AddConcurrencyLimiter(new ConcurrencyLimiterOptions()
+        client.AddResilienceHandler("rate-limit-1", i =>
         {
-            PermitLimit = 1,
-            QueueLimit = 10000,
-        }));
+            i.AddRetry(CreateRetryOptions());
+            i.AddConcurrencyLimiter(new ConcurrencyLimiterOptions()
+            {
+                PermitLimit = 1,
+                QueueLimit = 10000,
+            });
+        });
 
         client = services.AddHttpClient<INextcloudDeckClient, NextcloudDeckClient>(i =>
         {
@@ -112,12 +117,23 @@ public static class DependencyInjection
 
     private static void GetRateLimiter(ResiliencePipelineBuilder<HttpResponseMessage> builder)
     {
+        builder.AddRetry(CreateRetryOptions());
         builder.AddConcurrencyLimiter(new ConcurrencyLimiterOptions()
         {
             PermitLimit = 5,
             QueueLimit = 10000,
         });
     }
+
+    private static HttpRetryStrategyOptions CreateRetryOptions() => new()
+    {
+        MaxRetryAttempts = 3,
+        BackoffType = DelayBackoffType.Exponential,
+        Delay = TimeSpan.FromSeconds(2),
+        MaxDelay = TimeSpan.FromSeconds(30),
+        UseJitter = true,
+        ShouldRetryAfterHeader = true,
+    };
 
     private static NextcloudApi.Api GetNextCloudApi(string username, string password, string nextcloudUrl)
     {

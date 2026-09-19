@@ -58,10 +58,18 @@ public class PeopleToNextcloudSync(
 
     protected override async Task UpdateMatch(Person person, User user)
     {
+        var newDisplayName = GetDisplayName(person) == user.DisplayName ? null : GetDisplayName(person);
+        var newEmail = person.Email?.ToLower() == user.Email?.ToLower() ? null : person.Email;
+
+        if (newDisplayName == null && newEmail == null)
+        {
+            return;
+        }
+
         var request = new EditUserRequest()
         {
-            DisplayName = GetDisplayName(person) == user.DisplayName ? null : GetDisplayName(person),
-            Email = person.Email?.ToLower() == user.Email?.ToLower() ? null : user.Email,
+            DisplayName = newDisplayName,
+            Email = newEmail,
         };
         await provisioningClient.EditUser(user.Id, request);
     }

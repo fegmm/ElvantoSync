@@ -1,4 +1,5 @@
 using ElvantoSync.ElvantoService;
+using ElvantoSync.Infrastructure.Http;
 using ElvantoSync.Settings;
 using KasApi;
 using Microsoft.EntityFrameworkCore;
@@ -41,6 +42,7 @@ builder.Services
         config.BaseUrl = appSettings.ChurchToolsUrl;
         config.ApiToken = appSettings.ChurchToolsToken;
     })
+    .AddHttpErrorBodyLogging()
     .AddSyncs();
 
 if (builder.Environment.IsDevelopment())
