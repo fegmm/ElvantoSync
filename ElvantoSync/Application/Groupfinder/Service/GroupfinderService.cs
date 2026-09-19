@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System;
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -24,7 +26,14 @@ class GroupFinderService(HttpClient client, ILogger<GroupFinderService> logger) 
 
     public async Task DeleteGroupAsync(string GroupId, CancellationToken cancellationToken = default)
     {
-        var response = await client.DeleteAsync($"/index.php/apps/app_api/proxy/group-finder/group/" + GroupId);
+        var encodedGroupId = Uri.EscapeDataString(GroupId);
+        var response = await client.DeleteAsync($"/index.php/apps/app_api/proxy/group-finder/group/{encodedGroupId}", cancellationToken);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            // The desired state is already reached. This also allows the
+            // caller to remove its stale local mapping.
+            return;
+        }
         response.EnsureSuccessStatusCode();
     }
 

@@ -117,6 +117,16 @@ public static class DependencyInjection
 
     private static void GetRateLimiter(ResiliencePipelineBuilder<HttpResponseMessage> builder)
     {
+        // Nextcloud's provisioning endpoints reject sustained request bursts
+        // even when requests are serialized by the sync. Limit the request
+        // rate in addition to limiting concurrent requests.
+        builder.AddRateLimiter(new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 1,
+            Window = TimeSpan.FromMilliseconds(250),
+            QueueLimit = 10000,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+        }));
         builder.AddRetry(CreateRetryOptions());
         builder.AddConcurrencyLimiter(new ConcurrencyLimiterOptions()
         {

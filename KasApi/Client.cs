@@ -2,6 +2,7 @@
 using KasApi.Response;
 using ServiceReference1;
 using System.Collections.Concurrent;
+using System.ServiceModel;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -39,10 +40,6 @@ namespace KasApi
 
             try
             {
-                var wait_time = this.nextCallPossible.GetValueOrDefault(request.kas_action, DateTime.Now) - DateTime.Now;
-                if (wait_time.TotalMilliseconds > 0)
-                    await Task.Delay(wait_time);
-
                 object? parse_xml_to_objects(XElement i, bool sub_value = true)
                 {
                     var reference = (sub_value ? i.Element("value") : i);
@@ -61,24 +58,43 @@ namespace KasApi
                 }
 
                 var request_json = Newtonsoft.Json.JsonConvert.SerializeObject(request);
-                var response = await this.client.KasApiAsync(request_json);
-                var response_xml = response.Return as XmlNode[];
-                if (response_xml == null) return null;
+                for (var attempt = 0; ; attempt++)
+                {
+                    if (attempt == 5)
+                    {
+                        throw new Exception($"KasApi: Too many attempts to execute request {request.kas_action}");
+                    }
+                    
+                    var wait_time = this.nextCallPossible.GetValueOrDefault(request.kas_action, DateTime.Now) - DateTime.Now;
+                    if (wait_time.TotalMilliseconds > 0)
+                        await Task.Delay(wait_time);
 
-                var response_doc = XDocument.Load(new XmlNodeReader(response_xml[response_xml.Length - 1]));
+                    try
+                    {
+                        var response = await this.client.KasApiAsync(request_json);
+                        var response_xml = response.Return as XmlNode[];
+                        if (response_xml == null) return null;
 
-                XElement? item = response_doc.Element("item");
-                if (item == null) return null;
-                var result = parse_xml_to_objects(item) as Dictionary<string, object>;
-                if (result == null) return null;
-                this.nextCallPossible[request.kas_action] = DateTime.Now.AddSeconds(int.Parse((string)result.GetValueOrDefault("KasFloodDelay", "0")));
-                return result["ReturnInfo"];
+                        var response_doc = XDocument.Load(new XmlNodeReader(response_xml[response_xml.Length - 1]));
+
+                        XElement? item = response_doc.Element("item");
+                        if (item == null) return null;
+                        var result = parse_xml_to_objects(item) as Dictionary<string, object>;
+                        if (result == null) return null;
+                        this.nextCallPossible[request.kas_action] = DateTime.Now.AddSeconds(int.Parse((string)result.GetValueOrDefault("KasFloodDelay", "0")));
+                        return result["ReturnInfo"];
+                    }
+                    catch (FaultException ex) when (ex.Message.Contains("flood_protection", StringComparison.OrdinalIgnoreCase) && attempt < 3)
+                    {
+                        // A flood fault does not include the normal KasFloodDelay
+                        // value. Reserve a conservative retry slot so the next
+                        // request for this action does not immediately fail too.
+                        var retryDelay = TimeSpan.FromSeconds(5 * (attempt + 1));
+                        this.nextCallPossible[request.kas_action] = DateTime.Now.Add(retryDelay);
+                    }
+                }
             }
-            catch (Exception)
-            {
-                throw;
-            }
-            finally {
+             finally {
                 this.semaphores[request.kas_action].Release();
             }
         }
