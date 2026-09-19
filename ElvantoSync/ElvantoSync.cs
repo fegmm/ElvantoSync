@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace ElvantoSync;
 
+[DisallowConcurrentExecution]
 internal class ElvantoSync(IEnumerable<ISync> syncs, ILogger<ElvantoSync> logger) : IJob
 {
     public async Task Execute(IJobExecutionContext context)

@@ -21,7 +21,7 @@ public sealed class HttpErrorBodyLoggingHandler(
     {
         var response = await base.SendAsync(request, cancellationToken);
 
-        if ((int)response.StatusCode is >= 400 and < 500)
+        if ((int)response.StatusCode >= 400)
         {
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
             if (body.Length > MaxLoggedBodyLength)

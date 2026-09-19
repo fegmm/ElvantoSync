@@ -10,17 +10,21 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using WebDav;
 
 namespace ElvantoSync.AllInkl;
 
 internal class GroupsToEmailSync(
     IElvantoClient elvanto,
     NextcloudApi.Api nextcloud,
+    WebDavClient nextcloudWebDav,
     KasApi.IKasClient kas,
     DbContext dbContext,
     IOptions<GroupsToEmailSyncSettings> settings,
@@ -105,7 +109,13 @@ internal class GroupsToEmailSync(
         using var stream = new MemoryStream();
         document.GeneratePdf(stream);
         stream.Position = 0;
-        await NextcloudApi.CloudFile.Upload(nextcloud, $"{nextcloud.Settings.Username}/{path}", stream);
+        using var content = new ByteArrayContent(stream.ToArray());
+        var uploadPath = $"remote.php/dav/files/{nextcloud.Settings.Username}/{path}";
+        var response = await nextcloudWebDav.PutFile(uploadPath, content);
+        if (!response.IsSuccessful)
+        {
+            throw new IOException($"PDF upload returned {response.StatusCode}: {response.Description}");
+        }
     }
 
     protected async override Task<string> AddMissing(Group group)

@@ -29,7 +29,7 @@ public class GroupsToNextcloudSync(
     public override string FromKeySelector(ElvantoGroup i) => i.Id;
     public override string ToKeySelector(NextcloudGroup i) => i.Id;
     public override string FallbackFromKeySelector(ElvantoGroup i) => i.Name;
-    public override string FallbackToKeySelector(NextcloudGroup i) => i.Id;
+    public override string FallbackToKeySelector(NextcloudGroup i) => i.DisplayName;
 
     public override async Task<IEnumerable<ElvantoGroup>> GetFromAsync()
         => (await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People] }))
@@ -46,9 +46,9 @@ public class GroupsToNextcloudSync(
 
         try
         {
-            await provisioningClient.CreateGroup(group.Id + settings.Value.GroupLeaderSuffix, group.Name + settings.Value.GroupLeaderSuffix);
-            await UpdateMembersOfGroup(group.People.Person, group.Id);
-            await UpdateMembersOfGroup(group.People.Person.Where(IsLeader), group.Id + settings.Value.GroupLeaderSuffix);
+        await provisioningClient.CreateGroup(group.Id + settings.Value.GroupLeaderSuffix, group.Name + settings.Value.GroupLeaderSuffix);
+        await UpdateMembersOfGroup(group.People.Person, group.Id);
+        await UpdateMembersOfGroup(group.People.Person.Where(IsLeader), group.Id + settings.Value.GroupLeaderSuffix);
         }
         catch { } // Ignore errors, as the group will be updated in the next sync and no rollback is needed
 

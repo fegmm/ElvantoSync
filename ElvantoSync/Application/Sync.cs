@@ -254,25 +254,51 @@ public abstract class Sync<TFrom, TTo>(Persistence.DbContext dbContext, IOptions
 
     private async Task<CompareResult<TFrom, TTo>> RunComparisonWithMappings(List<TFrom> from, List<TTo> to)
     {
-        // Initial state
-        IEnumerable<TFrom> additionals = from;
-        IEnumerable<TTo> missings = to;
-        IEnumerable<(TFrom, TTo)> matches = [];
-
         // Convert from to use stored ToIds
         Dictionary<string, TFrom> fromDict = from.ToDictionary(FromKeySelector);
         Dictionary<string, TFrom> mappedFrom = await dbContext.IndexMappings
             .Where(i => i.Type == this.GetType().Name && fromDict.Keys.Contains(i.FromId))
             .ToDictionaryAsync(i => i.ToId, i => fromDict[i.FromId]);
 
-        // Run comparison
+        // First honor explicit mappings. These are authoritative when both
+        // sides are still present.
         var mappedComp = mappedFrom.CompareTo(to, i => i.Key, ToKeySelector);
         var matchedAdditionals = mappedComp.matches.Select(i => i.Item1.Value).ToHashSet();
         var matchedMissings = mappedComp.matches.Select(i => i.Item2).ToHashSet();
 
-        additionals = additionals.Where(i => !matchedAdditionals.Contains(i)).ToList();
-        missings = missings.Where(i => !matchedMissings.Contains(i)).ToList();
-        matches = mappedComp.matches.Select(i => (i.Item1.Value, i.Item2));
+        var remainingFrom = from.Where(i => !matchedAdditionals.Contains(i)).ToList();
+        var remainingTo = to.Where(i => !matchedMissings.Contains(i)).ToList();
+
+        // Mappings can be lost while the remote object survives (for
+        // example after restoring the SQLite database). Recover those links
+        // using the same guarded fallback comparison used for first syncs.
+        (remainingFrom, remainingTo) = FilterDuplicateFallbackIds(remainingFrom, remainingTo);
+        var fallbackComp = remainingFrom.CompareTo(remainingTo, FallbackFromKeySelector, FallbackToKeySelector);
+
+        var matches = mappedComp.matches
+            .Select(i => (i.Item1.Value, i.Item2))
+            .Concat(fallbackComp.matches)
+            .ToList();
+
+        var additionals = remainingFrom
+            .Where(i => !fallbackComp.matches.Any(m => EqualityComparer<TFrom>.Default.Equals(m.Item1, i)))
+            .ToList();
+        var missings = remainingTo
+            .Where(i => !fallbackComp.matches.Any(m => EqualityComparer<TTo>.Default.Equals(m.Item2, i)))
+            .ToList();
+
+        // Persist mappings recovered through fallback matching immediately so
+        // dependent syncs can use them during the same job.
+        var recoveredMappings = fallbackComp.matches.Select(i => new IndexMapping()
+        {
+            FromId = FromKeySelector(i.Item1),
+            ToId = ToKeySelector(i.Item2),
+            Type = this.GetType().Name
+        }).Where(i => !dbContext.IndexMappings.Any(m =>
+            m.FromId == i.FromId && m.ToId == i.ToId && m.Type == i.Type));
+
+        await dbContext.IndexMappings.AddRangeAsync(recoveredMappings);
+        await dbContext.SaveChangesAsync();
 
         return new CompareResult<TFrom, TTo>(additionals, matches, missings);
     }
