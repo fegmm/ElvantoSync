@@ -1,8 +1,8 @@
-using ElvantoSync.ElvantoService;
+using ElvantoSync.ChurchTools;
 using ElvantoSync.Exceptions;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
-using Fegmm.Elvanto.Models;
+using ElvantoSync.ChurchTools.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 namespace ElvantoSync.Nextcloud;
 
 public class PeopleToNextcloudSync(
-    IElvantoClient elvanto,
+    IChurchToolsSource churchTools,
     INextcloudProvisioningClient provisioningClient,
     DbContext dbContext,
     IOptions<PeopleToNextcloudSyncSettings> settings,
@@ -27,8 +27,12 @@ public class PeopleToNextcloudSync(
     public override string FallbackFromKeySelector(Person i) => settings.Value.IdPrefix + i.Id.ToString();
     public override string FallbackToKeySelector(User i) => i.Id.ToString();
 
-    public override async Task<IEnumerable<Person>> GetFromAsync() =>
-        await elvanto.PeopleGetAllAsync(new());
+    public override async Task<IEnumerable<Person>> GetFromAsync()
+    {
+        var people = await churchTools.GetPeopleAsync();
+        var includedAreaIds = settings.Value.IncludedAreaIds;
+        return people.Where(person => includedAreaIds.Count == 0 || person.AreaIds.Any(includedAreaIds.Contains));
+    }
 
     public override async Task<IEnumerable<User>> GetToAsync()
     {
@@ -74,5 +78,5 @@ public class PeopleToNextcloudSync(
         await provisioningClient.EditUser(user.Id, request);
     }
 
-    private static string GetDisplayName(Person i) => $"{i.Lastname}, {i.Firstname}";
+    private static string GetDisplayName(Person i) => $"{i.LastName}, {i.FirstName}";
 }

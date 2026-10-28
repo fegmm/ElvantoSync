@@ -1,12 +1,12 @@
-using ElvantoSync.ElvantoService;
+using ElvantoSync.ChurchTools;
 using ElvantoSync.Infrastructure.Nextcloud;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
-using Fegmm.Elvanto.Groups.GetAllJson;
-using Fegmm.Elvanto.Models;
+using ElvantoSync.ChurchTools.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nextcloud.Models.Talk;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace ElvantoSync.Nextcloud;
 
 class GroupsToTalkSync(
-    IElvantoClient elvanto,
+    IChurchToolsSource churchTools,
     INextcloudTalkClient talkClient,
     DbContext dbContext,
     IOptions<GroupsToTalkSyncSettings> settings,
@@ -27,15 +27,15 @@ class GroupsToTalkSync(
     public override string FallbackToKeySelector(Conversation i) => i.Name;
 
     public override async Task<IEnumerable<Group>> GetFromAsync() =>
-        (await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People] }))
-           .Where(i => i.People?.Person?.Any() ?? false);
+        (await churchTools.GetGroupsAsync())
+           .Where(i => i.Members.Any());
 
     public override async Task<IEnumerable<Conversation>> GetToAsync() =>
         await talkClient.GetConversations();
 
     protected override async Task<string> AddMissing(Group group)
     {
-        string nextcloudGroupId = dbContext.ElvantoToNextcloudGroupId(group.Id);
+        string nextcloudGroupId = dbContext.ChurchToolsToNextcloudGroupId(group.Id);
 
         var createdConvo = await talkClient.CreateConversation(2, nextcloudGroupId, "groups", group.Name);
         try
@@ -59,8 +59,8 @@ class GroupsToTalkSync(
 
         var participants = await talkClient.GetListOfParticipants(to.Token);
         
-        var leaderIds = from.People.Person.Where(GroupsToNextcloudSync.IsLeader)
-            .Select(i => dbContext.ElvantoToNextcloudPeopleId(i.Id))
+        var leaderIds = from.Members.Where(GroupsToNextcloudSync.IsLeader)
+            .Select(i => dbContext.ChurchToolsToNextcloudPeopleId(i.Id))
             .ToHashSet();
         var leaderAttendeeIds = participants.Where(i => leaderIds.Contains(i.ActorId))
             .Select(i => i.AttendeeId);

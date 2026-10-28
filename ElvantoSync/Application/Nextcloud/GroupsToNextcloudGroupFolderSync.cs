@@ -1,10 +1,9 @@
 using ElvantoSync;
-using ElvantoSync.ElvantoService;
+using ElvantoSync.ChurchTools;
 using ElvantoSync.Exceptions;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
-using Fegmm.Elvanto.Groups.GetAllJson;
-using Fegmm.Elvanto.Models;
+using ElvantoSync.ChurchTools.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
@@ -15,7 +14,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 class GroupsToNextcloudGroupFolderSync(
-    IElvantoClient elvanto,
+    IChurchToolsSource churchTools,
     INextcloudGroupFolderClient groupFolderClient,
     DbContext dbContext,
     IOptions<GroupsToNextcloudGroupFolderSyncSettings> settings,
@@ -29,8 +28,8 @@ class GroupsToNextcloudGroupFolderSync(
     public override string FallbackToKeySelector(GroupFolder i) => i.MountPoint;
 
     public override async Task<IEnumerable<Group>> GetFromAsync()
-        => (await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People] }))
-            .Where(i => i.People?.Person?.Any() ?? false);
+        => (await churchTools.GetGroupsAsync())
+            .Where(i => i.Members.Any());
 
     public override async Task<IEnumerable<GroupFolder>> GetToAsync()
         => await groupFolderClient.GetGroupFolders();
@@ -98,7 +97,7 @@ class GroupsToNextcloudGroupFolderSync(
 
     private string GetNextcloudGroupId(Group group)
     {
-        var nextcloudGroupId = dbContext.ElvantoToNextcloudGroupId(group.Id);
+        var nextcloudGroupId = dbContext.ChurchToolsToNextcloudGroupId(group.Id);
         if (string.IsNullOrWhiteSpace(nextcloudGroupId))
         {
             throw new InvalidOperationException(

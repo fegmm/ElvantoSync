@@ -1,8 +1,11 @@
-﻿namespace ElvantoSync.Settings.Nextcloud;
+﻿using System.Collections.Generic;
+
+namespace ElvantoSync.Settings.Nextcloud;
 
 public record PeopleToNextcloudSyncSettings : SyncSettings
 {
     internal const string ConfigSection = "Sync:Nextcloud:PeopleToNextcloudSync";
     public string IdPrefix { get; init; } = "Elvanto-";
     public string Quoata { get; init; } = "1 GB";
+    public ICollection<int> IncludedAreaIds { get; init; } = [];
 }

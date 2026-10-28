@@ -1,9 +1,8 @@
-﻿using ElvantoSync.ElvantoService;
+using ElvantoSync.ChurchTools;
 using ElvantoSync.Extensions;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.AllInkl;
-using Fegmm.Elvanto.Groups.GetAllJson;
-using Fegmm.Elvanto.Models;
+using ElvantoSync.ChurchTools.Models;
 using KasApi.Requests;
 using KasApi.Response;
 using Microsoft.Extensions.Logging;
@@ -22,7 +21,7 @@ using WebDav;
 namespace ElvantoSync.AllInkl;
 
 internal class GroupsToEmailSync(
-    IElvantoClient elvanto,
+    IChurchToolsSource churchTools,
     NextcloudApi.Api nextcloud,
     WebDavClient nextcloudWebDav,
     KasApi.IKasClient kas,
@@ -31,28 +30,28 @@ internal class GroupsToEmailSync(
     ILogger<GroupsToEmailSync> logger
 ) : Sync<Group, MailForward>(dbContext, settings, logger)
 {
-    public override string FromKeySelector(Group i) => i.Name;
+    public override string FromKeySelector(Group i) => i.Id;
     public override string ToKeySelector(MailForward i) => i.MailForwardAdress;
     public override string FallbackFromKeySelector(Group i) => SanitizeName(i.Name);
     public override string FallbackToKeySelector(MailForward i) => i.MailForwardAdress.Split('@')[0];
 
     public override async Task<IEnumerable<Group>> GetFromAsync() =>
-        (await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People] }))
-            .Where(i => i.People?.Person?.Any() ?? false);
+        (await churchTools.GetGroupsAsync())
+            .Where(i => i.Members.Any());
 
     public override async Task<IEnumerable<MailForward>> GetToAsync()
         => (await kas.GetMailforwardsAsync()).Where(i => i.MailForwardAdress.Split("@")[1] == settings.Value.KASDomain);
 
     protected override async Task UpdateMatch(Group group, MailForward mail)
     {
-        var compare = group.People.Person
+        var compare = group.Members
             .DistinctBy(i => i.Email)
             .Where(i => !string.IsNullOrEmpty(i.Email))
             .CompareTo(mail.MailForwardTargets, i => i.Email, j => j);
 
         if (compare.additional.Any() || compare.missing.Any())
         {
-            var mails = group.People.Person.Select(i => i.Email)
+            var mails = group.Members.Select(i => i.Email)
                 .Distinct()
                 .Where(i => !string.IsNullOrEmpty(i))
                 .ToArray();
@@ -121,7 +120,7 @@ internal class GroupsToEmailSync(
     protected async override Task<string> AddMissing(Group group)
     {
         string sanitizedGroupName = SanitizeName(group.Name);
-        string[] targets = group.People.Person
+        string[] targets = group.Members
                             .Select(i => i.Email)
                             .Distinct()
                             .Where(i => !string.IsNullOrEmpty(i))

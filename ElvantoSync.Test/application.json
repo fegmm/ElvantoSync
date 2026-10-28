@@ -1,49 +1,45 @@
 {
-    "Application": {
-      "ConnectionString": "Data Source=Test.db",
-      "ElvantoKey": "ThisIsFake",
-      "KASLogin": "",
-      "KASAuthData": "",
-      "NextcloudServer": "http://nextcloud.local:8080",
-      "NextcloudUser": "admin",
-      "NextcloudPassword": "admin"
+  "Application": {
+    "ConnectionString": "Data Source=Test.db",
+    "KASLogin": "",
+    "KASAuthData": "",
+    "NextcloudServer": "http://nextcloud.local:8080",
+    "NextcloudUser": "admin",
+    "NextcloudPassword": "admin",
+    "ChurchToolsUrl": "https://demo.church.tools.example.org/api",
+    "ChurchToolsToken": "ThisIsFake"
+  },
+  "Sync": {
+    "AllInkl": {
+      "GroupsToEmailSync": {
+        "LogOnly": true,
+        "KASDomain": "sync.example.org",
+        "UploadGroupMailAddressesToNextcloudPath": "Documents/Gruppen-Mail-Adressen.pdf"
+      }
     },
-    "Sync": {
-      "AllInkl": {
-        "GroupsToEmailSync": {
-          "LogOnly": true,
-          "KASDomain": "sync.example.org",
-          "UploadGroupMailAddressesToNextcloudPath": "Documents/Gruppen-Mail-Adressen.pdf"
-        }
+    "Nextcloud": {
+      "GroupsToCollectiveSync": {
+        "LogOnly": true
       },
-      "Elvanto": {
-        "DepartementsToGroupMemberSync": {
-          "LogOnly": true
-        }
+      "GroupsToDeckSync": {
+        "LogOnly": true
       },
-      "Nextcloud": {
-        "GroupsToCollectiveSync": {
-          "LogOnly": true
-        },
-        "GroupsToDeckSync": {
-          "LogOnly": true
-        },
-        "GroupsToNextcloudGroupFolderSync": {
-          "LogOnly": true
-        },
-        "GroupsToNextcloudSync": {
-          "LogOnly": false,
-          "GroupLeaderSuffix": "- Leitung"
-        },
-        "GroupsToTalkSync": {
-          "LogOnly": true
-        },
-        "PeopleToContactSync": {
-          "LogOnly": true
-        },
-        "PeopleToNextcloudSync": {
-          "LogOnly": false
-        }
+      "GroupsToNextcloudGroupFolderSync": {
+        "LogOnly": true
+      },
+      "GroupsToNextcloudSync": {
+        "LogOnly": false,
+        "GroupLeaderSuffix": "- Leitung"
+      },
+      "GroupsToTalkSync": {
+        "LogOnly": true
+      },
+      "PeopleToContactSync": {
+        "LogOnly": true
+      },
+      "PeopleToNextcloudSync": {
+        "LogOnly": false
       }
     }
   }
+}

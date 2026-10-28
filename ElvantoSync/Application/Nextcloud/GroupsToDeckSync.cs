@@ -1,8 +1,7 @@
-using ElvantoSync.ElvantoService;
+using ElvantoSync.ChurchTools;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
-using Fegmm.Elvanto.Groups.GetAllJson;
-using Fegmm.Elvanto.Models;
+using ElvantoSync.ChurchTools.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
@@ -15,7 +14,7 @@ using System.Threading.Tasks;
 namespace ElvantoSync.Nextcloud;
 
 class GroupsToDeckSync(
-    IElvantoClient elvanto,
+    IChurchToolsSource churchTools,
     INextcloudDeckClient deckClient,
     DbContext dbContext,
     IOptions<GroupsToDeckSyncSettings> settings,
@@ -29,8 +28,8 @@ class GroupsToDeckSync(
     public override string FallbackToKeySelector(Board i) => i.Title;
 
     public override async Task<IEnumerable<Group>> GetFromAsync()
-        => (await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People] }))
-            .Where(i => i.People?.Person?.Any() ?? false);
+        => (await churchTools.GetGroupsAsync())
+            .Where(i => i.Members.Any());
 
     public override async Task<IEnumerable<Board>> GetToAsync()
         => await deckClient.GetBoards();

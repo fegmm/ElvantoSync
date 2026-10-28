@@ -2,7 +2,6 @@ using ElvantoSync.Nextcloud;
 using ElvantoSync.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
-using ElvantoSync.ChurchTools;
 
 namespace ElvantoSync.Persistence;
 
@@ -27,18 +26,13 @@ public class DbContext : Microsoft.EntityFrameworkCore.DbContext
             .HasIndex(i => new { i.FromId, i.Type });
     }
     
-    public string ElvantoToNextcloudGroupId(string elvantoId)
+    public string ChurchToolsToNextcloudGroupId(string churchToolsId)
         => IndexMappings
-            .FirstOrDefault(i => i.FromId == elvantoId && i.Type == nameof(GroupsToNextcloudSync))
+            .FirstOrDefault(i => i.FromId == churchToolsId && i.Type == nameof(GroupsToNextcloudSync))
             ?.ToId;
 
-    public string ElvantoToNextcloudPeopleId(string elvantoId)
+    public string ChurchToolsToNextcloudPeopleId(string churchToolsId)
         => IndexMappings
-            .FirstOrDefault(i => i.FromId == elvantoId && i.Type == nameof(PeopleToNextcloudSync))
-            ?.ToId;
-
-    public string ElvantoToChurchToolsPeopleId(string elvantoId)
-        => IndexMappings
-            .FirstOrDefault(i => i.FromId == elvantoId && i.Type == nameof(PeopleToChurchToolsSync))
+            .FirstOrDefault(i => i.FromId == churchToolsId && i.Type == nameof(PeopleToNextcloudSync))
             ?.ToId;
 }

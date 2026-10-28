@@ -1,9 +1,8 @@
-using ElvantoSync.ElvantoService;
+using ElvantoSync.ChurchTools;
 using ElvantoSync.Infrastructure.Nextcloud;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings.Nextcloud;
-using Fegmm.Elvanto.Groups.GetAllJson;
-using Fegmm.Elvanto.Models;
+using ElvantoSync.ChurchTools.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nextcloud.Interfaces;
@@ -17,7 +16,7 @@ using System.Threading.Tasks;
 namespace ElvantoSync.Nextcloud;
 
 class GroupsToCollectivesSync(
-    IElvantoClient elvanto,
+    IChurchToolsSource churchTools,
     INextcloudCollectivesClient collectivesRepo,
     INextcloudCircleClient circleRepo,
     DbContext dbContext,
@@ -34,15 +33,15 @@ class GroupsToCollectivesSync(
     private string SanitizeName(string name) => name.Replace('/', '-');
 
     public override async Task<IEnumerable<Group>> GetFromAsync()
-        => (await elvanto.GroupsGetAllAsync(new() { Fields = [GroupAdditionalFields.People] }))
-            .Where(i => i.People?.Person?.Any() ?? false);
+        => (await churchTools.GetGroupsAsync())
+            .Where(i => i.Members.Any());
 
     public override async Task<IEnumerable<Collective>> GetToAsync()
         => await collectivesRepo.GetCollectives();
 
     protected override async Task<string> AddMissing(Group group)
     {
-        string nextcloudGroupId = dbContext.ElvantoToNextcloudGroupId(group.Id);
+        string nextcloudGroupId = dbContext.ChurchToolsToNextcloudGroupId(group.Id);
         if (string.IsNullOrWhiteSpace(nextcloudGroupId))
         {
             throw new InvalidOperationException(
