@@ -45,7 +45,8 @@ source adapter, interface, and models live in
         "LogOnly": true
       },
       "PeopleToContactSync": {
-        "LogOnly": true
+        "LogOnly": true,
+        "IncludedAreaIds": []
       },
       "PeopleToNextcloudSync": {
         "LogOnly": true,
@@ -63,13 +64,15 @@ Leadership comes from ChurchTools roles with `isLeader = true`. As before, only
 groups with members are synchronized. Group email targets come from the persons'
 ChurchTools email addresses.
 
-Set `Sync:Nextcloud:PeopleToNextcloudSync:IncludedAreaIds` to ChurchTools person
-area IDs, for example `[1, 3]`, to synchronize Nextcloud accounts only for people
+Set `Sync:Nextcloud:PeopleToNextcloudSync:IncludedAreaIds` for account provisioning
+and `Sync:Nextcloud:PeopleToContactSync:IncludedAreaIds` for contacts. Each setting
+accepts ChurchTools person area IDs, for example `[1, 3]`, and includes people
 in at least one of those areas. An empty array includes all areas. The source
-reads these IDs from ChurchTools' `departmentIds` field. This filter applies to
-account provisioning; contact and group syncs keep their existing source scope.
-If `DeleteAdditionals` is enabled, managed accounts outside the selected areas
-are eligible for removal under the existing empty-account check.
+reads these IDs from ChurchTools' `departmentIds` field. The account and contact
+filters are independent; group syncs keep their existing source scope.
+If `DeleteAdditionals` is enabled for the corresponding sync, managed contacts
+and accounts outside its selected areas are eligible for removal. Accounts
+remain protected by the existing empty-account check.
 
 People sync runs before group sync and dependent Nextcloud syncs. Existing user and
 group mappings supply Nextcloud IDs for memberships, Deck boards, group folders,
@@ -85,7 +88,7 @@ and `Application:ElvantoKey` from deployment configuration.
 ## Validation
 
 ```bash
-dotnet test ElvantoSync.Test/ElvantoSync.Test.csproj --filter 'FullyQualifiedName~ChurchToolsSourceTests|FullyQualifiedName~ChurchToolsMembershipTests|FullyQualifiedName~PeopleToNextcloudAreaTests'
+dotnet test ElvantoSync.Test/ElvantoSync.Test.csproj --filter 'FullyQualifiedName~ChurchToolsSourceTests|FullyQualifiedName~ChurchToolsMembershipTests|FullyQualifiedName~PeopleToNextcloudAreaTests|FullyQualifiedName~PeopleToContactAreaTests'
 ```
 
 On Arch Linux, add `--runtime linux-x64` to the project-level .NET commands if the
