@@ -35,7 +35,11 @@ class PeopleToNextcloudContactSync(
     public override string FallbackToKeySelector(WebDavResource i) => i.Uri.Split("/")[^1];
 
     public override async Task<IEnumerable<Person>> GetFromAsync()
-        => (await churchTools.GetPeopleAsync());
+    {
+        var people = await churchTools.GetPeopleAsync();
+        var includedAreaIds = settings.Value.IncludedAreaIds;
+        return people.Where(person => includedAreaIds.Count == 0 || person.AreaIds.Any(includedAreaIds.Contains));
+    }
 
     public override async Task<IEnumerable<WebDavResource>> GetToAsync()
     {
