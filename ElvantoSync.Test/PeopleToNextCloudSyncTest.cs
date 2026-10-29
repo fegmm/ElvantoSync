@@ -1,6 +1,6 @@
-﻿using ElvantoSync.ElvantoService;
+using ElvantoSync.ChurchTools;
 using ElvantoSync.Nextcloud;
-using Fegmm.Elvanto.Models;
+using ElvantoSync.ChurchTools.Models;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -30,12 +30,12 @@ public class PeopleToNextcloudSyncTests : TestBase
     protected override void ConfigureServices(NextcloudContainer nextcloud)
     {
         base.ConfigureServices(nextcloud);
-        _elvantoClientMock = new Mock<IElvantoClient>();
-        Services.AddTransient<IElvantoClient>(x => _elvantoClientMock.Object);
+        _churchToolsSourceMock = new Mock<IChurchToolsSource>();
+        Services.AddTransient<IChurchToolsSource>(x => _churchToolsSourceMock.Object);
     }
 
     [Fact, Priority(0)]
-    public override async Task Apply_ShouldAddNewElementFromElvanto()
+    public override async Task Apply_ShouldAddNewElementFromChurchTools()
     {
 
         IEnumerable<Person> people = SetupPeopleMock();
@@ -50,8 +50,8 @@ public class PeopleToNextcloudSyncTests : TestBase
         foreach (var user in users)
         {
             user.DisplayName.Should().NotBeNullOrEmpty();
-            user.DisplayName.Should().ContainAny(people.Select(x => x.Firstname));
-            user.DisplayName.Should().ContainAny(people.Select(x => x.Lastname));
+            user.DisplayName.Should().ContainAny(people.Select(x => x.FirstName));
+            user.DisplayName.Should().ContainAny(people.Select(x => x.LastName));
             user.Email.Should().NotBeNullOrEmpty();
             user.Email.Should().ContainAny(people.Select(x => x.Email));
         }

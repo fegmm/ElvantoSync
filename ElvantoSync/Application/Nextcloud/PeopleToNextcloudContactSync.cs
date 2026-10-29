@@ -1,8 +1,8 @@
-﻿using ElvantoSync.ElvantoService;
+using ElvantoSync.ChurchTools;
 using ElvantoSync.Persistence;
 using ElvantoSync.Settings;
 using ElvantoSync.Settings.Nextcloud;
-using Fegmm.Elvanto.Models;
+using ElvantoSync.ChurchTools.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MixERP.Net.VCards;
@@ -19,7 +19,7 @@ using WebDav;
 namespace ElvantoSync.Nextcloud;
 
 class PeopleToNextcloudContactSync(
-    IElvantoClient elvanto,
+    IChurchToolsSource churchTools,
     IOptions<PeopleToNextcloudSyncSettings> peopleSettings,
     IOptions<ApplicationSettings> applicationSettings,
     WebDavClient nextcloud_webdav,
@@ -35,7 +35,7 @@ class PeopleToNextcloudContactSync(
     public override string FallbackToKeySelector(WebDavResource i) => i.Uri.Split("/")[^1];
 
     public override async Task<IEnumerable<Person>> GetFromAsync()
-        => (await elvanto.PeopleGetAllAsync(new()));
+        => (await churchTools.GetPeopleAsync());
 
     public override async Task<IEnumerable<WebDavResource>> GetToAsync()
     {
@@ -73,7 +73,7 @@ class PeopleToNextcloudContactSync(
 
     protected override async Task UpdateMatch(Person person, WebDavResource vCard)
     {
-        if (person.DateModified <= vCard.LastModifiedDate)
+        if (person.LastEditedDate <= vCard.LastModifiedDate)
         {
             return;
         }
@@ -90,12 +90,12 @@ class PeopleToNextcloudContactSync(
     private async Task<VCard> PersonToVCard(Person person)
     {
         Photo photo = null;
-        if (!string.IsNullOrWhiteSpace(person.Picture))
+        if (!string.IsNullOrWhiteSpace(person.ImageUrl))
         {
             try
             {
-                byte[] personPhoto = await img_client.GetByteArrayAsync(person.Picture);
-                var photoExtension = Path.GetExtension(new Uri(person.Picture).AbsolutePath).TrimStart('.');
+                byte[] personPhoto = await img_client.GetByteArrayAsync(person.ImageUrl);
+                var photoExtension = Path.GetExtension(new Uri(person.ImageUrl).AbsolutePath).TrimStart('.');
                 if (personPhoto.Length > 0 && !string.IsNullOrWhiteSpace(photoExtension))
                 {
                     photo = new Photo(true, photoExtension, Convert.ToBase64String(personPhoto));
@@ -110,17 +110,16 @@ class PeopleToNextcloudContactSync(
         return new VCard()
         {
             Version = MixERP.Net.VCards.Types.VCardVersion.V4,
-            FirstName = person.Firstname,
-            LastName = person.Lastname,
-            MiddleName = person.MiddleName,
-            FormattedName = $"{person.Lastname}, {person.Firstname}",
+            FirstName = person.FirstName,
+            LastName = person.LastName,
+            FormattedName = $"{person.LastName}, {person.FirstName}",
             Emails = new[] { new Email() { EmailAddress = person.Email, Type = MixERP.Net.VCards.Types.EmailType.Smtp } },
             Telephones = (new[] {
-                            new Telephone() { Number = person.Phone, Type = MixERP.Net.VCards.Types.TelephoneType.Home},
+                            new Telephone() { Number = person.PhonePrivate, Type = MixERP.Net.VCards.Types.TelephoneType.Home},
                             new Telephone() { Number= person.Mobile, Type = MixERP.Net.VCards.Types.TelephoneType.Cell}
                     }).Where(i => !string.IsNullOrWhiteSpace(i.Number)),
             Photo = photo?.Extension != "svg" ? photo : null,
-            BirthDay = person.Birthday?.DateTime
+            BirthDay = person.Birthday
         };
     }
 }

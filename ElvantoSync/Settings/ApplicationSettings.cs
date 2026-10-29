@@ -1,4 +1,4 @@
-﻿namespace ElvantoSync.Settings;
+namespace ElvantoSync.Settings;
 
 public record ApplicationSettings
 {
@@ -6,7 +6,6 @@ public record ApplicationSettings
 
     public string CronSchedule { get; set; } = "0 0 0 1/1 * ? *";
     public string ConnectionString { get; set; } = "Data Source=ElvantoSync.db";
-    public string ElvantoKey { get; init; }
     public string KASLogin { get; init; }
     public string KASAuthData { get; init; }
     public string NextcloudServer { get; init; }

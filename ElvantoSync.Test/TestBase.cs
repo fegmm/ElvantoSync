@@ -1,5 +1,4 @@
-﻿using Fegmm.Elvanto.Models;
-using Fegmm.Elvanto.Groups.GetAllJson;
+using ElvantoSync.ChurchTools.Models;
 using ElvantoSync.Settings;
 using KasApi;
 using Microsoft.EntityFrameworkCore;
@@ -14,12 +13,12 @@ namespace ElvantoSync.Tests;
 
 public abstract class TestBase : IAsyncLifetime
 {
-    public abstract Task Apply_ShouldAddNewElementFromElvanto();
+    public abstract Task Apply_ShouldAddNewElementFromChurchTools();
     public abstract Task Apply_ShouldNotAddIfNoNewElement();
 
     protected ApplicationSettings Settings;
     private readonly NextcloudContainer nextcloud;
-    protected Mock<ElvantoService.IElvantoClient> _elvantoClientMock;
+    protected Mock<ChurchTools.IChurchToolsSource> _churchToolsSourceMock;
     protected IServiceCollection Services { get; private set; }
     private bool _disposed = false;
     public TestBase()
@@ -44,15 +43,15 @@ public abstract class TestBase : IAsyncLifetime
     protected IEnumerable<Person> SetupPeopleMock()
     {
         IEnumerable<Person> people = [
-            new Person { Id = "3", Firstname = "Alex", Lastname = "Johnson", Email = "alexj@example.com" },
-            new Person { Id = "4", Firstname = "Chris", Lastname = "Smith", Email = "chriss@example.net" },
-            new Person { Id = "5", Firstname = "Jordan", Lastname = "Brown", Email = "jordanb@example.org" },
-            new Person { Id = "6", Firstname = "Jamie", Lastname = "Lee", Email = "jamiel@example.com" },
-            new Person { Id = "7", Firstname = "Casey", Lastname = "Kim", Email = "caseyk@example.net" },
+            new Person { Id = "3", FirstName = "Alex", LastName = "Johnson", Email = "alexj@example.com" },
+            new Person { Id = "4", FirstName = "Chris", LastName = "Smith", Email = "chriss@example.net" },
+            new Person { Id = "5", FirstName = "Jordan", LastName = "Brown", Email = "jordanb@example.org" },
+            new Person { Id = "6", FirstName = "Jamie", LastName = "Lee", Email = "jamiel@example.com" },
+            new Person { Id = "7", FirstName = "Casey", LastName = "Kim", Email = "caseyk@example.net" },
         ];
 
-        _elvantoClientMock
-            .Setup(x => x.PeopleGetAllAsync(It.IsAny<Fegmm.Elvanto.People.GetAllJson.GetAllPostRequestBody>()))
+        _churchToolsSourceMock
+            .Setup(x => x.GetPeopleAsync())
             .ReturnsAsync(people);
 
         return people;
@@ -60,24 +59,19 @@ public abstract class TestBase : IAsyncLifetime
 
     protected IEnumerable<Group> SetupGroupMock(Person[] person)
     {
-        GroupMembers groupMembers = new GroupMembers
+        var groupMembers = person.Take(2).Select(x => new GroupMember
         {
-            Person = person.Select(x => new GroupMember { Id = x.Id, Firstname = x.Firstname, Lastname = x.Lastname, Email = x.Email })
-            .Take(2)
-            .Select(x => { x.Position = GroupMemberPositions.AssistantLeader; return x; })
-            .ToList()
-        };
-
-        groupMembers.Person.Take(2).Select(x => x.Position = GroupMemberPositions.Leader);
+            Id = x.Id, Email = x.Email, IsLeader = true
+        }).ToList();
 
         IEnumerable<Group> groups = new List<Group>
         {
-            new Group { Id = "1", Name = "Group 1", People = groupMembers},
-            new Group { Id = "2", Name = "Group 2", People = groupMembers}
+            new Group { Id = "1", Name = "Group 1", Members = groupMembers},
+            new Group { Id = "2", Name = "Group 2", Members = groupMembers}
         };
 
-        _elvantoClientMock
-            .Setup(x => x.GroupsGetAllAsync(It.IsAny<GetAllPostRequestBody>()))
+        _churchToolsSourceMock
+            .Setup(x => x.GetGroupsAsync())
             .ReturnsAsync(groups);
 
         return groups;
@@ -90,7 +84,7 @@ public abstract class TestBase : IAsyncLifetime
         Services.AddDbContext<ElvantoSync.Persistence.DbContext>(options => options.UseSqlite("Data Source=ElvantoSync.db"))
                .AddOptions()
                .AddSingleton(new Mock<IKasClient>().Object)
-               .AddApplicationOptions("test", "test","http://group-finder:8080")
+               .AddApplicationOptions()
                .AddNextcloudClients(nextcloud.NextcloudUrl, "admin", "StrongPassword123!", "elvatnosync/1.0")
                .AddChurchToolsClient((config, _) =>
                 {

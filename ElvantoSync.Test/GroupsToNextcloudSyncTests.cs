@@ -1,7 +1,7 @@
-﻿using ElvantoSync.ElvantoService;
+using ElvantoSync.ChurchTools;
 using ElvantoSync.Nextcloud;
 using ElvantoSync.Settings.Nextcloud;
-using Fegmm.Elvanto.Models;
+using ElvantoSync.ChurchTools.Models;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -9,7 +9,7 @@ using Moq;
 using Nextcloud.Interfaces;
 using Nextcloud.Tests;
 using Xunit.Priority;
-using ElvantoGroup = Fegmm.Elvanto.Models.Group;
+using SourceGroup = ElvantoSync.ChurchTools.Models.Group;
 
 namespace ElvantoSync.Tests;
 [TestCaseOrderer(PriorityOrderer.Name, PriorityOrderer.Assembly)]
@@ -31,15 +31,15 @@ public class GroupsToNextcloudSyncTests : TestBase
     protected override void ConfigureServices(NextcloudContainer nextcloud)
     {
         base.ConfigureServices(nextcloud);
-        _elvantoClientMock = new Mock<IElvantoClient>();
-        Services.AddTransient<IElvantoClient>(x => _elvantoClientMock.Object);
+        _churchToolsSourceMock = new Mock<IChurchToolsSource>();
+        Services.AddTransient<IChurchToolsSource>(x => _churchToolsSourceMock.Object);
     }
 
  [Fact, Priority(0)]
-    public override async Task Apply_ShouldAddNewElementFromElvanto()
+    public override async Task Apply_ShouldAddNewElementFromChurchTools()
     {
 
-        IEnumerable<ElvantoGroup> groups =await SetupGroupsTests();
+        IEnumerable<SourceGroup> groups =await SetupGroupsTests();
         await _groupsToNextcloudSync.Apply();
         var result = await client.GetGroups();
         
@@ -54,7 +54,7 @@ public class GroupsToNextcloudSyncTests : TestBase
     public override async Task Apply_ShouldNotAddIfNoNewElement()
     {
 
-        IEnumerable<ElvantoGroup> groups = await SetupGroupsTests();
+        IEnumerable<SourceGroup> groups = await SetupGroupsTests();
         await _groupsToNextcloudSync.Apply();
         var initialApply = await client.GetGroups();
         // Act
@@ -80,7 +80,7 @@ public class GroupsToNextcloudSyncTests : TestBase
 
     private async Task<IEnumerable<Group>> SetupGroupsTests()
     {
-        IEnumerable<ElvantoGroup> groups = SetupGroupMock(SetupPeopleMock().ToArray());
+        IEnumerable<SourceGroup> groups = SetupGroupMock(SetupPeopleMock().ToArray());
         _groupsToNextcloudSync = FetchSyncImplementation<GroupsToNextcloudSync>(_serviceProvider);
         _peopleToNextcloudSync = FetchSyncImplementation<PeopleToNextcloudSync>(_serviceProvider);
         await _peopleToNextcloudSync.Apply();   

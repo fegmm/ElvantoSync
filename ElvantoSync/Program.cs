@@ -1,4 +1,4 @@
-using ElvantoSync.ElvantoService;
+using ElvantoSync.ChurchTools;
 using ElvantoSync.Infrastructure.Http;
 using ElvantoSync.Settings;
 using KasApi;
@@ -31,12 +31,9 @@ builder.Services
     .AddDbContext<ElvantoSync.Persistence.DbContext>(options => options.UseSqlite(appSettings.ConnectionString))
     .AddOptions()
     .AddSingleton<IKasClient>(kas)
-    .AddSingleton<IElvantoClient, ExternalClientWrapper>()
-    .AddApplicationOptions(appSettings.NextcloudUser, appSettings.NextcloudPassword, appSettings.NextcloudServer)
+    .AddScoped<IChurchToolsSource, ChurchToolsSource>()
+    .AddApplicationOptions()
     .AddNextcloudClients(appSettings.NextcloudServer, appSettings.NextcloudUser, appSettings.NextcloudPassword, nameof(ElvantoSync))
-    .AddElvantoClient((config, _) => {
-        config.ApiToken = appSettings.ElvantoKey;
-    })
     .AddChurchToolsClient((config, _) =>
     {
         config.BaseUrl = appSettings.ChurchToolsUrl;
