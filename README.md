@@ -76,14 +76,13 @@ remain protected by the existing empty-account check.
 
 People sync runs before group sync and dependent Nextcloud syncs. Existing user and
 group mappings supply Nextcloud IDs for memberships, Deck boards, group folders,
-Collectives, and Talk. New users use `IdPrefix + ChurchTools person ID`; new groups
-use the ChurchTools group ID. Keep the existing `PeopleToNextcloudSync.IdPrefix`
-when migrating: its default `Elvanto-` remains for compatibility with existing
-Nextcloud accounts and contact files. This prefix identifies managed target
-objects and does not select the source system. `ExcludedFromIds` now refers to
-ChurchTools IDs; update configured exclusions manually. Target exclusions stay
-unchanged. Remove obsolete `Sync:ChurchTools`, `Sync:Elvanto`, GroupFinder options,
-and `Application:ElvantoKey` from deployment configuration.
+Collectives, and Talk. New users use `IdPrefix + ChurchTools person ID` (default
+`ChurchTools-` to match Nextcloud Social Login's `ChurchTools-<id>` identifier);
+new groups use the ChurchTools group ID. Existing migrated `Elvanto-` Nextcloud
+accounts and contact files remain managed through `IndexMappings`. `ExcludedFromIds`
+now refers to ChurchTools IDs; update configured exclusions manually. Target
+exclusions stay unchanged. Remove obsolete `Sync:ChurchTools`, `Sync:Elvanto`,
+GroupFinder options, and `Application:ElvantoKey` from deployment configuration.
 
 ## Validation
 
