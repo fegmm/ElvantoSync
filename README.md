@@ -76,14 +76,40 @@ remain protected by the existing empty-account check.
 
 People sync runs before group sync and dependent Nextcloud syncs. Existing user and
 group mappings supply Nextcloud IDs for memberships, Deck boards, group folders,
-Collectives, and Talk. New users use `IdPrefix + ChurchTools person ID`; new groups
-use the ChurchTools group ID. Keep the existing `PeopleToNextcloudSync.IdPrefix`
-when migrating: its default `Elvanto-` remains for compatibility with existing
-Nextcloud accounts and contact files. This prefix identifies managed target
-objects and does not select the source system. `ExcludedFromIds` now refers to
-ChurchTools IDs; update configured exclusions manually. Target exclusions stay
-unchanged. Remove obsolete `Sync:ChurchTools`, `Sync:Elvanto`, GroupFinder options,
-and `Application:ElvantoKey` from deployment configuration.
+Collectives, and Talk. New users use `IdPrefix + ChurchTools person ID` (default
+`ChurchTools-` to match Nextcloud Social Login's `ChurchTools-<id>` identifier);
+new groups use the ChurchTools group ID. Existing migrated `Elvanto-` Nextcloud
+accounts and contact files remain managed through `IndexMappings`. `ExcludedFromIds`
+now refers to ChurchTools IDs; update configured exclusions manually. Target
+exclusions stay unchanged. Remove obsolete `Sync:ChurchTools`, `Sync:Elvanto`,
+GroupFinder options, and `Application:ElvantoKey` from deployment configuration.
+
+### One-time cleanup when upgrading the user prefix
+
+Pause synchronization while cleaning up accounts created by the previous
+ChurchTools sync with numeric IDs such as `Elvanto-42`. For affected accounts
+that never logged in and contain no data or other resources that need preserving:
+
+1. Delete the affected accounts through Nextcloud's user administration or
+   Provisioning API. Do not delete rows directly from Nextcloud's database.
+2. Remove only their `PeopleToNextcloudSync` rows from the sync database's
+   `IndexMappings` table. Deleting mappings alone leaves the old accounts behind
+   and can result in duplicate accounts.
+3. If replacing corresponding numeric contact files such as `Elvanto-42.vcf`,
+   preserve any manually maintained information, delete those files, and remove
+   their `PeopleToNextcloudContactSync` mappings. Contacts with intact mappings
+   can instead remain at their existing filenames.
+4. Remove an explicit `PeopleToNextcloudSync.IdPrefix = "Elvanto-"` override, or
+   set it to `ChurchTools-`, matching the Social Login provider name. Keep
+   `UseFallbackSync = false` for both account and contact syncs so existing
+   mappings remain authoritative.
+5. Run both syncs with `LogOnly = true` and inspect the reported changes before
+   resuming normal synchronization. Missing accounts and contacts will be
+   recreated with the `ChurchTools-` prefix.
+
+Keep migrated `Elvanto-<UUID>` accounts, contacts, and their mappings. Fallback
+matching uses only the configured prefix; it cannot recover legacy IDs if their
+mappings are missing. Retain the sync database as part of deployment backups.
 
 ## Validation
 

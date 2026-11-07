@@ -37,7 +37,7 @@ public class PeopleToNextcloudSync(
     public override async Task<IEnumerable<User>> GetToAsync()
     {
         var users = await provisioningClient.GetUsers();
-        return users.Where(i => i.Id.StartsWith(settings.Value.IdPrefix));
+        return users.Where(i => settings.Value.HasManagedPrefix(i.Id));
     }
 
     protected override async Task<string> AddMissing(Person person)

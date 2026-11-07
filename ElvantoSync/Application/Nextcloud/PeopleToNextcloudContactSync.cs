@@ -44,7 +44,7 @@ class PeopleToNextcloudContactSync(
     public override async Task<IEnumerable<WebDavResource>> GetToAsync()
     {
         var contact_response = await nextcloud_webdav.Propfind($"remote.php/dav/addressbooks/users/{applicationSettings.Value.NextcloudUser}/{settings.Value.ContactBook}/");
-        return contact_response.Resources.Where(i => ToKeySelector(i).Contains(peopleSettings.Value.IdPrefix));
+        return contact_response.Resources.Where(i => peopleSettings.Value.ContainsManagedPrefix(ToKeySelector(i)));
     }
 
     protected override async Task<string> AddMissing(Person person)
