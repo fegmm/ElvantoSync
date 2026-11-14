@@ -39,7 +39,9 @@ source adapter, interface, and models live in
       },
       "GroupsToNextcloudSync": {
         "LogOnly": true,
-        "GroupLeaderSuffix": "- Leitung"
+        "GroupLeaderSuffix": "- Leitung",
+        "ExcludedGroupTypeIds": [3],
+        "ExcludedGroupIds": []
       },
       "GroupsToTalkSync": {
         "LogOnly": true
@@ -83,6 +85,14 @@ accounts and contact files remain managed through `IndexMappings`. `ExcludedFrom
 now refers to ChurchTools IDs; update configured exclusions manually. Target
 exclusions stay unchanged. Remove obsolete `Sync:ChurchTools`, `Sync:Elvanto`,
 GroupFinder options, and `Application:ElvantoKey` from deployment configuration.
+
+Exclude ChurchTools groups centrally from Nextcloud group, folder, Deck board,
+Talk conversation, and Collective synchronization with
+`Sync:Nextcloud:GroupsToNextcloudSync:ExcludedGroupIds` as integer IDs, for
+example `[123, 456]`. To exclude a whole group type, set its ChurchTools type ID in
+`Sync:Nextcloud:GroupsToNextcloudSync:ExcludedGroupTypeIds`. If
+`DeleteAdditionals` is enabled for a sync, its existing resources for excluded
+groups are eligible for deletion (group folders are only deleted when empty).
 
 ### One-time cleanup when upgrading the user prefix
 

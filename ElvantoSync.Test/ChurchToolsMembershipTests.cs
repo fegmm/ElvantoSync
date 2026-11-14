@@ -35,7 +35,7 @@ public class ChurchToolsMembershipTests
             NullLogger<GroupsToNextcloudSync>.Instance);
         var group = new SourceGroup
         {
-            Id = "73", Name = "Example",
+            Id = 73, Name = "Example",
             Members = [new GroupMember { Id = "42", IsLeader = true }, new GroupMember { Id = "43" }],
         };
 
@@ -59,7 +59,7 @@ public class ChurchToolsMembershipTests
         client.Setup(c => c.GetMembers(It.IsAny<string>(), default)).ReturnsAsync(new[] { "legacy-user" });
         var sync = new GroupsToNextcloudSync(Mock.Of<IChurchToolsSource>(), client.Object, db,
             Options.Create(new GroupsToNextcloudSyncSettings()), NullLogger<GroupsToNextcloudSync>.Instance);
-        var group = new SourceGroup { Id = "73", Name = "Example", Members = [new GroupMember { Id = "42" }] };
+        var group = new SourceGroup { Id = 73, Name = "Example", Members = [new GroupMember { Id = "42" }] };
 
         await sync.UpdateMatches([(group, new TargetGroup { Id = "legacy-group", DisplayName = "Example", UserCount = 0, Disabled = false, CanAdd = true, CanRemove = true })]);
 

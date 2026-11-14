@@ -43,7 +43,7 @@ public class GroupsToNextcloudSyncTests : TestBase
         await _groupsToNextcloudSync.Apply();
         var result = await client.GetGroups();
         
-        groups.All(x => result.Any(y => x.Id.Equals(y.Id) && x.Name.Equals(y.DisplayName)))
+        groups.All(x => result.Any(y => x.Id.ToString() == y.Id && x.Name == y.DisplayName))
         .Should().BeTrue();
 
 
