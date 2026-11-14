@@ -26,7 +26,9 @@ public class ChurchToolsSourceTests
         Assert.Equal(new[] { "42", "43" }, people.Select(p => p.Id));
         Assert.Equal(new[] { 1, 3 }, people[0].AreaIds);
         Assert.Empty(people[1].AreaIds);
-        Assert.Equal(new[] { "73", "74" }, groups.Select(g => g.Id));
+        Assert.Equal(new[] { 73, 74 }, groups.Select(g => g.Id));
+        Assert.Equal(5, groups[0].GroupTypeId);
+        Assert.Null(groups[1].GroupTypeId);
         var leader = Assert.Single(groups[0].Members);
         Assert.Equal("42", leader.Id);
         Assert.Equal("alex@example.org", leader.Email);
@@ -75,7 +77,7 @@ public class ChurchToolsSourceTests
                     {"data":[{"id":74,"name":"Group two"}],"meta":{"pagination":{"lastPage":2}}}
                     """,
                 "/api/groups" => """
-                    {"data":[{"id":73,"name":"Group one"}],"meta":{"pagination":{"lastPage":2}}}
+                    {"data":[{"id":73,"name":"Group one","information":{"groupTypeId":5}}],"meta":{"pagination":{"lastPage":2}}}
                     """,
                 _ => throw new InvalidOperationException($"Unexpected request: {uri}"),
             };

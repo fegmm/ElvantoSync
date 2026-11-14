@@ -18,24 +18,27 @@ class GroupsToTalkSync(
     INextcloudTalkClient talkClient,
     DbContext dbContext,
     IOptions<GroupsToTalkSyncSettings> settings,
+    IOptions<GroupsToNextcloudSyncSettings> groupSettings,
     ILogger<GroupsToTalkSync> logger
 ) : Sync<Group, Conversation>(dbContext, settings, logger)
 {
-    public override string FromKeySelector(Group i) => i.Id;
+    public override string FromKeySelector(Group i) => i.Id.ToString();
     public override string ToKeySelector(Conversation i) => i.Token;
     public override string FallbackFromKeySelector(Group i) => i.Name;
     public override string FallbackToKeySelector(Conversation i) => i.Name;
 
     public override async Task<IEnumerable<Group>> GetFromAsync() =>
         (await churchTools.GetGroupsAsync())
-           .Where(i => i.Members.Any());
+           .Where(i => i.Members.Any())
+           .Where(i => !groupSettings.Value.ExcludedGroupIds.Contains(i.Id))
+           .Where(i => !i.GroupTypeId.HasValue || !groupSettings.Value.ExcludedGroupTypeIds.Contains(i.GroupTypeId.Value));
 
     public override async Task<IEnumerable<Conversation>> GetToAsync() =>
         await talkClient.GetConversations();
 
     protected override async Task<string> AddMissing(Group group)
     {
-        string nextcloudGroupId = dbContext.ChurchToolsToNextcloudGroupId(group.Id);
+        string nextcloudGroupId = dbContext.ChurchToolsToNextcloudGroupId(group.Id.ToString());
 
         var createdConvo = await talkClient.CreateConversation(2, nextcloudGroupId, "groups", group.Name);
         try
