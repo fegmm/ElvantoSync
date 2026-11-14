@@ -22,14 +22,16 @@ class GroupsToDeckSync(
     ILogger<GroupsToDeckSync> logger
 ) : Sync<Group, Board>(dbContext, settings, logger)
 {
-    public override string FromKeySelector(Group i) => i.Id;
+    public override string FromKeySelector(Group i) => i.Id.ToString();
     public override string ToKeySelector(Board i) => i.Id.ToString();
     public override string FallbackFromKeySelector(Group i) => i.Name;
     public override string FallbackToKeySelector(Board i) => i.Title;
 
     public override async Task<IEnumerable<Group>> GetFromAsync()
         => (await churchTools.GetGroupsAsync())
-            .Where(i => i.Members.Any());
+            .Where(i => i.Members.Any())
+            .Where(i => !groupSettings.Value.ExcludedGroupIds.Contains(i.Id))
+            .Where(i => !i.GroupTypeId.HasValue || !groupSettings.Value.ExcludedGroupTypeIds.Contains(i.GroupTypeId.Value));
 
     public override async Task<IEnumerable<Board>> GetToAsync()
         => await deckClient.GetBoards();

@@ -22,14 +22,16 @@ class GroupsToNextcloudGroupFolderSync(
     ILogger<GroupsToNextcloudGroupFolderSync> logger
 ) : Sync<Group, GroupFolder>(dbContext, settings, logger)
 {
-    public override string FromKeySelector(Group i) => i.Id;
+    public override string FromKeySelector(Group i) => i.Id.ToString();
     public override string ToKeySelector(GroupFolder i) => i.Id.ToString();
     public override string FallbackFromKeySelector(Group i) => i.Name;
     public override string FallbackToKeySelector(GroupFolder i) => i.MountPoint;
 
     public override async Task<IEnumerable<Group>> GetFromAsync()
         => (await churchTools.GetGroupsAsync())
-            .Where(i => i.Members.Any());
+            .Where(i => i.Members.Any())
+            .Where(i => !groupSettings.Value.ExcludedGroupIds.Contains(i.Id))
+            .Where(i => !i.GroupTypeId.HasValue || !groupSettings.Value.ExcludedGroupTypeIds.Contains(i.GroupTypeId.Value));
 
     public override async Task<IEnumerable<GroupFolder>> GetToAsync()
         => await groupFolderClient.GetGroupFolders();
@@ -97,7 +99,7 @@ class GroupsToNextcloudGroupFolderSync(
 
     private string GetNextcloudGroupId(Group group)
     {
-        var nextcloudGroupId = dbContext.ChurchToolsToNextcloudGroupId(group.Id);
+        var nextcloudGroupId = dbContext.ChurchToolsToNextcloudGroupId(group.Id.ToString());
         if (string.IsNullOrWhiteSpace(nextcloudGroupId))
         {
             throw new InvalidOperationException(

@@ -17,6 +17,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using WebDav;
+using ElvantoSync.Settings.Nextcloud;
 
 namespace ElvantoSync.AllInkl;
 
@@ -27,17 +28,20 @@ internal class GroupsToEmailSync(
     KasApi.IKasClient kas,
     DbContext dbContext,
     IOptions<GroupsToEmailSyncSettings> settings,
+    IOptions<GroupsToNextcloudSyncSettings> groupSettings,
     ILogger<GroupsToEmailSync> logger
 ) : Sync<Group, MailForward>(dbContext, settings, logger)
 {
-    public override string FromKeySelector(Group i) => i.Id;
+    public override string FromKeySelector(Group i) => i.Id.ToString();
     public override string ToKeySelector(MailForward i) => i.MailForwardAdress;
     public override string FallbackFromKeySelector(Group i) => SanitizeName(i.Name);
     public override string FallbackToKeySelector(MailForward i) => i.MailForwardAdress.Split('@')[0];
 
     public override async Task<IEnumerable<Group>> GetFromAsync() =>
         (await churchTools.GetGroupsAsync())
-            .Where(i => i.Members.Any());
+            .Where(i => i.Members.Any())
+            .Where(i => !groupSettings.Value.ExcludedGroupIds.Contains(i.Id))
+            .Where(i => !i.GroupTypeId.HasValue || !groupSettings.Value.ExcludedGroupTypeIds.Contains(i.GroupTypeId.Value));
 
     public override async Task<IEnumerable<MailForward>> GetToAsync()
         => (await kas.GetMailforwardsAsync()).Where(i => i.MailForwardAdress.Split("@")[1] == settings.Value.KASDomain);

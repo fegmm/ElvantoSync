@@ -24,14 +24,16 @@ public class GroupsToNextcloudSync(
     ILogger<GroupsToNextcloudSync> logger
 ) : Sync<SourceGroup, NextcloudGroup>(dbContext, settings, logger)
 {
-    public override string FromKeySelector(SourceGroup i) => i.Id;
+    public override string FromKeySelector(SourceGroup i) => i.Id.ToString();
     public override string ToKeySelector(NextcloudGroup i) => i.Id;
     public override string FallbackFromKeySelector(SourceGroup i) => i.Name;
     public override string FallbackToKeySelector(NextcloudGroup i) => i.DisplayName;
 
     public override async Task<IEnumerable<SourceGroup>> GetFromAsync()
         => (await churchTools.GetGroupsAsync())
-            .Where(i => i.Members.Any());
+            .Where(i => i.Members.Any())
+            .Where(i => !settings.Value.ExcludedGroupIds.Contains(i.Id))
+            .Where(i => !i.GroupTypeId.HasValue || !settings.Value.ExcludedGroupTypeIds.Contains(i.GroupTypeId.Value));
 
     public override async Task<IEnumerable<NextcloudGroup>> GetToAsync()
         => (await provisioningClient.GetGroups())
@@ -40,17 +42,18 @@ public class GroupsToNextcloudSync(
 
     protected override async Task<string> AddMissing(SourceGroup group)
     {
-        await provisioningClient.CreateGroup(group.Id, group.Name);
+        string churchToolsGroupId = group.Id.ToString();
+        await provisioningClient.CreateGroup(churchToolsGroupId, group.Name);
 
         try
         {
-        await provisioningClient.CreateGroup(group.Id + settings.Value.GroupLeaderSuffix, group.Name + settings.Value.GroupLeaderSuffix);
-        await UpdateMembersOfGroup(group.Members, group.Id);
-        await UpdateMembersOfGroup(group.Members.Where(IsLeader), group.Id + settings.Value.GroupLeaderSuffix);
+        await provisioningClient.CreateGroup(churchToolsGroupId + settings.Value.GroupLeaderSuffix, group.Name + settings.Value.GroupLeaderSuffix);
+        await UpdateMembersOfGroup(group.Members, churchToolsGroupId);
+        await UpdateMembersOfGroup(group.Members.Where(IsLeader), churchToolsGroupId + settings.Value.GroupLeaderSuffix);
         }
         catch { } // Ignore errors, as the group will be updated in the next sync and no rollback is needed
 
-        return group.Id;
+        return churchToolsGroupId;
     }
 
     protected override async Task RemoveAdditional(NextcloudGroup group)

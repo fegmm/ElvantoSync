@@ -92,8 +92,9 @@ public sealed class ChurchToolsSource(ChurchToolsClient client) : IChurchToolsSo
                 ?? throw new InvalidOperationException("ChurchTools groups response is missing data.");
             result.AddRange(data.Select(g => new Group
             {
-                Id = Id(g.Id),
+                Id = RequiredId(g.Id),
                 Name = g.Name,
+                GroupTypeId = g.Information?.GroupTypeId,
                 Members = activeMembers[g.Id].Select(m => new GroupMember
                 {
                     Id = Id(m.PersonId),
@@ -106,5 +107,8 @@ public sealed class ChurchToolsSource(ChurchToolsClient client) : IChurchToolsSo
     }
 
     private static string Id(int? id) => id?.ToString(CultureInfo.InvariantCulture)
+        ?? throw new InvalidOperationException("ChurchTools response contains an entity without an ID.");
+
+    private static int RequiredId(int? id) => id
         ?? throw new InvalidOperationException("ChurchTools response contains an entity without an ID.");
 }

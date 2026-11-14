@@ -20,7 +20,7 @@ public abstract class TestBase : IAsyncLifetime
     private readonly NextcloudContainer nextcloud;
     protected Mock<ChurchTools.IChurchToolsSource> _churchToolsSourceMock;
     protected IServiceCollection Services { get; private set; }
-    private bool _disposed = false;
+
     public TestBase()
     {
 
@@ -66,8 +66,8 @@ public abstract class TestBase : IAsyncLifetime
 
         IEnumerable<Group> groups = new List<Group>
         {
-            new Group { Id = "1", Name = "Group 1", Members = groupMembers},
-            new Group { Id = "2", Name = "Group 2", Members = groupMembers}
+            new Group { Id = 1, Name = "Group 1", Members = groupMembers},
+            new Group { Id = 2, Name = "Group 2", Members = groupMembers}
         };
 
         _churchToolsSourceMock
