@@ -30,7 +30,6 @@ public static class DependencyInjection
         });
 
 
-        
         client.AddResilienceHandler("rate-limit", GetRateLimiter);
 
 
@@ -62,17 +61,6 @@ public static class DependencyInjection
             i.BaseAddress = new Uri(nextcloudUrl);
             i.Timeout = TimeSpan.FromMinutes(5);
             i.DefaultRequestHeaders.Authorization = auth;
-            i.DefaultRequestHeaders.UserAgent.ParseAdd(applicationName);
-            i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        });
-        client.AddResilienceHandler("rate-limit", GetRateLimiter);
-
-        client = services.AddHttpClient<INextcloudTalkClient, NextcloudTalkClient>(i =>
-        {
-            i.BaseAddress = new Uri(nextcloudUrl);
-            i.Timeout = TimeSpan.FromMinutes(5);
-            i.DefaultRequestHeaders.Authorization = auth;
-            i.DefaultRequestHeaders.Add("OCS-ApiRequest", "true");
             i.DefaultRequestHeaders.UserAgent.ParseAdd(applicationName);
             i.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         });

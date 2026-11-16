@@ -21,8 +21,7 @@ public static class DependencyInjections
         .AddTransient<ISync, GroupsToEmailSync>()
         .AddTransient<ISync, GroupsToNextcloudGroupFolderSync>()
         .AddTransient<ISync, GroupsToCollectivesSync>()
-        .AddTransient<ISync, GroupsToDeckSync>()
-        .AddTransient<ISync, GroupsToTalkSync>();
+        .AddTransient<ISync, GroupsToDeckSync>();
 
     public static IServiceCollection AddApplicationOptions(this IServiceCollection services)
     {
@@ -46,9 +45,6 @@ public static class DependencyInjections
 
         services.AddOptions<GroupsToDeckSyncSettings>()
             .BindConfiguration(GroupsToDeckSyncSettings.ConfigSection);
-
-        services.AddOptions<GroupsToTalkSyncSettings>()
-            .BindConfiguration(GroupsToTalkSyncSettings.ConfigSection);
 
         services.AddOptions<GroupsToEmailSyncSettings>()
             .BindConfiguration(GroupsToEmailSyncSettings.ConfigSection);
