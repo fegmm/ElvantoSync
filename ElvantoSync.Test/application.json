@@ -31,9 +31,6 @@
         "LogOnly": false,
         "GroupLeaderSuffix": "- Leitung"
       },
-      "GroupsToTalkSync": {
-        "LogOnly": true
-      },
       "PeopleToContactSync": {
         "LogOnly": true
       },
